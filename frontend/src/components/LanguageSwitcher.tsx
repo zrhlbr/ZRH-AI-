@@ -12,6 +12,7 @@ export function LanguageSwitcher() {
           <button
             key={lng}
             type="button"
+            data-testid={`lang-${lng}`}
             onClick={() => void i18n.changeLanguage(lng)}
             className={`rounded-md px-2.5 py-1 text-xs transition-colors sm:text-sm ${
               active

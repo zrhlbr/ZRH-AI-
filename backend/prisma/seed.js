@@ -25,6 +25,13 @@ const PERMISSIONS = [
   { code: 'api:system:docker', type: 'API', name: 'Docker 监控接口' },
   { code: 'api:ollama:read', type: 'API', name: 'Ollama 读取接口' },
   { code: 'api:auth:profile', type: 'API', name: '用户资料接口' },
+  // 阶段 3：AI 对话核心
+  { code: 'menu:chat', type: 'MENU', name: 'AI 对话菜单' },
+  { code: 'api:chat:read', type: 'API', name: '对话读取接口' },
+  { code: 'api:chat:write', type: 'API', name: '对话写入接口' },
+  { code: 'api:chat:delete', type: 'API', name: '对话删除接口' },
+  { code: 'api:prompts:read', type: 'API', name: 'Prompt 模板接口' },
+  { code: 'api:parameters:write', type: 'API', name: '生成参数设置接口' },
 ];
 
 const ROLE_PERMISSIONS = {
@@ -33,6 +40,7 @@ const ROLE_PERMISSIONS = {
   USER: [
     'menu:home',
     'menu:status',
+    'menu:chat',
     'button:status:refresh',
     'api:system:cpu',
     'api:system:memory',
@@ -41,8 +49,48 @@ const ROLE_PERMISSIONS = {
     'api:system:docker',
     'api:ollama:read',
     'api:auth:profile',
+    'api:chat:read',
+    'api:chat:write',
+    'api:chat:delete',
+    'api:prompts:read',
+    'api:parameters:write',
   ],
 };
+
+// 阶段 3：默认模型配置（与 Ollama 实时清单合并）
+const MODEL_CONFIGS = [
+  { name: 'qwen3:8b', displayName: 'Qwen3 8B', isDefault: true, sortOrder: 1 },
+  { name: 'deepseek-r1:8b', displayName: 'DeepSeek R1 8B', isDefault: false, sortOrder: 2 },
+  { name: 'deepseek-coder:latest', displayName: 'DeepSeek Coder', isDefault: false, sortOrder: 3 },
+];
+
+// 阶段 3：内置 Prompt 模板（后续 AI Agent 直接调用）
+const PROMPT_TEMPLATES = [
+  {
+    code: 'default.system',
+    name: '默认系统提示',
+    role: 'system',
+    isDefault: true,
+    content:
+      'You are ZRH AI, a helpful assistant inside the ZRH ecosystem. Answer accurately and concisely. Use Markdown for structure, code blocks for code, and tables for comparisons when helpful.',
+  },
+  {
+    code: 'role.coder',
+    name: '编程助手',
+    role: 'system',
+    isDefault: false,
+    content:
+      'You are a senior software engineer assistant. Provide correct, runnable code with brief explanations. Prefer code blocks with language tags and keep prose minimal.',
+  },
+  {
+    code: 'role.translator',
+    name: '翻译助手',
+    role: 'system',
+    isDefault: false,
+    content:
+      'You are a professional translator for Chinese, English and Burmese. Translate faithfully, keep formatting, and note ambiguities briefly.',
+  },
+];
 
 async function main() {
   // 1. 权限目录
@@ -73,6 +121,26 @@ async function main() {
     });
   }
   console.log('[seed] role-permission mappings rebuilt');
+
+  // 3.5 阶段 3：模型配置（幂等，不覆盖用户后续修改的 enabled/isDefault）
+  for (const m of MODEL_CONFIGS) {
+    await prisma.modelConfig.upsert({
+      where: { name: m.name },
+      update: { displayName: m.displayName, sortOrder: m.sortOrder },
+      create: { ...m, enabled: true },
+    });
+  }
+  console.log(`[seed] model configs: ${MODEL_CONFIGS.length}`);
+
+  // 3.6 阶段 3：内置 Prompt 模板
+  for (const p of PROMPT_TEMPLATES) {
+    await prisma.promptTemplate.upsert({
+      where: { code: p.code },
+      update: { name: p.name, role: p.role, content: p.content, isDefault: p.isDefault },
+      create: { ...p, builtin: true },
+    });
+  }
+  console.log(`[seed] prompt templates: ${PROMPT_TEMPLATES.length}`);
 
   // 4. 超级管理员
   const username = process.env.ADMIN_USERNAME || 'admin';

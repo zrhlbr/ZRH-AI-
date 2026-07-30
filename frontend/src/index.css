@@ -108,3 +108,171 @@ html[lang='my-MM'] body {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* ============ 阶段 3：AI 对话核心视觉 ============ */
+
+/* AI 光环：数字地球外围双环脉动（纯 CSS，GPU 友好） */
+.zrh-ai-halo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 224px;
+  height: 224px;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  border: 1px solid var(--zrh-border-glow);
+  animation: zrh-halo-pulse 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+.zrh-ai-halo--slow {
+  width: 264px;
+  height: 264px;
+  opacity: 0.5;
+  animation-duration: 4.8s;
+  animation-delay: 0.8s;
+}
+@keyframes zrh-halo-pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(0.92);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.06);
+    opacity: 0.25;
+  }
+}
+
+/* 流式输出呼吸光标 */
+.zrh-stream-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--zrh-accent);
+  animation: zrh-cursor-blink 0.9s steps(2, start) infinite;
+}
+@keyframes zrh-cursor-blink {
+  to {
+    visibility: hidden;
+  }
+}
+
+/* 等待首 token 的打字点（不影响阅读速度） */
+.zrh-typing {
+  display: inline-flex;
+  gap: 5px;
+  padding: 6px 2px;
+}
+.zrh-typing i {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--zrh-accent);
+  opacity: 0.3;
+  animation: zrh-typing-bounce 1.2s ease-in-out infinite;
+}
+.zrh-typing i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.zrh-typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes zrh-typing-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.3;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* 参数滑杆（黑金风格） */
+.zrh-slider {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--zrh-border);
+  outline: none;
+  cursor: pointer;
+}
+.zrh-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--zrh-accent);
+  border: 2px solid var(--zrh-bg);
+  box-shadow: 0 0 8px var(--zrh-border-glow);
+  transition: transform 0.15s ease;
+}
+.zrh-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+.zrh-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--zrh-accent);
+  border: 2px solid var(--zrh-bg);
+  box-shadow: 0 0 8px var(--zrh-border-glow);
+}
+
+/* Markdown 正文细节 */
+.zrh-markdown p {
+  margin: 0.4em 0;
+}
+.zrh-markdown h1,
+.zrh-markdown h2,
+.zrh-markdown h3,
+.zrh-markdown h4 {
+  margin: 0.8em 0 0.4em;
+  font-weight: 600;
+  color: var(--zrh-text);
+}
+.zrh-markdown h1 {
+  font-size: 1.15em;
+}
+.zrh-markdown h2 {
+  font-size: 1.1em;
+}
+.zrh-markdown h3 {
+  font-size: 1.05em;
+}
+.zrh-markdown ul,
+.zrh-markdown ol {
+  margin: 0.4em 0;
+  padding-left: 1.4em;
+}
+.zrh-markdown ul {
+  list-style: disc;
+}
+.zrh-markdown ol {
+  list-style: decimal;
+}
+.zrh-markdown li {
+  margin: 0.2em 0;
+}
+.zrh-markdown hr {
+  margin: 0.8em 0;
+  border-color: var(--zrh-border);
+}
+.zrh-markdown pre code.hljs {
+  background: transparent;
+  padding: 0;
+}
+
+/* 尊重系统级减弱动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .zrh-ai-halo,
+  .zrh-typing i {
+    animation: none;
+  }
+}

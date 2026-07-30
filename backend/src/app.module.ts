@@ -6,6 +6,7 @@ import { OllamaModule } from './ollama/ollama.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { SystemModule } from './system/system.module';
+import { ChatModule } from './chat/chat.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -13,7 +14,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 @Module({
-  imports: [PrismaModule, RedisModule, OllamaModule, HealthModule, AuthModule, SystemModule],
+  imports: [PrismaModule, RedisModule, OllamaModule, HealthModule, AuthModule, SystemModule, ChatModule],
   providers: [
     // 全局鉴权：JWT → 权限码（@Public() 除外）
     { provide: APP_GUARD, useClass: JwtAuthGuard },

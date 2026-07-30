@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { TechBackground } from '../components/background/TechBackground';
 import { DigitalGlobe } from '../components/background/DigitalGlobe';
@@ -8,7 +9,9 @@ import { zrhIcons } from '../design-system/icons';
 import { brand } from '../design-system/theme';
 import { fadeInUp, baseTransition } from '../design-system/animations';
 import { api, HealthReport, OllamaModel, OllamaStatus, SystemMetric } from '../api/client';
+import { chatApi, ChatStats } from '../api/chat';
 import { useAuthStore } from '../store/authStore';
+import { useChatStore } from '../store/chatStore';
 
 type PanelState = 'loading' | 'online' | 'offline' | 'nodata';
 
@@ -55,16 +58,18 @@ function bytes(n: unknown): string {
  */
 export function HomePage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { hasPermission } = useAuthStore();
+  const setPendingHomeMessage = useChatStore((s) => s.setPendingHomeMessage);
   const [panels, setPanels] = useState<Panels>(initialPanels);
+  const [chatStats, setChatStats] = useState<ChatStats | null>(null);
   const [input, setInput] = useState('');
-  const [hint, setHint] = useState(false);
 
   useEffect(() => {
     let alive = true;
     const load = async () => {
       const safe = <T,>(p: Promise<T>) => p.catch(() => null);
-      const [cpu, gpu, memory, docker, health, ollama, models] = await Promise.all([
+      const [cpu, gpu, memory, docker, health, ollama, models, stats] = await Promise.all([
         hasPermission('api:system:cpu') ? safe(api.systemCpu()) : null,
         hasPermission('api:system:gpu') ? safe(api.systemGpu()) : null,
         hasPermission('api:system:memory') ? safe(api.systemMemory()) : null,
@@ -72,6 +77,7 @@ export function HomePage() {
         safe(api.health()),
         hasPermission('api:ollama:read') ? safe(api.ollamaHealth()) : null,
         hasPermission('api:ollama:read') ? safe(api.ollamaModels()) : null,
+        hasPermission('api:chat:read') ? safe(chatApi.stats()) : null,
       ]);
       if (!alive) return;
       setPanels({
@@ -83,6 +89,7 @@ export function HomePage() {
         ollama,
         models: models?.models ?? null,
       });
+      setChatStats(stats ?? null);
     };
     void load();
     const timer = setInterval(() => void load(), 10000);
@@ -92,10 +99,13 @@ export function HomePage() {
     };
   }, [hasPermission]);
 
+  // 首页输入 → 携带首条消息进入 AI 对话
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    setHint(true);
+    const value = input.trim();
+    if (!value) return;
+    setPendingHomeMessage(value);
+    navigate('/chat');
   };
 
   const SendIcon = zrhIcons.send;
@@ -166,6 +176,11 @@ export function HomePage() {
           className="flex min-w-0 flex-1 flex-col items-center justify-center gap-8 py-8 sm:py-14"
         >
           <div className="relative flex w-full max-w-xl flex-col items-center">
+            {/* AI 光环：数字地球外围双环脉动 */}
+            <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2">
+              <div className="zrh-ai-halo" aria-hidden />
+              <div className="zrh-ai-halo zrh-ai-halo--slow" aria-hidden />
+            </div>
             <DigitalGlobe className="pointer-events-none absolute -top-24 left-1/2 h-56 w-56 -translate-x-1/2 opacity-60" />
             <div className="relative z-10 mt-28 text-center">
               <h1 className="text-3xl font-bold tracking-[0.2em] text-zrh-accent sm:text-4xl">
@@ -174,6 +189,22 @@ export function HomePage() {
               <p className="mt-2 text-xs tracking-widest text-zrh-text-dim sm:text-sm">
                 {brand.subtitle}
               </p>
+              {/* 实时统计：模型数量 / 聊天数量 */}
+              {chatStats && (
+                <div className="mt-4 flex items-center justify-center gap-4 text-[11px] text-zrh-text-dim">
+                  <span>
+                    {t('chat.modelCount')} <span className="font-mono text-zrh-accent">{chatStats.models}</span>
+                  </span>
+                  <span className="h-3 w-px bg-zrh-border" aria-hidden />
+                  <span>
+                    {t('chat.chatCount')} <span className="font-mono text-zrh-accent">{chatStats.conversations}</span>
+                  </span>
+                  <span className="h-3 w-px bg-zrh-border" aria-hidden />
+                  <span>
+                    {t('chat.messageCount')} <span className="font-mono text-zrh-accent">{chatStats.messages}</span>
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -183,10 +214,7 @@ export function HomePage() {
           >
             <input
               value={input}
-              onChange={(e) => {
-                setInput(e.target.value);
-                setHint(false);
-              }}
+              onChange={(e) => setInput(e.target.value)}
               placeholder={t('home.aiInputPlaceholder')}
               className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-sm text-zrh-text outline-none placeholder:text-zrh-text-dim/60"
             />
@@ -198,17 +226,9 @@ export function HomePage() {
               <SendIcon className="h-4 w-4" aria-hidden />
             </button>
           </form>
-          {hint && (
-            <motion.p
-              variants={fadeInUp}
-              initial="initial"
-              animate="animate"
-              transition={baseTransition}
-              className="max-w-xl text-center text-xs text-zrh-text-dim"
-            >
-              {t('home.aiInputStageHint')}
-            </motion.p>
-          )}
+          <p className="max-w-xl text-center text-[10px] text-zrh-text-dim/60">
+            {t('home.aiInputStageHint')}
+          </p>
         </motion.section>
 
         {/* 右侧：实时状态面板 */}

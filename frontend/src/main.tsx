@@ -1,4 +1,4 @@
-import { StrictMode } from 'react';
+import { StrictMode, Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import './i18n';
@@ -8,6 +8,9 @@ import { LoginPage } from './pages/LoginPage';
 import { HomePage } from './pages/HomePage';
 import { StatusPage } from './pages/StatusPage';
 import { useAuthStore } from './store/authStore';
+
+// 聊天页（含 Markdown/Mermaid/KaTeX 渲染链）按需加载，保持首页轻量
+const ChatPage = lazy(() => import('./pages/ChatPage').then((m) => ({ default: m.ChatPage })));
 
 /** 路由守卫：未登录跳转登录页 */
 function RequireAuth() {
@@ -38,6 +41,8 @@ const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { path: '/', element: <HomePage /> },
+          { path: '/chat', element: <Suspense fallback={null}><ChatPage /></Suspense> },
+          { path: '/chat/:id', element: <Suspense fallback={null}><ChatPage /></Suspense> },
           { path: '/status', element: <StatusPage /> },
         ],
       },

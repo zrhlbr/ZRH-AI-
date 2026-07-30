@@ -29,6 +29,9 @@ model User {
   roleId       Int
   role         Role           @relation(fields: [roleId], references: [id])
   refreshTokens RefreshToken[]
+  conversations Conversation[]
+  folders      ConversationFolder[]
+  chatParams   ChatParams?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
@@ -81,4 +84,108 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+// ============ 阶段 3：AI 对话核心 ============
+
+// 对话分组（预留：阶段后续开放文件夹管理 UI）
+model ConversationFolder {
+  id            Int            @id @default(autoincrement())
+  userId        Int
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  sortOrder     Int            @default(0)
+  conversations Conversation[]
+  createdAt     DateTime       @default(now())
+
+  @@index([userId])
+  @@map("conversation_folders")
+}
+
+model Conversation {
+  id            Int                 @id @default(autoincrement())
+  userId        Int
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  model         String // 当前使用的模型（可在聊天中切换，新消息走新模型）
+  systemPrompt  String?             @db.Text // 为空时回落到默认 Prompt 模板
+  promptCode    String? // 选用的角色 Prompt 模板 code
+  pinned        Boolean             @default(false)
+  favorite      Boolean             @default(false)
+  folderId      Int?
+  folder        ConversationFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  messages      Message[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  lastMessageAt DateTime            @default(now())
+
+  @@index([userId, lastMessageAt(sort: Desc)])
+  @@index([userId, pinned])
+  @@index([userId, favorite])
+  @@map("conversations")
+}
+
+model Message {
+  id               Int          @id @default(autoincrement())
+  conversationId   Int
+  conversation     Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role             String // user | assistant | system
+  content          String       @db.Text
+  model            String? // 生成该消息的模型（历史保留）
+  promptTokens     Int? // 预留：Token 统计
+  completionTokens Int? // 预留：Token 统计
+  durationMs       Int? // 生成耗时
+  status           String       @default("done") // done | stopped | error
+  feedback         String? // like | dislike | null
+  createdAt        DateTime     @default(now())
+
+  @@index([conversationId, id])
+  @@map("messages")
+}
+
+// 模型配置：与 Ollama 实时清单合并后对外提供
+model ModelConfig {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // Ollama 模型名，如 qwen3:8b
+  displayName String
+  enabled     Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  params      Json? // 该模型的默认参数覆盖（可选）
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("model_configs")
+}
+
+// Prompt 模板：System / User / Assistant 三类，后续 AI Agent 直接调用
+model PromptTemplate {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  name      String
+  role      String // system | user | assistant
+  content   String   @db.Text
+  isDefault Boolean  @default(false)
+  builtin   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("prompt_templates")
+}
+
+// 每个用户的生成参数设置（持久化）
+model ChatParams {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  temperature   Float    @default(0.7)
+  topP          Float    @default(0.9)
+  topK          Int      @default(40)
+  repeatPenalty Float    @default(1.1)
+  contextLength Int      @default(8192)
+  maxTokens     Int      @default(2048)
+  seed          Int? // 预留
+  updatedAt     DateTime @updatedAt
+
+  @@map("chat_params")
 }

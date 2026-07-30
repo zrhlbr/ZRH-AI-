@@ -26,6 +26,7 @@ export function AppShell() {
 
   const menuItems = [
     { to: '/', key: 'menu:home', label: t('nav.home'), icon: zrhIcons.home, end: true },
+    { to: '/chat', key: 'menu:chat', label: t('nav.chat'), icon: zrhIcons.ai },
     { to: '/status', key: 'menu:status', label: t('nav.status'), icon: zrhIcons.dashboard },
   ].filter((item) => profile?.permissions.includes(item.key));
 

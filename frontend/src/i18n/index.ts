@@ -32,8 +32,14 @@ void i18n
   });
 
 // 同步 <html lang>，供缅文字体等 CSS 规则使用
+// 同时显式写入 localStorage，确保刷新后语言选择保持（language detector 的 cache 为兜底）
 i18n.on('languageChanged', (lng) => {
   document.documentElement.lang = lng;
+  try {
+    window.localStorage.setItem('zrh-ai-language', lng);
+  } catch {
+    // 忽略隐私模式等 localStorage 不可用场景
+  }
 });
 document.documentElement.lang = i18n.language || 'zh-CN';
 
