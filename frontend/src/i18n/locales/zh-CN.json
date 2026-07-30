@@ -1,0 +1,36 @@
+{
+  "app": {
+    "name": "ZRH AI",
+    "tagline": "本地私有化 AI 平台"
+  },
+  "nav": {
+    "home": "首页",
+    "status": "系统状态"
+  },
+  "status": {
+    "system": "系统状态",
+    "backend": "后端状态",
+    "database": "数据库状态",
+    "redis": "Redis 状态",
+    "ollama": "Ollama 状态",
+    "models": "模型清单",
+    "online": "在线",
+    "offline": "离线",
+    "loading": "加载中…",
+    "error": "错误",
+    "refresh": "刷新",
+    "version": "版本",
+    "timestamp": "时间戳",
+    "latency": "延迟"
+  },
+  "language": {
+    "label": "语言",
+    "zh-CN": "中文",
+    "my-MM": "缅文",
+    "en-US": "English"
+  },
+  "home": {
+    "stage": "阶段 1 · 项目骨架",
+    "notice": "基础框架已就绪。业务功能将在后续阶段开放。"
+  }
+}

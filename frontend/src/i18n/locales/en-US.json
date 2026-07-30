@@ -1,0 +1,36 @@
+{
+  "app": {
+    "name": "ZRH AI",
+    "tagline": "Private Local AI Platform"
+  },
+  "nav": {
+    "home": "Home",
+    "status": "System Status"
+  },
+  "status": {
+    "system": "System Status",
+    "backend": "Backend Status",
+    "database": "Database Status",
+    "redis": "Redis Status",
+    "ollama": "Ollama Status",
+    "models": "Model List",
+    "online": "Online",
+    "offline": "Offline",
+    "loading": "Loading…",
+    "error": "Error",
+    "refresh": "Refresh",
+    "version": "Version",
+    "timestamp": "Timestamp",
+    "latency": "Latency"
+  },
+  "language": {
+    "label": "Language",
+    "zh-CN": "中文",
+    "my-MM": "မြန်မာ",
+    "en-US": "English"
+  },
+  "home": {
+    "stage": "Stage 1 · Project Skeleton",
+    "notice": "The base framework is ready. Business features will be enabled in later stages."
+  }
+}

@@ -1,0 +1,37 @@
+/* 缅文字体预留：my-MM 语言环境下自动应用（@import 必须位于文件最前） */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Myanmar:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 黑金科技主题变量 */
+:root {
+  --zrh-bg: #0a0a0b;
+  --zrh-surface: #141416;
+  --zrh-border: #2a2a2e;
+  --zrh-gold: #d4af37;
+  --zrh-gold-soft: #b8952e;
+  --zrh-text: #f5f3ec;
+  --zrh-text-dim: #9a978c;
+  --zrh-ok: #4ade80;
+  --zrh-err: #f87171;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--zrh-bg);
+  color: var(--zrh-text);
+  overflow-x: hidden;
+}
+
+/* 缅文语言环境字体切换 */
+html[lang='my-MM'] body {
+  font-family: 'Noto Sans Myanmar', 'Padauk', -apple-system, sans-serif;
+}

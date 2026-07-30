@@ -1,0 +1,20 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 阶段 1 占位模型：用于验证 Prisma ↔ PostgreSQL 连通性。
+// 业务模型从阶段 2 起按模块添加。
+model SystemMeta {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("system_meta")
+}
