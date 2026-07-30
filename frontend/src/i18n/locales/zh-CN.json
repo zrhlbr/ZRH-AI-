@@ -5,15 +5,41 @@
   },
   "nav": {
     "home": "首页",
-    "status": "系统状态"
+    "status": "系统状态",
+    "menu": "菜单"
+  },
+  "common": {
+    "close": "关闭",
+    "confirm": "确认",
+    "cancel": "取消"
+  },
+  "auth": {
+    "adminLogin": "管理员登录",
+    "login": "登 录",
+    "logout": "退出",
+    "loggingIn": "登录中…",
+    "loginFailed": "登录失败",
+    "username": "用户名",
+    "password": "密码"
+  },
+  "theme": {
+    "label": "主题",
+    "blackGold": "黑金",
+    "deepSpaceBlue": "深空蓝",
+    "midnightBlack": "暗夜黑"
   },
   "status": {
     "system": "系统状态",
+    "realtime": "实时状态",
     "backend": "后端状态",
     "database": "数据库状态",
     "redis": "Redis 状态",
     "ollama": "Ollama 状态",
     "models": "模型清单",
+    "memory": "内存",
+    "cores": "核",
+    "load": "负载",
+    "unavailable": "暂不可用",
     "online": "在线",
     "offline": "离线",
     "loading": "加载中…",
@@ -21,7 +47,11 @@
     "refresh": "刷新",
     "version": "版本",
     "timestamp": "时间戳",
-    "latency": "延迟"
+    "latency": "延迟",
+    "modelName": "模型",
+    "modelSize": "大小",
+    "modelModified": "修改时间",
+    "noData": "暂无数据"
   },
   "language": {
     "label": "语言",
@@ -30,7 +60,10 @@
     "en-US": "English"
   },
   "home": {
-    "stage": "阶段 1 · 项目骨架",
-    "notice": "基础框架已就绪。业务功能将在后续阶段开放。"
+    "stage": "阶段 2 · 认证与基础",
+    "notice": "基础框架已就绪。业务功能将在后续阶段开放。",
+    "aiInputPlaceholder": "向 ZRH AI 提问…",
+    "aiInputStageHint": "AI 对话能力将在阶段 3 开放，当前版本仅提供输入框架。",
+    "send": "发送"
   }
 }

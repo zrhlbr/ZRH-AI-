@@ -14,7 +14,7 @@ Write-Host '===== ZRH AI 容器状态 =====' -ForegroundColor Cyan
 Write-Host ''
 Write-Host '===== 后端健康检查 =====' -ForegroundColor Cyan
 try {
-    $health = Invoke-RestMethod -Uri 'http://localhost:4010/api/health' -TimeoutSec 5
+    $health = Invoke-RestMethod -Uri 'http://localhost:4010/api/v1/health' -TimeoutSec 5
     $health | ConvertTo-Json -Depth 5
 } catch {
     Write-Host "后端暂不可达: $($_.Exception.Message)" -ForegroundColor Yellow
@@ -23,7 +23,7 @@ try {
 Write-Host ''
 Write-Host '===== Ollama 状态（经后端代理） =====' -ForegroundColor Cyan
 try {
-    $ollama = Invoke-RestMethod -Uri 'http://localhost:4010/api/ollama/health' -TimeoutSec 8
+    $ollama = Invoke-RestMethod -Uri 'http://localhost:4010/api/v1/ollama/health' -TimeoutSec 8
     $ollama | ConvertTo-Json -Depth 5
 } catch {
     Write-Host "Ollama 状态暂不可达: $($_.Exception.Message)" -ForegroundColor Yellow

@@ -45,9 +45,9 @@ docker-compose up -d --build
 ## 验证入口
 
 - 前端: http://localhost:3010
-- 后端健康检查: http://localhost:4010/api/health
-- Ollama 状态: http://localhost:4010/api/ollama/health
-- Ollama 模型: http://localhost:4010/api/ollama/models
+- 后端健康检查: http://localhost:4010/api/v1/health
+- Ollama 状态: http://localhost:4010/api/v1/ollama/health
+- Ollama 模型: http://localhost:4010/api/v1/ollama/models
 
 ## 国际化
 

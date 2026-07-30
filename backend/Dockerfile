@@ -26,5 +26,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY prisma ./prisma
 COPY package.json ./
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
 EXPOSE 4010
-CMD ["node", "dist/main.js"]
+CMD ["sh", "docker-entrypoint.sh"]

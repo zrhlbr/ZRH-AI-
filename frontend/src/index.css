@@ -5,16 +5,23 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 黑金科技主题变量 */
+/*
+ * ZRH 主题变量 —— 默认值与 black-gold 对齐，运行时由
+ * design-system/theme.ts applyThemeToDom() 按主题覆写。
+ */
 :root {
   --zrh-bg: #0a0a0b;
   --zrh-surface: #141416;
+  --zrh-surface-raised: #1c1c20;
   --zrh-border: #2a2a2e;
-  --zrh-gold: #d4af37;
-  --zrh-gold-soft: #b8952e;
+  --zrh-border-glow: rgba(212, 175, 55, 0.35);
+  --zrh-accent: #d4af37;
+  --zrh-accent-soft: #b8952e;
+  --zrh-tech-blue: #3b82f6;
   --zrh-text: #f5f3ec;
   --zrh-text-dim: #9a978c;
   --zrh-ok: #4ade80;
+  --zrh-warn: #fbbf24;
   --zrh-err: #f87171;
 }
 
@@ -29,9 +36,75 @@ body {
   background-color: var(--zrh-bg);
   color: var(--zrh-text);
   overflow-x: hidden;
+  transition: background-color 0.3s ease;
 }
 
 /* 缅文语言环境字体切换 */
 html[lang='my-MM'] body {
   font-family: 'Noto Sans Myanmar', 'Padauk', -apple-system, sans-serif;
+}
+
+/* ============ ZRH 通用视觉基元（由设计系统驱动） ============ */
+
+/* 毛玻璃面板 */
+.zrh-glass {
+  background: color-mix(in srgb, var(--zrh-surface) 78%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* 微光边框 */
+.zrh-glow-border {
+  box-shadow:
+    0 0 0 1px var(--zrh-border-glow),
+    0 0 24px -10px var(--zrh-border-glow);
+}
+
+/* HUD 角标面板 */
+.zrh-hud {
+  position: relative;
+}
+.zrh-hud::before,
+.zrh-hud::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--zrh-accent);
+  opacity: 0.6;
+  pointer-events: none;
+}
+.zrh-hud::before {
+  top: -1px;
+  left: -1px;
+  border-right: none;
+  border-bottom: none;
+}
+.zrh-hud::after {
+  bottom: -1px;
+  right: -1px;
+  border-left: none;
+  border-top: none;
+}
+
+/* 科技网格背景层 */
+.zrh-tech-grid {
+  background-image:
+    linear-gradient(var(--zrh-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--zrh-border) 1px, transparent 1px);
+  background-size: 44px 44px;
+  opacity: 0.35;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--zrh-border);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
 }

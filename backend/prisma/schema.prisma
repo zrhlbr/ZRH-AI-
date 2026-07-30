@@ -9,7 +9,6 @@ datasource db {
 }
 
 // 阶段 1 占位模型：用于验证 Prisma ↔ PostgreSQL 连通性。
-// 业务模型从阶段 2 起按模块添加。
 model SystemMeta {
   id        Int      @id @default(autoincrement())
   key       String   @unique
@@ -17,4 +16,69 @@ model SystemMeta {
   updatedAt DateTime @updatedAt
 
   @@map("system_meta")
+}
+
+// ============ 阶段 2：认证与 RBAC ============
+
+model User {
+  id           Int            @id @default(autoincrement())
+  username     String         @unique
+  displayName  String
+  passwordHash String
+  status       String         @default("active") // active | disabled
+  roleId       Int
+  role         Role           @relation(fields: [roleId], references: [id])
+  refreshTokens RefreshToken[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@map("users")
+}
+
+model Role {
+  id          Int              @id @default(autoincrement())
+  code        String           @unique // SUPER_ADMIN | ADMIN | USER
+  name        String
+  description String?
+  users       User[]
+  permissions RolePermission[]
+  createdAt   DateTime         @default(now())
+
+  @@map("roles")
+}
+
+model Permission {
+  id          Int              @id @default(autoincrement())
+  code        String           @unique // 例如 menu:home / button:user:create / api:system:cpu
+  type        String           // MENU | BUTTON | API
+  name        String
+  description String?
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       Int
+  permissionId Int
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model RefreshToken {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  userAgent  String?
+  ip         String?
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }

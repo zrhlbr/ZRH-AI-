@@ -5,15 +5,41 @@
   },
   "nav": {
     "home": "Home",
-    "status": "System Status"
+    "status": "System Status",
+    "menu": "Menu"
+  },
+  "common": {
+    "close": "Close",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "auth": {
+    "adminLogin": "Administrator Login",
+    "login": "Sign In",
+    "logout": "Sign Out",
+    "loggingIn": "Signing in…",
+    "loginFailed": "Sign-in failed",
+    "username": "Username",
+    "password": "Password"
+  },
+  "theme": {
+    "label": "Theme",
+    "blackGold": "Black Gold",
+    "deepSpaceBlue": "Deep Space Blue",
+    "midnightBlack": "Midnight Black"
   },
   "status": {
     "system": "System Status",
+    "realtime": "Real-time Status",
     "backend": "Backend Status",
     "database": "Database Status",
     "redis": "Redis Status",
     "ollama": "Ollama Status",
     "models": "Model List",
+    "memory": "Memory",
+    "cores": "cores",
+    "load": "Load",
+    "unavailable": "Unavailable",
     "online": "Online",
     "offline": "Offline",
     "loading": "Loading…",
@@ -21,7 +47,11 @@
     "refresh": "Refresh",
     "version": "Version",
     "timestamp": "Timestamp",
-    "latency": "Latency"
+    "latency": "Latency",
+    "modelName": "Model",
+    "modelSize": "Size",
+    "modelModified": "Modified",
+    "noData": "No data"
   },
   "language": {
     "label": "Language",
@@ -30,7 +60,10 @@
     "en-US": "English"
   },
   "home": {
-    "stage": "Stage 1 · Project Skeleton",
-    "notice": "The base framework is ready. Business features will be enabled in later stages."
+    "stage": "Stage 2 · Auth & Foundation",
+    "notice": "The base framework is ready. Business features will be enabled in later stages.",
+    "aiInputPlaceholder": "Ask ZRH AI…",
+    "aiInputStageHint": "AI chat will be enabled in Stage 3. This build provides the input frame only.",
+    "send": "Send"
   }
 }

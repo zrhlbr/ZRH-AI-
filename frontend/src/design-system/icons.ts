@@ -1,0 +1,53 @@
+import {
+  Activity,
+  BrainCircuit,
+  Cpu,
+  Database,
+  Globe,
+  HardDrive,
+  Home,
+  Languages,
+  LayoutDashboard,
+  LogOut,
+  MemoryStick,
+  Moon,
+  Network,
+  Palette,
+  RefreshCw,
+  Send,
+  Server,
+  ShieldCheck,
+  Sparkles,
+  User,
+  Boxes,
+} from 'lucide-react';
+
+/**
+ * ZRH Design System — 图标注册表（统一 Lucide 来源，禁止散引）
+ */
+export const zrhIcons = {
+  brand: Sparkles,
+  globe: Globe,
+  ai: BrainCircuit,
+  home: Home,
+  dashboard: LayoutDashboard,
+  cpu: Cpu,
+  gpu: BrainCircuit,
+  memory: MemoryStick,
+  disk: HardDrive,
+  network: Network,
+  database: Database,
+  redis: Server,
+  docker: Boxes,
+  activity: Activity,
+  user: User,
+  logout: LogOut,
+  language: Languages,
+  theme: Palette,
+  dark: Moon,
+  shield: ShieldCheck,
+  send: Send,
+  refresh: RefreshCw,
+} as const;
+
+export type ZrhIconName = keyof typeof zrhIcons;
