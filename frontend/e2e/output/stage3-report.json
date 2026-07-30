@@ -80,23 +80,23 @@
     "dockerStats": [
       {
         "name": "zrh-ai-api",
-        "cpu": "0.02%",
-        "mem": "56.64MiB / 15.27GiB"
+        "cpu": "0.00%",
+        "mem": "54.41MiB / 15.27GiB"
       },
       {
         "name": "zrh-ai-web",
         "cpu": "0.00%",
-        "mem": "24.84MiB / 15.27GiB"
+        "mem": "24.95MiB / 15.27GiB"
       },
       {
         "name": "zrh-ai-postgres",
-        "cpu": "2.19%",
-        "mem": "56.23MiB / 15.27GiB"
+        "cpu": "2.03%",
+        "mem": "55.14MiB / 15.27GiB"
       },
       {
         "name": "zrh-ai-redis",
-        "cpu": "0.28%",
-        "mem": "6.754MiB / 15.27GiB"
+        "cpu": "0.33%",
+        "mem": "6MiB / 15.27GiB"
       }
     ]
   },
@@ -110,7 +110,7 @@
     "containers": [
       {
         "name": "zrh-ai-api",
-        "status": "Up 13 minutes (healthy)",
+        "status": "Up 16 minutes (healthy)",
         "health": "healthy"
       },
       {
@@ -125,7 +125,7 @@
       },
       {
         "name": "zrh-ai-web",
-        "status": "Up 6 minutes (healthy)",
+        "status": "Up 9 minutes (healthy)",
         "health": "healthy"
       }
     ]
@@ -136,9 +136,9 @@
     "dockerBuild": true
   },
   "git": {
-    "clean": false,
-    "sha": "6f7be4bddeddacfc9a3b4b62d447a891af2f68f0",
-    "note": "未提交文件：\nM backend/prisma/schema.prisma\n M backend/prisma/seed.js\n M backend/src/app.module.ts\n M frontend/package-lock.json\n M frontend/package.json\n M frontend/src/components/AppShell.tsx\n M frontend/src/components/LanguageSwitcher.tsx\n M frontend/src/components/background/TechBackground.tsx\n M frontend/src/i18n/index.ts\n M frontend/src/i18n/locales/en-US.json\n M frontend/src/i18n/locales/my-MM.json\n M frontend/src/i18n/locales/zh-CN.json\n M frontend/src/index.css\n M frontend/src/main.tsx\n M frontend/src/pages/HomePage.tsx\n M frontend/src/store/themeStore.ts\n?? backend/prisma/migrations/20260731033725_stage3_chat_core/\n?? backend/src/chat/\n?? frontend/e2e/\n?? frontend/playwright.config.ts\n?? frontend/src/api/chat.ts\n?? frontend/src/components/chat/\n?? frontend/src/pages/ChatPage.tsx\n?? frontend/src/store/chatStore.ts"
+    "clean": true,
+    "sha": "84b37e829d859c96c4cc8168f2d6578611d1bde5",
+    "note": "工作区干净"
   },
   "risks": [
     "Ollama 响应较快，停止生成按钮的 UI 断言未在真实流式中触发，但停止 API 与按钮逻辑已就位",
