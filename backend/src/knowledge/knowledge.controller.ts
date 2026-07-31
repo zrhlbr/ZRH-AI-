@@ -241,12 +241,28 @@ export class KnowledgeController {
   @Get('search')
   @RequirePermissions('api:knowledge:read')
   @RateLimit({ windowSeconds: 60, maxRequests: 30, keyPrefix: 'knowledge:search' })
-  search(@Query() q: SearchKnowledgeDto, @CurrentUser() user: AuthUser) {
-    return this.retriever.search({
+  async search(@Query() q: SearchKnowledgeDto, @CurrentUser() user: AuthUser) {
+    const payload = await this.retriever.search({
       query: q.query,
       mode: q.mode ?? 'hybrid',
       topK: q.topK ?? 10,
+      userId: user.id,
     });
+    return {
+      ...payload,
+      results: payload.results.map((r) => ({
+        chunkId: r.chunkId,
+        documentId: r.documentId,
+        content: r.content,
+        score: r.score,
+        source: r.source,
+        document: {
+          id: r.documentId,
+          title: r.title,
+          filename: r.filename,
+        },
+      })),
+    };
   }
 
   // ---------- Health / Status ----------

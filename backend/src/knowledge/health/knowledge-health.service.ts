@@ -19,12 +19,24 @@ export class KnowledgeHealthService {
       this.embedding.health(),
       this.vector.health(),
     ]);
+    const vectors = Number((vectorCount as { count: number }[])[0]?.count ?? 0);
     return {
       documents: documentCount,
       chunks: chunkCount,
-      vectors: Number((vectorCount as { count: number }[])[0]?.count ?? 0),
-      embedding: embeddingHealth,
-      vector: vectorHealth,
+      vectors,
+      parser: { ok: true, supportedFormats: ['txt', 'md', 'html', 'json', 'xml', 'csv', 'pdf', 'docx', 'xlsx', 'zip'] },
+      embedding: {
+        ok: embeddingHealth.status === 'online',
+        provider: this.embedding.code,
+        latencyMs: embeddingHealth.latencyMs,
+        error: embeddingHealth.error,
+      },
+      vector: {
+        ok: vectorHealth.status === 'online',
+        provider: this.vector.code,
+        count: vectorHealth.count ?? vectors,
+        error: vectorHealth.error,
+      },
     };
   }
 }
