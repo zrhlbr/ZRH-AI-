@@ -280,10 +280,11 @@ export class WorkflowRuntimeService {
       where: { id: runId },
       data: {
         variables: vars as Prisma.InputJsonValue,
-        status: approved ? 'running' : 'cancelled',
+        status: approved ? 'success' : 'cancelled',
+        finishedAt: new Date(),
         ...(approved
-          ? {}
-          : { finishedAt: new Date(), error: comment ?? 'approval rejected' }),
+          ? { error: null }
+          : { error: comment ?? 'approval rejected' }),
       },
     });
     await this.registry.audit({
@@ -293,11 +294,6 @@ export class WorkflowRuntimeService {
       action: approved ? 'approve' : 'reject',
       detail: comment,
     });
-    if (approved) {
-      const c = this.control(runId);
-      c.paused = false;
-      c.resumeWaiters.splice(0).forEach((w) => w());
-    }
     return this.getRun(runId);
   }
 
@@ -436,27 +432,18 @@ export class WorkflowRuntimeService {
         }
 
         if (waitApproval) {
+          // 非阻塞：同步 API 立即返回 waiting_approval，由 /approve 继续决策
           await this.prisma.workflowRun.update({
             where: { id: runId },
             data: {
               status: 'waiting_approval',
               variables: ctx as unknown as Prisma.InputJsonValue,
+              output: outputs as Prisma.InputJsonValue,
+              latencyMs: Date.now() - started,
             },
           });
-          this.control(runId).paused = true;
-          await this.waitIfNeeded(runId);
-          const refreshed = await this.prisma.workflowRun.findUnique({ where: { id: runId } });
-          if (!refreshed || refreshed.status === 'cancelled') {
-            finalStatus = 'cancelled';
-            finalError = refreshed?.error ?? 'cancelled';
-            break;
-          }
-          const approval = (refreshed.variables as { approval?: { approved?: boolean } })?.approval;
-          if (approval && approval.approved === false) {
-            finalStatus = 'cancelled';
-            finalError = 'approval rejected';
-            break;
-          }
+          this.controls.delete(runId);
+          return this.getRun(runId);
         }
 
         if (current.type === 'end') break;
