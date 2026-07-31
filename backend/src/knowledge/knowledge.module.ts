@@ -30,6 +30,16 @@ import { KnowledgeHealthService } from './health/knowledge-health.service';
     StorageService,
     KnowledgeHealthService,
   ],
-  exports: [DocumentService, RetrieverService, KnowledgePermissionService],
+  exports: [
+    DocumentService,
+    RetrieverService,
+    KnowledgePermissionService,
+    OllamaEmbeddingProvider,
+    PgvectorProvider,
+    EmbeddingTaskService,
+    StorageService,
+    ParserService,
+    ChunkService,
+  ],
 })
 export class KnowledgeModule {}

@@ -9,6 +9,7 @@ import { SystemModule } from './system/system.module';
 import { ChatModule } from './chat/chat.module';
 import { AIModule } from './ai/ai.module';
 import { KnowledgeModule } from './knowledge/knowledge.module';
+import { RagModule } from './rag/rag.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { RateLimitGuard } from './common/guards/rate-limit.guard';
@@ -17,7 +18,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 @Module({
-  imports: [PrismaModule, RedisModule, OllamaModule, HealthModule, AuthModule, SystemModule, ChatModule, AIModule, KnowledgeModule],
+  imports: [PrismaModule, RedisModule, OllamaModule, HealthModule, AuthModule, SystemModule, ChatModule, AIModule, KnowledgeModule, RagModule],
   providers: [
     // 全局鉴权：JWT → 权限码（@Public() 除外）→ 限流
     { provide: APP_GUARD, useClass: JwtAuthGuard },

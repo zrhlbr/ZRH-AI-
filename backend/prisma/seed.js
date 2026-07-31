@@ -43,6 +43,11 @@ const PERMISSIONS = [
   { code: 'api:knowledge:write', type: 'API', name: '知识平台写入接口' },
   { code: 'api:knowledge:delete', type: 'API', name: '知识平台删除接口' },
   { code: 'api:knowledge:admin', type: 'API', name: '知识平台管理接口' },
+  // 阶段 6：Enterprise RAG Engine
+  { code: 'menu:rag', type: 'MENU', name: '企业 RAG 引擎菜单' },
+  { code: 'api:rag:read', type: 'API', name: 'RAG 读取接口' },
+  { code: 'api:rag:write', type: 'API', name: 'RAG 问答接口' },
+  { code: 'api:rag:admin', type: 'API', name: 'RAG 管理接口' },
 ];
 
 const ROLE_PERMISSIONS = {
@@ -70,6 +75,9 @@ const ROLE_PERMISSIONS = {
     'api:knowledge:read',
     'api:knowledge:write',
     'api:knowledge:delete',
+    'menu:rag',
+    'api:rag:read',
+    'api:rag:write',
   ],
 };
 
@@ -238,6 +246,7 @@ async function main() {
     { code: 'milvus', name: 'Milvus', description: 'Milvus（预留）', enabled: false, isDefault: false, config: {} },
     { code: 'qdrant', name: 'Qdrant', description: 'Qdrant（预留）', enabled: false, isDefault: false, config: {} },
     { code: 'chroma', name: 'Chroma', description: 'Chroma（预留）', enabled: false, isDefault: false, config: {} },
+    { code: 'faiss', name: 'FAISS', description: 'FAISS（预留）', enabled: false, isDefault: false, config: {} },
   ];
   for (const p of VECTOR_PROVIDERS) {
     await prisma.vectorProvider.upsert({
@@ -248,6 +257,37 @@ async function main() {
   }
   console.log(`[seed] vector providers: ${VECTOR_PROVIDERS.length}`);
 
+  // 3.9 阶段 6：部门 + 同义词/业务词
+  const DEPARTMENTS = [
+    { code: 'HQ', name: '总部' },
+    { code: 'IT', name: '信息技术部' },
+    { code: 'OPS', name: '运营部' },
+  ];
+  for (const d of DEPARTMENTS) {
+    await prisma.department.upsert({
+      where: { code: d.code },
+      update: { name: d.name },
+      create: d,
+    });
+  }
+  console.log(`[seed] departments: ${DEPARTMENTS.length}`);
+
+  const RAG_SYNONYMS = [
+    { term: '知识库', synonyms: JSON.stringify(['知识平台', 'Knowledge', 'KB', '文档库']), language: 'zh-CN', category: 'synonym' },
+    { term: 'RAG', synonyms: JSON.stringify(['检索增强生成', 'Retrieval Augmented Generation']), language: '*', category: 'abbreviation' },
+    { term: 'ZRH', synonyms: JSON.stringify(['赵氏控股', 'ZRH Group']), language: '*', category: 'business' },
+    { term: 'embedding', synonyms: JSON.stringify(['向量化', 'embed', '嵌入']), language: '*', category: 'synonym' },
+    { term: 'KB', synonyms: JSON.stringify(['knowledge base', '知识库']), language: 'en-US', category: 'abbreviation' },
+  ];
+  for (const s of RAG_SYNONYMS) {
+    await prisma.ragSynonym.upsert({
+      where: { term_language_category: { term: s.term, language: s.language, category: s.category } },
+      update: { synonyms: s.synonyms, enabled: true },
+      create: s,
+    });
+  }
+  console.log(`[seed] rag synonyms: ${RAG_SYNONYMS.length}`);
+
   // 4. 超级管理员
   const username = process.env.ADMIN_USERNAME || 'admin';
   const password = process.env.ADMIN_INITIAL_PASSWORD;
@@ -256,14 +296,16 @@ async function main() {
     return;
   }
   const passwordHash = await bcrypt.hash(password, 10);
+  const itDept = await prisma.department.findUnique({ where: { code: 'IT' } });
   await prisma.user.upsert({
     where: { username },
-    update: { roleId: roles.SUPER_ADMIN.id, passwordHash },
+    update: { roleId: roles.SUPER_ADMIN.id, passwordHash, departmentId: itDept?.id ?? null },
     create: {
       username,
       displayName: 'ZRH Administrator',
       passwordHash,
       roleId: roles.SUPER_ADMIN.id,
+      departmentId: itDept?.id ?? null,
     },
   });
   console.log(`[seed] super admin ready: ${username}`);

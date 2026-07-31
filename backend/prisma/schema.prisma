@@ -28,6 +28,8 @@ model User {
   status       String         @default("active") // active | disabled
   roleId       Int
   role         Role           @relation(fields: [roleId], references: [id])
+  departmentId Int?
+  department   Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   refreshTokens RefreshToken[]
   conversations Conversation[]
   folders      ConversationFolder[]
@@ -37,7 +39,19 @@ model User {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
+  @@index([departmentId])
   @@map("users")
+}
+
+model Department {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  name      String
+  users     User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("departments")
 }
 
 model Role {
@@ -452,4 +466,40 @@ model DocumentPermission {
   @@unique([documentId, targetType, targetId])
   @@index([documentId])
   @@map("document_permissions")
+}
+
+// ============ 阶段 6：Enterprise RAG Engine ============
+
+model RagSynonym {
+  id        Int      @id @default(autoincrement())
+  term      String
+  synonyms  String   @db.Text // JSON string array
+  language  String   @default("zh-CN") // zh-CN | en-US | my-MM | *
+  category  String   @default("synonym") // synonym | abbreviation | business
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([term, language, category])
+  @@index([enabled, category])
+  @@map("rag_synonyms")
+}
+
+model RagQueryLog {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  conversationId  Int?
+  originalQuery   String   @db.Text
+  rewrittenQuery  String   @db.Text
+  mode            String
+  retrieveCount   Int      @default(0)
+  rerankCount     Int      @default(0)
+  citationCount   Int      @default(0)
+  hitRate         Float?
+  latencyMs       Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([conversationId])
+  @@map("rag_query_logs")
 }
