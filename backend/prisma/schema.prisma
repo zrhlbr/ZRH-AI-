@@ -592,3 +592,114 @@ model AgentRunLog {
   @@index([userId, createdAt])
   @@map("agent_run_logs")
 }
+
+// ============ 阶段 8：MCP & Tool Calling Platform ============
+
+model ToolCategory {
+  id          Int              @id @default(autoincrement())
+  code        String           @unique
+  name        String
+  description String?
+  sortOrder   Int              @default(0)
+  tools       ToolDefinition[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("tool_categories")
+}
+
+model ToolDefinition {
+  id           Int           @id @default(autoincrement())
+  code         String        @unique
+  name         String
+  description  String?
+  categoryId   Int
+  category     ToolCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  version      String        @default("1.0.0")
+  enabled      Boolean       @default(true)
+  builtin      Boolean       @default(false)
+  inputSchema  Json?
+  outputSchema Json?
+  timeoutMs    Int           @default(15000)
+  maxRetries   Int           @default(1)
+  roleAccess   String? // JSON role codes
+  executorCode String // runtime handler key
+  config       Json?
+  logs         ToolRunLog[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([enabled])
+  @@index([categoryId])
+  @@map("tool_definitions")
+}
+
+model ToolRunLog {
+  id        Int            @id @default(autoincrement())
+  toolId    Int
+  tool      ToolDefinition @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  userId    Int
+  agentCode String?
+  status    String // success | error | timeout
+  input     Json?
+  output    Json?
+  error     String?
+  latencyMs Int            @default(0)
+  createdAt DateTime       @default(now())
+
+  @@index([toolId, createdAt])
+  @@index([userId, createdAt])
+  @@map("tool_run_logs")
+}
+
+model McpServer {
+  id          Int          @id @default(autoincrement())
+  code        String       @unique
+  name        String
+  description String?
+  transport   String       @default("stub") // stub | stdio | http | sse
+  endpoint    String?
+  enabled     Boolean      @default(false)
+  status      String       @default("offline") // online | offline | error | reserved
+  version     String       @default("0.1.0")
+  builtin     Boolean      @default(true)
+  reserved    Boolean      @default(true)
+  roleAccess  String?
+  config      Json?
+  sessions    McpSession[]
+  logs        McpRunLog[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([enabled, status])
+  @@map("mcp_servers")
+}
+
+model McpSession {
+  id        Int       @id @default(autoincrement())
+  serverId  Int
+  server    McpServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  userId    Int
+  status    String    @default("connected") // connected | disconnected | error
+  metadata  Json?
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  @@index([serverId, userId])
+  @@map("mcp_sessions")
+}
+
+model McpRunLog {
+  id        Int       @id @default(autoincrement())
+  serverId  Int
+  server    McpServer @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  userId    Int
+  action    String
+  status    String
+  detail    String?
+  latencyMs Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  @@index([serverId, createdAt])
+  @@map("mcp_run_logs")
+}

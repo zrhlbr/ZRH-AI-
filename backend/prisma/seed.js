@@ -54,6 +54,15 @@ const PERMISSIONS = [
   { code: 'api:agents:write', type: 'API', name: 'Agent 管理接口' },
   { code: 'api:agents:chat', type: 'API', name: 'Agent 对话接口' },
   { code: 'api:agents:admin', type: 'API', name: 'Agent 管理后台接口' },
+  // 阶段 8：Tools & MCP
+  { code: 'menu:tools', type: 'MENU', name: 'Tool Center 菜单' },
+  { code: 'menu:mcp', type: 'MENU', name: 'MCP Center 菜单' },
+  { code: 'api:tools:read', type: 'API', name: 'Tool 读取接口' },
+  { code: 'api:tools:execute', type: 'API', name: 'Tool 执行接口' },
+  { code: 'api:tools:admin', type: 'API', name: 'Tool 管理接口' },
+  { code: 'api:mcp:read', type: 'API', name: 'MCP 读取接口' },
+  { code: 'api:mcp:write', type: 'API', name: 'MCP 连接接口' },
+  { code: 'api:mcp:admin', type: 'API', name: 'MCP 管理接口' },
 ];
 
 const ROLE_PERMISSIONS = {
@@ -87,6 +96,11 @@ const ROLE_PERMISSIONS = {
     'menu:agents',
     'api:agents:read',
     'api:agents:chat',
+    'menu:tools',
+    'api:tools:read',
+    'api:tools:execute',
+    'menu:mcp',
+    'api:mcp:read',
   ],
 };
 
@@ -418,6 +432,108 @@ async function main() {
     }
   }
   console.log(`[seed] default agents: ${DEFAULT_AGENTS.length}`);
+
+  // 3.11 阶段 8：Tool categories + builtin tools + MCP connectors
+  const TOOL_CATEGORIES = [
+    { code: 'knowledge', name: 'Knowledge', description: '知识与检索', sortOrder: 1 },
+    { code: 'language', name: 'Language', description: '语言处理', sortOrder: 2 },
+    { code: 'developer', name: 'Developer', description: '开发工具', sortOrder: 3 },
+    { code: 'system', name: 'System', description: '系统与运维', sortOrder: 4 },
+    { code: 'data', name: 'Data', description: '数据查询', sortOrder: 5 },
+  ];
+  for (const c of TOOL_CATEGORIES) {
+    await prisma.toolCategory.upsert({
+      where: { code: c.code },
+      update: { name: c.name, description: c.description, sortOrder: c.sortOrder },
+      create: c,
+    });
+  }
+  const cat = Object.fromEntries(
+    (await prisma.toolCategory.findMany()).map((c) => [c.code, c.id]),
+  );
+
+  const BUILTIN_TOOLS = [
+    { code: 'knowledge_search', name: 'Knowledge Search', category: 'knowledge', executorCode: 'knowledge_search', description: '企业知识关键词/混合检索', inputSchema: { query: 'string', topK: 'number?' } },
+    { code: 'rag_search', name: 'RAG Search', category: 'knowledge', executorCode: 'rag_search', description: 'RAG 检索（含重排引用）', inputSchema: { query: 'string', mode: 'string?' } },
+    { code: 'document_parser', name: 'Document Parser', category: 'knowledge', executorCode: 'document_parser', description: '解析文本/Markdown 内容', inputSchema: { content: 'string', filename: 'string?' } },
+    { code: 'translation', name: 'Translation', category: 'language', executorCode: 'translation', description: '中缅英翻译', inputSchema: { text: 'string', targetLang: 'string' } },
+    { code: 'code_execute', name: 'Code Execute', category: 'developer', executorCode: 'code_execute', description: '沙箱表达式执行（受限）', inputSchema: { expression: 'string' }, timeoutMs: 3000 },
+    { code: 'file_manager', name: 'File Manager', category: 'system', executorCode: 'file_manager', description: '知识库存储目录只读文件操作', inputSchema: { action: 'list|exists|readMeta', path: 'string?' } },
+    { code: 'http_request', name: 'HTTP Request', category: 'system', executorCode: 'http_request', description: '受控 HTTP 请求（白名单）', inputSchema: { url: 'string', method: 'GET?' } },
+    { code: 'database_query', name: 'Database Query', category: 'data', executorCode: 'database_query', description: '只读统计查询', inputSchema: { metric: 'string' } },
+    { code: 'system_health', name: 'System Health', category: 'system', executorCode: 'system_health', description: '系统健康快照', inputSchema: {} },
+    { code: 'calculator', name: 'Calculator', category: 'developer', executorCode: 'calculator', description: '安全计算器', inputSchema: { expression: 'string' } },
+  ];
+  for (const t of BUILTIN_TOOLS) {
+    await prisma.toolDefinition.upsert({
+      where: { code: t.code },
+      update: {
+        name: t.name,
+        description: t.description,
+        categoryId: cat[t.category],
+        enabled: true,
+        builtin: true,
+        executorCode: t.executorCode,
+        inputSchema: t.inputSchema,
+        timeoutMs: t.timeoutMs ?? 15000,
+        version: '1.0.0',
+      },
+      create: {
+        code: t.code,
+        name: t.name,
+        description: t.description,
+        categoryId: cat[t.category],
+        enabled: true,
+        builtin: true,
+        executorCode: t.executorCode,
+        inputSchema: t.inputSchema,
+        timeoutMs: t.timeoutMs ?? 15000,
+        version: '1.0.0',
+        maxRetries: 1,
+      },
+    });
+  }
+  console.log(`[seed] builtin tools: ${BUILTIN_TOOLS.length}`);
+
+  const MCP_SERVERS = [
+    { code: 'github', name: 'GitHub', description: 'GitHub MCP Connector（预留）' },
+    { code: 'gitlab', name: 'GitLab', description: 'GitLab MCP Connector（预留）' },
+    { code: 'postgresql', name: 'PostgreSQL', description: 'PostgreSQL MCP Connector（预留）' },
+    { code: 'mysql', name: 'MySQL', description: 'MySQL MCP Connector（预留）' },
+    { code: 'redis', name: 'Redis', description: 'Redis MCP Connector（预留）' },
+    { code: 'docker', name: 'Docker', description: 'Docker MCP Connector（预留）' },
+    { code: 'ollama', name: 'Ollama', description: 'Ollama MCP Connector（预留）' },
+    { code: 'filesystem', name: 'Filesystem', description: '文件系统 MCP Connector（预留）' },
+    { code: 'web_search', name: 'Web Search', description: 'Web Search MCP（预留）' },
+    { code: 'browser', name: 'Browser', description: 'Browser MCP（预留）' },
+  ];
+  for (const s of MCP_SERVERS) {
+    await prisma.mcpServer.upsert({
+      where: { code: s.code },
+      update: {
+        name: s.name,
+        description: s.description,
+        transport: 'stub',
+        enabled: false,
+        status: 'reserved',
+        reserved: true,
+        builtin: true,
+        version: '0.1.0',
+      },
+      create: {
+        code: s.code,
+        name: s.name,
+        description: s.description,
+        transport: 'stub',
+        enabled: false,
+        status: 'reserved',
+        reserved: true,
+        builtin: true,
+        version: '0.1.0',
+      },
+    });
+  }
+  console.log(`[seed] mcp servers: ${MCP_SERVERS.length}`);
 
   // 4. 超级管理员
   const username = process.env.ADMIN_USERNAME || 'admin';
