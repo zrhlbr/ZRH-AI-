@@ -2,7 +2,9 @@ import { BaseParser } from './base.parser';
 import { ParsedDocument } from '../interfaces/document-parser.interface';
 
 /**
- * Markdown 解析器：保留文本，去除格式标记。
+ * Markdown 解析器：
+ * - 去除链接/加粗/代码块等格式噪声
+ * - 保留 ATX 标题（# / ##）与条目编号，供 Knowledge Chunk 按标题切分（V1.1 P1）
  */
 export class MarkdownParser extends BaseParser {
   readonly supportedMimeTypes = ['text/markdown', 'text/x-markdown'];
@@ -14,15 +16,13 @@ export class MarkdownParser extends BaseParser {
 
   async parse(buffer: Buffer, filename: string): Promise<ParsedDocument> {
     const raw = buffer.toString('utf-8');
-    // 简单清洗：去除链接、图片、粗体、斜体、代码块标记，保留文本
-    let content = raw
+    const content = raw
       .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
-      .replace(/#{1,6}\s+/g, '')
-      .replace(/(\*\*|__|\*|_|`)/g, '')
-      .replace(/^\s*[-*+]\s+/gm, '')
-      .replace(/^\s*\d+\.\s+/gm, '')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/__([^_]+)__/g, '$1')
       .replace(/```[\s\S]*?```/g, '')
-      .replace(/`([^`]+)`/g, '$1');
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/^\s*[-*+]\s+/gm, '');
 
     const titleMatch = raw.match(/^#\s+(.+)$/m);
     return {

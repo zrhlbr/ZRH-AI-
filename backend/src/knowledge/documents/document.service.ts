@@ -45,7 +45,16 @@ export class DocumentService {
 
   // ---------- Folder ----------
 
-  async createFolder(userId: number, data: { name: string; parentId?: number; permission?: PermissionScope }) {
+  async createFolder(
+    userId: number,
+    data: {
+      name: string;
+      parentId?: number;
+      permission?: PermissionScope;
+      description?: string;
+      sortOrder?: number;
+    },
+  ) {
     if (data.parentId) {
       const can = await this.permissions.canAccessFolder(data.parentId, { userId });
       if (!can) throw new ForbiddenException('no permission to create folder here');
@@ -56,6 +65,8 @@ export class DocumentService {
         parentId: data.parentId ?? null,
         ownerId: userId,
         permission: data.permission ?? 'private',
+        description: data.description ?? null,
+        sortOrder: data.sortOrder ?? 0,
       },
     });
   }
@@ -371,7 +382,7 @@ export class DocumentService {
       }
     }
 
-    return updated;
+    return { ...updated, sizeBytes: Number(updated.sizeBytes) };
   }
 
   async moveDocument(userId: number, id: number, folderId: number | null) {

@@ -85,7 +85,7 @@ export class KnowledgeController {
 
   @Post('upload')
   @RequirePermissions('api:knowledge:write')
-  @RateLimit({ windowSeconds: 60, maxRequests: 10, keyPrefix: 'knowledge:upload' })
+  @RateLimit({ windowSeconds: 60, maxRequests: 40, keyPrefix: 'knowledge:upload' })
   @UseInterceptors(FileInterceptor('file'))
   upload(
     @UploadedFile() file: Express.Multer.File,

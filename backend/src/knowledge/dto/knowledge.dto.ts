@@ -24,6 +24,16 @@ export class CreateFolderDto {
   @IsOptional()
   @IsIn(['public', 'company', 'department', 'private', 'role'])
   permission?: PermissionScopeDto;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  sortOrder?: number;
 }
 
 export class UpdateFolderDto {
