@@ -32,6 +32,11 @@ const PERMISSIONS = [
   { code: 'api:chat:delete', type: 'API', name: '对话删除接口' },
   { code: 'api:prompts:read', type: 'API', name: 'Prompt 模板接口' },
   { code: 'api:parameters:write', type: 'API', name: '生成参数设置接口' },
+  // 阶段 4：AI Gateway / 模型管理
+  { code: 'menu:ai-models', type: 'MENU', name: 'AI 模型管理菜单' },
+  { code: 'api:ai:read', type: 'API', name: 'AI Gateway 读取接口' },
+  { code: 'api:ai:write', type: 'API', name: 'AI Gateway 写入接口' },
+  { code: 'api:ai:admin', type: 'API', name: 'AI Gateway 管理接口' },
 ];
 
 const ROLE_PERMISSIONS = {
@@ -54,6 +59,7 @@ const ROLE_PERMISSIONS = {
     'api:chat:delete',
     'api:prompts:read',
     'api:parameters:write',
+    'api:ai:read',
   ],
 };
 
@@ -132,6 +138,65 @@ async function main() {
   }
   console.log(`[seed] model configs: ${MODEL_CONFIGS.length}`);
 
+  // 3.7 阶段 4：AI Provider 与模型注册表
+  const AI_PROVIDERS = [
+    { code: 'ollama', name: 'Ollama', description: '本地 Ollama 服务', enabled: true, sortOrder: 1 },
+    { code: 'openai', name: 'OpenAI', description: 'OpenAI API（预留）', enabled: false, sortOrder: 2 },
+    { code: 'claude', name: 'Claude', description: 'Anthropic Claude（预留）', enabled: false, sortOrder: 3 },
+    { code: 'gemini', name: 'Gemini', description: 'Google Gemini（预留）', enabled: false, sortOrder: 4 },
+    { code: 'kimi', name: 'Kimi', description: 'Moonshot Kimi（预留）', enabled: false, sortOrder: 5 },
+    { code: 'vllm', name: 'vLLM', description: 'vLLM（预留）', enabled: false, sortOrder: 6 },
+    { code: 'sglang', name: 'SGLang', description: 'SGLang（预留）', enabled: false, sortOrder: 7 },
+    { code: 'mock', name: 'Mock', description: '仅用于测试', enabled: false, sortOrder: 99 },
+  ];
+  for (const p of AI_PROVIDERS) {
+    await prisma.aIProvider.upsert({
+      where: { code: p.code },
+      update: { name: p.name, description: p.description, enabled: p.enabled, sortOrder: p.sortOrder },
+      create: p,
+    });
+  }
+  console.log(`[seed] ai providers: ${AI_PROVIDERS.length}`);
+
+  const ollama = await prisma.aIProvider.findUnique({ where: { code: 'ollama' } });
+  const AI_MODELS = [
+    { name: 'qwen3:8b', displayName: 'Qwen3 8B', isDefault: true, contextLength: 8192 },
+    { name: 'deepseek-r1:8b', displayName: 'DeepSeek R1 8B', isDefault: false, contextLength: 8192 },
+    { name: 'deepseek-coder:latest', displayName: 'DeepSeek Coder', isDefault: false, contextLength: 8192 },
+  ];
+  for (const m of AI_MODELS) {
+    await prisma.aIModel.upsert({
+      where: { providerCode_name: { providerCode: ollama.code, name: m.name } },
+      update: { displayName: m.displayName, contextLength: m.contextLength },
+      create: { ...m, providerCode: ollama.code, enabled: true },
+    });
+  }
+  console.log(`[seed] ai models: ${AI_MODELS.length}`);
+
+  const CAPABILITIES = [
+    { code: 'code', name: '代码', description: '擅长编程与代码生成' },
+    { code: 'reasoning', name: '推理', description: '擅长逻辑推理' },
+    { code: 'multilingual', name: '多语言', description: '支持中文、英文、缅文等' },
+  ];
+  for (const c of CAPABILITIES) {
+    await prisma.modelCapability.upsert({
+      where: { code: c.code },
+      update: { name: c.name, description: c.description },
+      create: c,
+    });
+  }
+  // 绑定能力标签
+  const codeCap = await prisma.modelCapability.findUnique({ where: { code: 'code' } });
+  const reasoningCap = await prisma.modelCapability.findUnique({ where: { code: 'reasoning' } });
+  const multilingualCap = await prisma.modelCapability.findUnique({ where: { code: 'multilingual' } });
+  const qwen = await prisma.aIModel.findUnique({ where: { providerCode_name: { providerCode: 'ollama', name: 'qwen3:8b' } } });
+  const r1 = await prisma.aIModel.findUnique({ where: { providerCode_name: { providerCode: 'ollama', name: 'deepseek-r1:8b' } } });
+  const coder = await prisma.aIModel.findUnique({ where: { providerCode_name: { providerCode: 'ollama', name: 'deepseek-coder:latest' } } });
+  await prisma.aIModelCapability.upsert({ where: { modelId_capabilityId: { modelId: qwen.id, capabilityId: multilingualCap.id } }, update: {}, create: { modelId: qwen.id, capabilityId: multilingualCap.id } });
+  await prisma.aIModelCapability.upsert({ where: { modelId_capabilityId: { modelId: r1.id, capabilityId: reasoningCap.id } }, update: {}, create: { modelId: r1.id, capabilityId: reasoningCap.id } });
+  await prisma.aIModelCapability.upsert({ where: { modelId_capabilityId: { modelId: coder.id, capabilityId: codeCap.id } }, update: {}, create: { modelId: coder.id, capabilityId: codeCap.id } });
+  console.log(`[seed] model capabilities: ${CAPABILITIES.length}`);
+
   // 3.6 阶段 3：内置 Prompt 模板
   for (const p of PROMPT_TEMPLATES) {
     await prisma.promptTemplate.upsert({
@@ -152,7 +217,7 @@ async function main() {
   const passwordHash = await bcrypt.hash(password, 10);
   await prisma.user.upsert({
     where: { username },
-    update: { roleId: roles.SUPER_ADMIN.id },
+    update: { roleId: roles.SUPER_ADMIN.id, passwordHash },
     create: {
       username,
       displayName: 'ZRH Administrator',

@@ -6,7 +6,9 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
+import { Subscription } from 'rxjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { AIGatewayService } from '../ai/gateway/ai-gateway.service';
 import { AuthUser } from '../common/guards/jwt-auth.guard';
 import {
   ConversationListQueryDto,
@@ -16,40 +18,33 @@ import {
   UpdateMessageDto,
   UpdateParamsDto,
 } from './dto/chat.dto';
+import { AIMessage, AIStreamChunk } from '../ai/types/ai.types';
 
 interface ActiveGeneration {
-  controller: AbortController;
   conversationId: number;
   model: string;
   stoppedByUser: boolean;
-}
-
-interface OllamaChatChunk {
-  message?: { role?: string; content?: string };
-  done?: boolean;
-  prompt_eval_count?: number;
-  eval_count?: number;
-  total_duration?: number;
-  error?: string;
 }
 
 const HISTORY_LIMIT = 30;
 const CONTINUE_HINT = 'continue';
 
 /**
- * AI 对话核心服务（阶段 3）
- * - 所有 AI 回复真实调用本地 Ollama，禁止任何模拟数据
+ * AI 对话核心服务（阶段 4）
+ * - 所有 AI 回复统一经由 AIGatewayService，禁止直接调用 Ollama
  * - SSE / Chunk Streaming 逐字输出，支持停止 / 继续 / 重新生成
  * - 日志只记录事件（开始/停止/切换/异常），不记录消息内容
  */
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger(ChatService.name);
-  private readonly ollamaBase = (process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434').replace(/\/$/, '');
   /** 进行中的生成：key = `${userId}:${conversationId}` */
   private readonly active = new Map<string, ActiveGeneration>();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gateway: AIGatewayService,
+  ) {}
 
   // ---------- 对话 CRUD ----------
 
@@ -131,7 +126,6 @@ export class ChatService {
     const existing = await this.prisma.conversation.findFirst({ where: { id, userId } });
     if (!existing) throw new NotFoundException('conversation not found');
     if (dto.model && dto.model !== existing.model) {
-      // 模型切换：新消息走新模型，旧消息保留各自 model 字段
       this.logger.log(`model switch user=${userId} conv=${id} ${existing.model} -> ${dto.model}`);
     }
     return this.prisma.conversation.update({
@@ -208,38 +202,40 @@ export class ChatService {
   // ---------- 模型 / 参数 / Prompt ----------
 
   async listModels() {
-    const [configs, tags] = await Promise.all([
+    const [configs, registryModels, providerHealth] = await Promise.all([
       this.prisma.modelConfig.findMany({ orderBy: { sortOrder: 'asc' } }),
-      this.fetchOllama<{ models?: Array<{ name: string; size: number; digest: string }> }>('/api/tags'),
+      this.gateway.listModels().catch(() => []),
+      this.gateway.checkProvider('ollama').catch(() => ({ status: 'offline' as const })),
     ]);
-    const installed = new Map((tags?.models ?? []).map((m) => [m.name, m]));
+    const installed = new Map(registryModels.map((m) => [m.name, m]));
     return {
-      ollama: tags ? 'online' : 'offline',
+      ollama: providerHealth.status,
       models: configs.map((c) => ({
         name: c.name,
         displayName: c.displayName,
         enabled: c.enabled,
         isDefault: c.isDefault,
         installed: installed.has(c.name),
-        sizeBytes: installed.get(c.name)?.size ?? null,
+        sizeBytes: installed.get(c.name)?.sizeBytes ?? null,
       })),
     };
   }
 
   async modelsStatus() {
-    const [configs, tags, ps] = await Promise.all([
+    const [configs, registryModels, loaded, providerHealth] = await Promise.all([
       this.prisma.modelConfig.findMany({ orderBy: { sortOrder: 'asc' } }),
-      this.fetchOllama<{ models?: Array<{ name: string }> }>('/api/tags'),
-      this.fetchOllama<{ models?: Array<{ name: string; size_vram?: number; expires_at?: string }> }>('/api/ps'),
+      this.gateway.listModels().catch(() => []),
+      this.gateway.loadedModels('ollama').catch(() => []),
+      this.gateway.checkProvider('ollama').catch(() => ({ status: 'offline' as const })),
     ]);
-    if (!tags) {
+    if (providerHealth.status !== 'online') {
       return {
         ollama: 'offline',
         models: configs.map((c) => ({ name: c.name, displayName: c.displayName, status: 'error' as const })),
       };
     }
-    const installed = new Set((tags.models ?? []).map((m) => m.name));
-    const loaded = new Map((ps?.models ?? []).map((m) => [m.name, m]));
+    const installed = new Set(registryModels.map((m) => m.name));
+    const loadedMap = new Map(loaded.map((m) => [m.name, m]));
     const generatingModels = new Set([...this.active.values()].map((a) => a.model));
     return {
       ollama: 'online',
@@ -248,14 +244,14 @@ export class ChatService {
         if (!c.enabled) status = 'stopped';
         else if (!installed.has(c.name)) status = 'stopped';
         else if (generatingModels.has(c.name)) status = 'running';
-        else if (loaded.has(c.name)) status = 'online';
-        else status = 'loading'; // 已安装未载入显存，首次请求时加载
+        else if (loadedMap.has(c.name)) status = 'online';
+        else status = 'loading';
         return {
           name: c.name,
           displayName: c.displayName,
           status,
           installed: installed.has(c.name),
-          vramBytes: loaded.get(c.name)?.size_vram ?? null,
+          vramBytes: loadedMap.get(c.name)?.sizeVram ?? null,
         };
       }),
     };
@@ -285,7 +281,7 @@ export class ChatService {
   }
 
   async listPrompts() {
-    return this.prisma.promptTemplate.findMany({ orderBy: [{ role: 'asc' }, { id: 'asc' }] });
+    return this.gateway.listPrompts();
   }
 
   async stats(userId: number) {
@@ -304,8 +300,8 @@ export class ChatService {
     const gen = this.active.get(key);
     if (!gen) return false;
     gen.stoppedByUser = true;
-    gen.controller.abort();
-    this.logger.log(`generation stopped by user=${userId} conv=${conversationId}`);
+    const stopped = this.gateway.stop(conversationId);
+    this.logger.log(`generation stopped by user=${userId} conv=${conversationId} gateway=${stopped}`);
     return true;
   }
 
@@ -338,9 +334,9 @@ export class ChatService {
     let appendToMessageId: number | null = null;
     let accumulated = '';
     let finished = false;
+    let subscription: Subscription | undefined;
     const startedAt = Date.now();
     const gen: ActiveGeneration = {
-      controller: new AbortController(),
       conversationId: conversationId ?? -1,
       model: '',
       stoppedByUser: false,
@@ -367,7 +363,6 @@ export class ChatService {
         conversationId = conversation.id;
         gen.conversationId = conversation.id;
       } else if (dto.model && dto.model !== conversation.model) {
-        // 模型切换：会话记新模型，历史消息保留旧模型字段
         this.logger.log(`model switch user=${user.id} conv=${conversation.id} ${conversation.model} -> ${dto.model}`);
         conversation = await this.prisma.conversation.update({
           where: { id: conversation.id },
@@ -398,10 +393,9 @@ export class ChatService {
         }
         appendToMessageId = last.id;
         accumulated = last.content;
-        recent.push({ ...last, id: -1, role: 'user', content: CONTINUE_HINT });
+        recent.push({ ...last, id: -1, role: 'user', content: CONTINUE_HINT } as unknown as typeof last);
         sse({ type: 'meta', conversationId: conversation.id, appendToMessageId, model });
       } else {
-        // regenerate：删除最后一条 assistant 后重新生成
         const last = recent[recent.length - 1];
         if (!last || last.role !== 'assistant') {
           throw new BadRequestException('nothing to regenerate');
@@ -411,104 +405,83 @@ export class ChatService {
         sse({ type: 'meta', conversationId: conversation.id, replacedMessageId: last.id, model });
       }
 
-      // 3. System Prompt：会话自定义 → 模板 → 默认模板
-      const systemPrompt = await this.resolveSystemPrompt(conversation.systemPrompt, dto.promptCode ?? conversation.promptCode);
+      // 3. System Prompt
+      const systemPrompt = await this.gateway.resolveSystemPrompt(conversation.systemPrompt, dto.promptCode ?? conversation.promptCode);
 
-      // 4. 生成参数（数据库持久化）
+      // 4. 生成参数
       const params = await this.getParams(user.id);
 
-      // 5. 调用 Ollama（真实调用，流式）
+      // 5. 统一经 Gateway 启动流式生成
       const key = `${user.id}:${conversation.id}`;
-      this.active.get(key)?.controller.abort();
+      const existing = this.active.get(key);
+      if (existing && !existing.stoppedByUser) {
+        existing.stoppedByUser = true;
+        this.gateway.stop(conversation.id);
+      }
       this.active.set(key, gen);
       req.on('close', () => {
         if (!finished) {
           gen.stoppedByUser = true;
-          gen.controller.abort();
+          this.gateway.stop(conversation.id);
         }
       });
+
+      const messages: AIMessage[] = [
+        ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
+        ...recent.map((m) => ({ role: m.role as 'user' | 'assistant' | 'system', content: m.content })),
+      ];
 
       this.logger.log(`generation start user=${user.id} conv=${conversation.id} model=${model} mode=${mode}`);
-      const ollamaRes = await fetch(`${this.ollamaBase}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: gen.controller.signal,
-        body: JSON.stringify({
-          model,
-          stream: true,
-          messages: [
-            ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
-            ...recent.map((m) => ({ role: m.role, content: m.content })),
-          ],
-          options: {
-            temperature: params.temperature,
-            top_p: params.topP,
-            top_k: params.topK,
-            repeat_penalty: params.repeatPenalty,
-            num_ctx: params.contextLength,
-            num_predict: params.maxTokens,
-            ...(params.seed !== null && params.seed !== undefined ? { seed: params.seed } : {}),
-          },
-        }),
+      const { stream } = await this.gateway.stream(messages, {
+        conversationId: conversation.id,
+        modelRef: model,
+        temperature: params.temperature,
+        topP: params.topP,
+        topK: params.topK,
+        repeatPenalty: params.repeatPenalty,
+        contextLength: params.contextLength,
+        maxTokens: params.maxTokens,
+        seed: params.seed,
       });
 
-      if (!ollamaRes.ok || !ollamaRes.body) {
-        const text = await ollamaRes.text().catch(() => '');
-        throw new BadRequestException(`ollama error HTTP ${ollamaRes.status}: ${text.slice(0, 200)}`);
-      }
+      // 6. 订阅并转发 chunk
+      let promptTokens: number | null = null;
+      let completionTokens: number | null = null;
+      let durationMs: number | null = null;
 
-      // 6. 逐 chunk 解析 NDJSON 并转发
-      const reader = ollamaRes.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let usage: { promptTokens: number | null; completionTokens: number | null; durationMs: number | null } = {
-        promptTokens: null,
-        completionTokens: null,
-        durationMs: null,
-      };
-
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-          let chunk: OllamaChatChunk;
-          try {
-            chunk = JSON.parse(trimmed) as OllamaChatChunk;
-          } catch {
-            continue;
-          }
-          if (chunk.error) throw new BadRequestException(`ollama: ${chunk.error}`);
-          const delta = chunk.message?.content ?? '';
-          if (delta) {
-            accumulated += delta;
-            sse({ type: 'delta', content: delta });
-          }
-          if (chunk.done) {
-            usage = {
-              promptTokens: chunk.prompt_eval_count ?? null,
-              completionTokens: chunk.eval_count ?? null,
-              durationMs: chunk.total_duration ? Math.round(chunk.total_duration / 1e6) : null,
-            };
-          }
-        }
-      }
+      await new Promise<void>((resolve, reject) => {
+        subscription = stream.subscribe({
+          next: (chunk: AIStreamChunk) => {
+            if (chunk.type === 'delta' && chunk.content) {
+              accumulated += chunk.content;
+              sse({ type: 'delta', content: chunk.content });
+            } else if (chunk.type === 'done') {
+              promptTokens = chunk.promptTokens ?? null;
+              completionTokens = chunk.completionTokens ?? null;
+              durationMs = chunk.durationMs ?? null;
+            } else if (chunk.type === 'error') {
+              reject(new BadRequestException(chunk.message ?? 'stream error'));
+            }
+          },
+          error: (error: unknown) => {
+            reject(error instanceof Error ? error : new Error(String(error)));
+          },
+          complete: () => resolve(),
+        });
+      });
 
       // 7. 持久化 assistant 消息
       const status = gen.stoppedByUser ? 'stopped' : 'done';
+      const finalDurationMs = durationMs ?? Date.now() - startedAt;
       if (appendToMessageId) {
         await this.prisma.message.update({
           where: { id: appendToMessageId },
           data: {
             content: accumulated,
             status,
-            durationMs: usage.durationMs ?? Date.now() - startedAt,
-            promptTokens: usage.promptTokens,
-            completionTokens: usage.completionTokens,
+            durationMs: finalDurationMs,
+            promptTokens,
+            completionTokens,
           },
         });
         assistantMessageId = appendToMessageId;
@@ -520,9 +493,9 @@ export class ChatService {
             content: accumulated,
             model,
             status,
-            durationMs: usage.durationMs ?? Date.now() - startedAt,
-            promptTokens: usage.promptTokens,
-            completionTokens: usage.completionTokens,
+            durationMs: finalDurationMs,
+            promptTokens,
+            completionTokens,
           },
         });
         assistantMessageId = assistantMessage.id;
@@ -538,16 +511,17 @@ export class ChatService {
         conversationId: conversation.id,
         messageId: assistantMessageId,
         status,
-        ...usage,
+        promptTokens,
+        completionTokens,
+        durationMs: finalDurationMs,
       });
       this.logger.log(
-        `generation ${status} user=${user.id} conv=${conversation.id} model=${model} durationMs=${usage.durationMs ?? Date.now() - startedAt}`,
+        `generation ${status} user=${user.id} conv=${conversation.id} model=${model} durationMs=${finalDurationMs}`,
       );
     } catch (error) {
-      const isAbort = gen.controller.signal.aborted;
+      const isAbort = gen.stoppedByUser;
       const message = error instanceof Error ? error.message : String(error);
       if (isAbort) {
-        // 客户端断开 / 主动停止：保存已生成部分
         if (accumulated && conversationId) {
           try {
             const partialId = assistantMessageId ?? appendToMessageId;
@@ -582,8 +556,10 @@ export class ChatService {
         sse({ type: 'error', message: message.slice(0, 300) });
       }
     } finally {
+      subscription?.unsubscribe();
       const key = `${user.id}:${gen.conversationId}`;
       if (this.active.get(key) === gen) this.active.delete(key);
+      this.gateway.releaseStream(gen.conversationId);
       res.end();
     }
   }
@@ -591,33 +567,13 @@ export class ChatService {
   // ---------- 内部工具 ----------
 
   private async defaultModel(): Promise<string> {
+    const registryDefault = await this.gateway.getDefaultModel();
+    if (registryDefault) return registryDefault.name;
     const def = await this.prisma.modelConfig.findFirst({
       where: { isDefault: true, enabled: true },
     });
     if (def) return def.name;
     const any = await this.prisma.modelConfig.findFirst({ where: { enabled: true }, orderBy: { sortOrder: 'asc' } });
     return any?.name ?? 'qwen3:8b';
-  }
-
-  private async resolveSystemPrompt(custom: string | null, promptCode: string | null): Promise<string | null> {
-    if (custom) return custom;
-    if (promptCode) {
-      const tpl = await this.prisma.promptTemplate.findUnique({ where: { code: promptCode } });
-      if (tpl) return tpl.content;
-    }
-    const def = await this.prisma.promptTemplate.findFirst({ where: { isDefault: true, role: 'system' } });
-    return def?.content ?? null;
-  }
-
-  private async fetchOllama<T>(path: string): Promise<T | null> {
-    try {
-      const response = await fetch(`${this.ollamaBase}${path}`, {
-        signal: AbortSignal.timeout(4000),
-      });
-      if (!response.ok) return null;
-      return (await response.json()) as T;
-    } catch {
-      return null;
-    }
   }
 }

@@ -158,6 +158,85 @@ model ModelConfig {
   @@map("model_configs")
 }
 
+// ============ 阶段 4：AI Gateway / Model Registry ============
+
+model AIProvider {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique // ollama | openai | claude | gemini | kimi | vllm | sglang | mock
+  name        String
+  description String?
+  enabled     Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  config      Json?    // Provider 运行时配置：baseUrl、apiKey、timeout 等
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  models AIModel[]
+
+  @@map("ai_providers")
+}
+
+model AIModel {
+  id             Int                @id @default(autoincrement())
+  name           String             // 模型名，如 qwen3:8b
+  providerCode   String
+  provider       AIProvider         @relation(fields: [providerCode], references: [code], onDelete: Cascade)
+  displayName    String
+  description    String?
+  sizeBytes      BigInt?
+  digest         String?
+  status         String             @default("unknown") // online | offline | loading | error | unknown
+  isDefault      Boolean            @default(false)
+  enabled        Boolean            @default(true)
+  contextLength  Int                @default(8192)
+  params         Json?              // 模型默认参数覆盖
+  pulledAt       DateTime?
+  updatedAt      DateTime           @updatedAt
+  createdAt      DateTime           @default(now())
+
+  capabilities   AIModelCapability[]
+  healthRecords  ModelHealth[]
+
+  @@unique([providerCode, name])
+  @@index([providerCode])
+  @@index([enabled])
+  @@index([status])
+  @@map("ai_models")
+}
+
+model ModelCapability {
+  id          Int                 @id @default(autoincrement())
+  code        String              @unique // code | reasoning | vision | embedding | multilingual
+  name        String
+  description String?
+  models      AIModelCapability[]
+
+  @@map("model_capabilities")
+}
+
+model AIModelCapability {
+  modelId      Int
+  model        AIModel          @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  capabilityId Int
+  capability   ModelCapability  @relation(fields: [capabilityId], references: [id], onDelete: Cascade)
+
+  @@id([modelId, capabilityId])
+  @@map("ai_model_capabilities")
+}
+
+model ModelHealth {
+  id        Int      @id @default(autoincrement())
+  modelId   Int
+  model     AIModel  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  status    String   // online | offline | error
+  latencyMs Int?
+  error     String?
+  checkedAt DateTime @default(now())
+
+  @@index([modelId, checkedAt])
+  @@map("model_health")
+}
+
 // Prompt 模板：System / User / Assistant 三类，后续 AI Agent 直接调用
 model PromptTemplate {
   id        Int      @id @default(autoincrement())

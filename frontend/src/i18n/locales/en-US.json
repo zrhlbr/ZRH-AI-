@@ -7,7 +7,8 @@
     "home": "Home",
     "status": "System Status",
     "menu": "Menu",
-    "chat": "AI Chat"
+    "chat": "AI Chat",
+    "models": "AI Models"
   },
   "common": {
     "close": "Close",
@@ -28,6 +29,22 @@
     "blackGold": "Black Gold",
     "deepSpaceBlue": "Deep Space Blue",
     "midnightBlack": "Midnight Black"
+  },
+  "models": {
+    "title": "AI Model Management",
+    "providers": "Providers",
+    "registry": "Model Registry",
+    "default": "Default",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "setDefault": "Set Default",
+    "enable": "Enable",
+    "disable": "Disable",
+    "install": "Install",
+    "delete": "Delete",
+    "deleteConfirm": "Delete model {{name}}? This cannot be undone.",
+    "noProviders": "No providers",
+    "noModels": "No models"
   },
   "status": {
     "system": "System Status",
@@ -61,7 +78,7 @@
     "en-US": "English"
   },
   "home": {
-    "stage": "Stage 2 · Auth & Foundation",
+    "stage": "Stage 4 · AI Gateway & Model Management",
     "notice": "The base framework is ready. Business features will be enabled in later stages.",
     "aiInputPlaceholder": "Ask ZRH AI…",
     "aiInputStageHint": "Ask anything to start chatting with ZRH AI (powered by local Ollama).",

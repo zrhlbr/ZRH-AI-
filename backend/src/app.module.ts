@@ -7,18 +7,21 @@ import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { SystemModule } from './system/system.module';
 import { ChatModule } from './chat/chat.module';
+import { AIModule } from './ai/ai.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
+import { RateLimitGuard } from './common/guards/rate-limit.guard';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 @Module({
-  imports: [PrismaModule, RedisModule, OllamaModule, HealthModule, AuthModule, SystemModule, ChatModule],
+  imports: [PrismaModule, RedisModule, OllamaModule, HealthModule, AuthModule, SystemModule, ChatModule, AIModule],
   providers: [
-    // 全局鉴权：JWT → 权限码（@Public() 除外）
+    // 全局鉴权：JWT → 权限码（@Public() 除外）→ 限流
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
+    { provide: APP_GUARD, useClass: RateLimitGuard },
     // 统一响应 / 统一日志 / 统一异常
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
     { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },

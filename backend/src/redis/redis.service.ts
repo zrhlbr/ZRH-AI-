@@ -37,4 +37,22 @@ export class RedisService implements OnModuleDestroy {
       return false;
     }
   }
+
+  async increment(key: string): Promise<number> {
+    try {
+      if (this.client.status === 'wait') await this.client.connect();
+      return await this.client.incr(key);
+    } catch {
+      return 0;
+    }
+  }
+
+  async expire(key: string, seconds: number): Promise<void> {
+    try {
+      if (this.client.status === 'wait') await this.client.connect();
+      await this.client.expire(key, seconds);
+    } catch {
+      // ignore
+    }
+  }
 }

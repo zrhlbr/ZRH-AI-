@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
-import { OllamaService } from '../ollama/ollama.service';
+import { AIGatewayService } from '../ai/gateway/ai-gateway.service';
 
 export interface HealthReport {
   service: string;
@@ -18,17 +18,17 @@ export class HealthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
-    private readonly ollama: OllamaService,
+    private readonly gateway: AIGatewayService,
   ) {}
 
   async check(): Promise<HealthReport> {
-    const [dbOk, redisOk, ollamaStatus] = await Promise.all([
+    const [dbOk, redisOk, ollamaHealth] = await Promise.all([
       this.prisma.ping(),
       this.redis.ping(),
-      this.ollama.getStatus(),
+      this.gateway.checkProvider('ollama').catch(() => ({ status: 'offline' as const })),
     ]);
 
-    const allOk = dbOk && redisOk && ollamaStatus.status === 'online';
+    const allOk = dbOk && redisOk && ollamaHealth.status === 'online';
 
     return {
       service: 'zrh-ai-api',
@@ -37,7 +37,7 @@ export class HealthService {
       timestamp: new Date().toISOString(),
       database: dbOk ? 'online' : 'offline',
       redis: redisOk ? 'online' : 'offline',
-      ollama: ollamaStatus.status,
+      ollama: ollamaHealth.status === 'online' ? 'online' : 'offline',
     };
   }
 }

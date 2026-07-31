@@ -7,6 +7,7 @@ import { AppShell } from './components/AppShell';
 import { LoginPage } from './pages/LoginPage';
 import { HomePage } from './pages/HomePage';
 import { StatusPage } from './pages/StatusPage';
+import { ModelsPage } from './pages/ModelsPage';
 import { useAuthStore } from './store/authStore';
 
 // 聊天页（含 Markdown/Mermaid/KaTeX 渲染链）按需加载，保持首页轻量
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
           { path: '/', element: <HomePage /> },
           { path: '/chat', element: <Suspense fallback={null}><ChatPage /></Suspense> },
           { path: '/chat/:id', element: <Suspense fallback={null}><ChatPage /></Suspense> },
+          { path: '/ai/models', element: <ModelsPage /> },
           { path: '/status', element: <StatusPage /> },
         ],
       },
