@@ -828,3 +828,98 @@ model WorkflowAuditLog {
   @@index([runId])
   @@map("workflow_audit_logs")
 }
+
+// ============ 阶段 10：Business Integration Platform ============
+
+model Company {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  name      String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("companies")
+}
+
+model BusinessSystem {
+  id                    Int                      @id @default(autoincrement())
+  code                  String                   @unique // zrh_accounting | zrhpay | zrh_router | knowledge | document
+  name                  String
+  description           String?
+  kind                  String // accounting | payment | router | knowledge | document
+  enabled               Boolean                  @default(true)
+  status                String                   @default("online") // online | offline | degraded | reserved
+  version               String                   @default("1.0.0")
+  readOnlyDefault       Boolean                  @default(true)
+  writeRequiresApproval Boolean                  @default(true)
+  roleAccess            String? // JSON role codes
+  companyCode           String? // optional company scope
+  config                Json?
+  connectors            BusinessConnector[]
+  workflows             BusinessSystemWorkflow[]
+  audits                BusinessAuditLog[]
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+
+  @@index([enabled, status])
+  @@index([kind])
+  @@map("business_systems")
+}
+
+model BusinessConnector {
+  id           Int            @id @default(autoincrement())
+  systemId     Int
+  system       BusinessSystem @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  code         String
+  name         String
+  transport    String         @default("stub") // stub | mcp | tool
+  endpoint     String?
+  enabled      Boolean        @default(true)
+  status       String         @default("ready") // ready | offline | error | reserved
+  healthStatus String         @default("unknown") // healthy | degraded | unhealthy | unknown
+  config       Json?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([systemId, code])
+  @@index([enabled, status])
+  @@map("business_connectors")
+}
+
+model BusinessSystemWorkflow {
+  id                Int            @id @default(autoincrement())
+  systemId          Int
+  system            BusinessSystem @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  actionCode        String // qa | balance_query | wallet_query | device_status | ...
+  workflowCode      String
+  name              String
+  isDefault         Boolean        @default(false)
+  requiresApproval  Boolean        @default(false)
+  readOnly          Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@unique([systemId, actionCode])
+  @@index([workflowCode])
+  @@map("business_system_workflows")
+}
+
+model BusinessAuditLog {
+  id            Int            @id @default(autoincrement())
+  systemId      Int
+  system        BusinessSystem @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  userId        Int
+  action        String
+  workflowCode  String?
+  workflowRunId Int?
+  status        String
+  detail        String?
+  departmentId  Int?
+  companyCode   String?
+  createdAt     DateTime       @default(now())
+
+  @@index([systemId, createdAt])
+  @@index([userId, createdAt])
+  @@map("business_audit_logs")
+}

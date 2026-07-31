@@ -68,6 +68,11 @@ const PERMISSIONS = [
   { code: 'api:workflows:read', type: 'API', name: 'Workflow 读取接口' },
   { code: 'api:workflows:execute', type: 'API', name: 'Workflow 执行接口' },
   { code: 'api:workflows:admin', type: 'API', name: 'Workflow 管理接口' },
+  // 阶段 10：Business Integration
+  { code: 'menu:business', type: 'MENU', name: 'Business Dashboard 菜单' },
+  { code: 'api:business:read', type: 'API', name: 'Business 读取接口' },
+  { code: 'api:business:execute', type: 'API', name: 'Business 执行接口' },
+  { code: 'api:business:admin', type: 'API', name: 'Business 管理接口' },
 ];
 
 const ROLE_PERMISSIONS = {
@@ -109,6 +114,9 @@ const ROLE_PERMISSIONS = {
     'menu:workflows',
     'api:workflows:read',
     'api:workflows:execute',
+    'menu:business',
+    'api:business:read',
+    'api:business:execute',
   ],
 };
 
@@ -736,6 +744,312 @@ async function main() {
     });
   }
   console.log(`[seed] workflow templates: ${WF_TEMPLATES.length}`);
+
+  // 3.13 阶段 10：Business workflows + systems + connectors
+  if (!wfCat.integration) {
+    await prisma.workflowCategory.upsert({
+      where: { code: 'integration' },
+      update: { name: 'Integration' },
+      create: { code: 'integration', name: 'Integration', description: '业务集成', sortOrder: 5 },
+    });
+    Object.assign(
+      wfCat,
+      Object.fromEntries((await prisma.workflowCategory.findMany()).map((c) => [c.code, c.id])),
+    );
+  }
+
+  const BIZ_WF = [
+    {
+      code: 'biz_accounting_qa',
+      name: '会计系统财务问答',
+      category: 'knowledge',
+      description: 'Accounting → Workflow → Agent/Knowledge',
+      graph: linearGraph([
+        { type: 'agent', label: 'Knowledge Agent', config: { agentCode: 'knowledge', message: '{{input.query}}' } },
+        { type: 'tool', label: 'RAG Search', config: { toolCode: 'rag_search', args: { query: '{{input.query}}' } } },
+      ]),
+      variables: { defaults: { query: '本月收支概况' } },
+    },
+    {
+      code: 'biz_accounting_query',
+      name: '会计系统只读查询',
+      category: 'ops',
+      description: '收支/库存/商品只读查询门禁流程',
+      graph: linearGraph([
+        { type: 'tool', label: 'System Health', config: { toolCode: 'system_health', args: {} } },
+        { type: 'tool', label: 'DB Overview', config: { toolCode: 'database_query', args: { metric: 'overview' } } },
+      ]),
+      variables: { defaults: { metric: 'balance' } },
+    },
+    {
+      code: 'biz_accounting_write_approval',
+      name: '会计系统写入审批',
+      category: 'ops',
+      description: '资金写操作必须审批',
+      graph: linearGraph([
+        { type: 'approval', label: 'Finance Approval', config: { message: 'Approve accounting write?' } },
+        { type: 'tool', label: 'Audit Health', config: { toolCode: 'system_health', args: {} } },
+      ]),
+      variables: { defaults: {} },
+    },
+    {
+      code: 'biz_zrhpay_query',
+      name: 'ZRHPay 只读查询',
+      category: 'integration',
+      description: '钱包/汇率/交易只读',
+      graph: linearGraph([
+        { type: 'tool', label: 'System Health', config: { toolCode: 'system_health', args: {} } },
+        { type: 'mcp', label: 'Redis MCP stub', config: { serverCode: 'redis', action: 'ping', autoEnable: true } },
+      ]),
+      variables: { defaults: { queryType: 'wallet' } },
+    },
+    {
+      code: 'biz_zrhpay_write_approval',
+      name: 'ZRHPay 资金写审批',
+      category: 'integration',
+      description: '资金写操作预留审批',
+      graph: linearGraph([
+        { type: 'approval', label: 'Payment Approval', config: { message: 'Approve ZRHPay write?' } },
+      ]),
+      variables: { defaults: {} },
+    },
+    {
+      code: 'biz_router_status',
+      name: 'Router OS 状态巡检',
+      category: 'ops',
+      description: '设备/CPU/内存/网络只读状态',
+      graph: linearGraph([
+        { type: 'tool', label: 'System Health', config: { toolCode: 'system_health', args: {} } },
+        { type: 'mcp', label: 'Docker MCP stub', config: { serverCode: 'docker', action: 'status', autoEnable: true } },
+      ]),
+      variables: { defaults: {} },
+    },
+    {
+      code: 'biz_router_config_approval',
+      name: 'Router OS 配置审批',
+      category: 'ops',
+      description: '配置修改必须审批，禁止直改',
+      graph: linearGraph([
+        { type: 'approval', label: 'Router Config Approval', config: { message: 'Approve router config change?' } },
+        { type: 'tool', label: 'Health Recheck', config: { toolCode: 'system_health', args: {} } },
+      ]),
+      variables: { defaults: {} },
+    },
+    {
+      code: 'biz_knowledge_search',
+      name: '业务知识检索',
+      category: 'knowledge',
+      description: 'Knowledge Platform 统一知识来源',
+      graph: linearGraph([
+        { type: 'tool', label: 'Knowledge Search', config: { toolCode: 'knowledge_search', args: { query: '{{input.query}}', topK: 5 } } },
+      ]),
+      variables: { defaults: { query: '企业制度' } },
+    },
+    {
+      code: 'biz_document_center',
+      name: '文档中心流程',
+      category: 'knowledge',
+      description: '制度/合同/说明书/技术文档',
+      graph: linearGraph([
+        { type: 'tool', label: 'File Manager', config: { toolCode: 'file_manager', args: { action: 'list', path: '' } } },
+        { type: 'tool', label: 'Document Parser', config: { toolCode: 'document_parser', args: { content: '{{input.content}}', filename: 'policy.md' } } },
+      ]),
+      variables: { defaults: { content: '# 制度文档' } },
+    },
+    {
+      code: 'biz_platform_health',
+      name: '业务平台健康巡检',
+      category: 'ops',
+      description: 'Dashboard 健康聚合流程',
+      graph: linearGraph([
+        { type: 'tool', label: 'System Health', config: { toolCode: 'system_health', args: {} } },
+        { type: 'tool', label: 'Calculator', config: { toolCode: 'calculator', args: { expression: '1+1' } } },
+      ]),
+      variables: { defaults: {} },
+    },
+  ];
+
+  for (const t of BIZ_WF) {
+    await prisma.workflowDefinition.upsert({
+      where: { code: t.code },
+      update: {
+        name: t.name,
+        description: t.description,
+        categoryId: wfCat[t.category] ?? wfCat.ops,
+        enabled: true,
+        builtin: true,
+        template: true,
+        status: 'active',
+        graph: t.graph,
+        variables: t.variables,
+        version: '1.0.0',
+      },
+      create: {
+        code: t.code,
+        name: t.name,
+        description: t.description,
+        categoryId: wfCat[t.category] ?? wfCat.ops,
+        enabled: true,
+        builtin: true,
+        template: true,
+        status: 'active',
+        graph: t.graph,
+        variables: t.variables,
+        version: '1.0.0',
+        timeoutMs: 120000,
+        maxRetries: 0,
+      },
+    });
+  }
+  console.log(`[seed] business workflows: ${BIZ_WF.length}`);
+
+  await prisma.company.upsert({
+    where: { code: 'ZRH' },
+    update: { name: 'ZRH Group', enabled: true },
+    create: { code: 'ZRH', name: 'ZRH Group', enabled: true },
+  });
+
+  const BIZ_SYSTEMS = [
+    {
+      code: 'zrh_accounting',
+      name: 'ZRH Accounting System',
+      kind: 'accounting',
+      description: '财务问答 / 收支 / 库存 / 商品 / 统计 / 报表（写操作审批）',
+      connector: { code: 'accounting_stub', name: 'Accounting Connector', transport: 'stub' },
+      actions: [
+        { actionCode: 'qa', workflowCode: 'biz_accounting_qa', name: '财务问答', isDefault: true, readOnly: true },
+        { actionCode: 'balance_query', workflowCode: 'biz_accounting_query', name: '收支查询', readOnly: true },
+        { actionCode: 'inventory_query', workflowCode: 'biz_accounting_query', name: '库存查询', readOnly: true },
+        { actionCode: 'product_query', workflowCode: 'biz_accounting_query', name: '商品查询', readOnly: true },
+        { actionCode: 'stats', workflowCode: 'biz_accounting_query', name: '统计分析', readOnly: true },
+        { actionCode: 'report', workflowCode: 'biz_accounting_query', name: '报表生成', readOnly: true },
+        { actionCode: 'write', workflowCode: 'biz_accounting_write_approval', name: '资金写入（审批）', requiresApproval: true, readOnly: false },
+      ],
+    },
+    {
+      code: 'zrhpay',
+      name: 'ZRHPay',
+      kind: 'payment',
+      description: '钱包 / 汇率 / 交易 / 用户 / 商户只读；资金写审批',
+      connector: { code: 'zrhpay_stub', name: 'ZRHPay Connector', transport: 'stub' },
+      actions: [
+        { actionCode: 'wallet_query', workflowCode: 'biz_zrhpay_query', name: '钱包查询', isDefault: true, readOnly: true },
+        { actionCode: 'rate_query', workflowCode: 'biz_zrhpay_query', name: '汇率查询', readOnly: true },
+        { actionCode: 'tx_query', workflowCode: 'biz_zrhpay_query', name: '交易查询', readOnly: true },
+        { actionCode: 'user_query', workflowCode: 'biz_zrhpay_query', name: '用户信息查询', readOnly: true },
+        { actionCode: 'merchant_query', workflowCode: 'biz_zrhpay_query', name: '商户信息查询', readOnly: true },
+        { actionCode: 'write', workflowCode: 'biz_zrhpay_write_approval', name: '资金写入（审批）', requiresApproval: true, readOnly: false },
+      ],
+    },
+    {
+      code: 'zrh_router',
+      name: 'ZRH Router OS',
+      kind: 'router',
+      description: '设备状态巡检；配置修改必须审批',
+      connector: { code: 'router_stub', name: 'Router OS Connector', transport: 'stub' },
+      actions: [
+        { actionCode: 'device_status', workflowCode: 'biz_router_status', name: '设备状态', isDefault: true, readOnly: true },
+        { actionCode: 'cpu', workflowCode: 'biz_router_status', name: 'CPU', readOnly: true },
+        { actionCode: 'memory', workflowCode: 'biz_router_status', name: '内存', readOnly: true },
+        { actionCode: 'temperature', workflowCode: 'biz_router_status', name: '温度', readOnly: true },
+        { actionCode: 'clients', workflowCode: 'biz_router_status', name: '在线终端', readOnly: true },
+        { actionCode: 'network', workflowCode: 'biz_router_status', name: '网络状态', readOnly: true },
+        { actionCode: 'vpn', workflowCode: 'biz_router_status', name: 'VPN 状态', readOnly: true },
+        { actionCode: 'logs', workflowCode: 'biz_router_status', name: '系统日志', readOnly: true },
+        { actionCode: 'config_change', workflowCode: 'biz_router_config_approval', name: '配置修改（审批）', requiresApproval: true, readOnly: false },
+      ],
+    },
+    {
+      code: 'knowledge',
+      name: 'Knowledge Platform',
+      kind: 'knowledge',
+      description: '全业务统一知识来源',
+      connector: { code: 'knowledge_bridge', name: 'Knowledge Bridge', transport: 'tool' },
+      actions: [
+        { actionCode: 'search', workflowCode: 'biz_knowledge_search', name: '知识检索', isDefault: true, readOnly: true },
+      ],
+    },
+    {
+      code: 'document',
+      name: 'Document Center',
+      kind: 'document',
+      description: '制度 / 合同 / 说明书 / 技术文档',
+      connector: { code: 'document_bridge', name: 'Document Bridge', transport: 'tool' },
+      actions: [
+        { actionCode: 'manage', workflowCode: 'biz_document_center', name: '文档管理', isDefault: true, readOnly: true },
+      ],
+    },
+  ];
+
+  for (const s of BIZ_SYSTEMS) {
+    const system = await prisma.businessSystem.upsert({
+      where: { code: s.code },
+      update: {
+        name: s.name,
+        description: s.description,
+        kind: s.kind,
+        enabled: true,
+        status: 'online',
+        version: '1.0.0',
+        readOnlyDefault: true,
+        writeRequiresApproval: true,
+        companyCode: 'ZRH',
+      },
+      create: {
+        code: s.code,
+        name: s.name,
+        description: s.description,
+        kind: s.kind,
+        enabled: true,
+        status: 'online',
+        version: '1.0.0',
+        readOnlyDefault: true,
+        writeRequiresApproval: true,
+        companyCode: 'ZRH',
+      },
+    });
+    await prisma.businessConnector.upsert({
+      where: { systemId_code: { systemId: system.id, code: s.connector.code } },
+      update: {
+        name: s.connector.name,
+        transport: s.connector.transport,
+        enabled: true,
+        status: 'ready',
+        healthStatus: 'healthy',
+      },
+      create: {
+        systemId: system.id,
+        code: s.connector.code,
+        name: s.connector.name,
+        transport: s.connector.transport,
+        enabled: true,
+        status: 'ready',
+        healthStatus: 'healthy',
+      },
+    });
+    for (const a of s.actions) {
+      await prisma.businessSystemWorkflow.upsert({
+        where: { systemId_actionCode: { systemId: system.id, actionCode: a.actionCode } },
+        update: {
+          workflowCode: a.workflowCode,
+          name: a.name,
+          isDefault: a.isDefault ?? false,
+          requiresApproval: a.requiresApproval ?? false,
+          readOnly: a.readOnly ?? true,
+        },
+        create: {
+          systemId: system.id,
+          actionCode: a.actionCode,
+          workflowCode: a.workflowCode,
+          name: a.name,
+          isDefault: a.isDefault ?? false,
+          requiresApproval: a.requiresApproval ?? false,
+          readOnly: a.readOnly ?? true,
+        },
+      });
+    }
+  }
+  console.log(`[seed] business systems: ${BIZ_SYSTEMS.length}`);
 
   // 4. 超级管理员
   const username = process.env.ADMIN_USERNAME || 'admin';
