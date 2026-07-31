@@ -48,6 +48,12 @@ const PERMISSIONS = [
   { code: 'api:rag:read', type: 'API', name: 'RAG 读取接口' },
   { code: 'api:rag:write', type: 'API', name: 'RAG 问答接口' },
   { code: 'api:rag:admin', type: 'API', name: 'RAG 管理接口' },
+  // 阶段 7：Agent Center
+  { code: 'menu:agents', type: 'MENU', name: 'Agent Center 菜单' },
+  { code: 'api:agents:read', type: 'API', name: 'Agent 读取接口' },
+  { code: 'api:agents:write', type: 'API', name: 'Agent 管理接口' },
+  { code: 'api:agents:chat', type: 'API', name: 'Agent 对话接口' },
+  { code: 'api:agents:admin', type: 'API', name: 'Agent 管理后台接口' },
 ];
 
 const ROLE_PERMISSIONS = {
@@ -78,6 +84,9 @@ const ROLE_PERMISSIONS = {
     'menu:rag',
     'api:rag:read',
     'api:rag:write',
+    'menu:agents',
+    'api:agents:read',
+    'api:agents:chat',
   ],
 };
 
@@ -287,6 +296,128 @@ async function main() {
     });
   }
   console.log(`[seed] rag synonyms: ${RAG_SYNONYMS.length}`);
+
+  // 3.10 阶段 7：Skills + 默认 Agents
+  const AGENT_SKILLS = [
+    { code: 'chat', name: 'Chat', description: '通用对话', category: 'core', enabled: true, reserved: false },
+    { code: 'rag', name: 'RAG', description: '企业检索增强生成', category: 'core', enabled: true, reserved: false },
+    { code: 'knowledge_search', name: 'Knowledge Search', description: '知识检索', category: 'core', enabled: true, reserved: false },
+    { code: 'summarize', name: 'Summarize', description: '文档/对话总结', category: 'core', enabled: true, reserved: false },
+    { code: 'translate', name: 'Translate', description: '中缅英翻译', category: 'core', enabled: true, reserved: false },
+    { code: 'code', name: 'Code', description: '代码开发与分析', category: 'core', enabled: true, reserved: false },
+    { code: 'image', name: 'Image', description: '图像能力（预留）', category: 'media', enabled: false, reserved: true },
+    { code: 'video', name: 'Video', description: '视频能力（预留）', category: 'media', enabled: false, reserved: true },
+    { code: 'tool', name: 'Tool', description: '外部工具（预留）', category: 'tool', enabled: false, reserved: true },
+  ];
+  for (const s of AGENT_SKILLS) {
+    await prisma.agentSkill.upsert({
+      where: { code: s.code },
+      update: { name: s.name, description: s.description, category: s.category, enabled: s.enabled, reserved: s.reserved },
+      create: s,
+    });
+  }
+  console.log(`[seed] agent skills: ${AGENT_SKILLS.length}`);
+
+  const DEFAULT_AGENTS = [
+    {
+      code: 'developer',
+      name: 'Developer Agent',
+      description: '代码开发、代码分析与 Bug 修复',
+      avatar: 'code',
+      systemPrompt:
+        'You are ZRH Developer Agent. Help with coding, code review, debugging and architecture. Prefer concise, correct answers with Markdown code blocks.',
+      defaultModel: 'ollama:deepseek-coder:latest',
+      skills: ['chat', 'code', 'summarize'],
+      sortOrder: 1,
+    },
+    {
+      code: 'knowledge',
+      name: 'Knowledge Agent',
+      description: '企业知识查询、RAG 与文档总结',
+      avatar: 'book',
+      systemPrompt:
+        'You are ZRH Knowledge Agent. Answer from enterprise knowledge via RAG when available. Cite sources as [#n]. Summarize documents clearly.',
+      defaultModel: null,
+      defaultKnowledgeScope: 'all',
+      skills: ['chat', 'rag', 'knowledge_search', 'summarize'],
+      sortOrder: 2,
+    },
+    {
+      code: 'translation',
+      name: 'Translation Agent',
+      description: '中文 / 缅文 / 英文翻译',
+      avatar: 'languages',
+      systemPrompt:
+        'You are ZRH Translation Agent for Chinese, Burmese and English. Translate faithfully, preserve formatting, and note ambiguities briefly.',
+      defaultModel: null,
+      skills: ['chat', 'translate'],
+      sortOrder: 3,
+    },
+    {
+      code: 'document',
+      name: 'Document Agent',
+      description: '文档解析、分类与整理',
+      avatar: 'file',
+      systemPrompt:
+        'You are ZRH Document Agent. Help parse, classify, organize and extract structure from documents. Be systematic and structured.',
+      defaultModel: null,
+      skills: ['chat', 'summarize', 'knowledge_search'],
+      sortOrder: 4,
+    },
+    {
+      code: 'assistant',
+      name: 'Assistant Agent',
+      description: '通用聊天与任务协助',
+      avatar: 'sparkles',
+      systemPrompt:
+        'You are ZRH Assistant Agent. Help with general chat and task assistance inside the ZRH ecosystem. Be concise, friendly and accurate.',
+      defaultModel: null,
+      skills: ['chat', 'summarize'],
+      sortOrder: 5,
+    },
+  ];
+  for (const a of DEFAULT_AGENTS) {
+    const agent = await prisma.agent.upsert({
+      where: { code: a.code },
+      update: {
+        name: a.name,
+        description: a.description,
+        avatar: a.avatar,
+        systemPrompt: a.systemPrompt,
+        defaultModel: a.defaultModel,
+        defaultKnowledgeScope: a.defaultKnowledgeScope ?? null,
+        status: 'active',
+        enabled: true,
+        builtin: true,
+        version: '1.0.0',
+        sortOrder: a.sortOrder,
+      },
+      create: {
+        code: a.code,
+        name: a.name,
+        description: a.description,
+        avatar: a.avatar,
+        systemPrompt: a.systemPrompt,
+        defaultModel: a.defaultModel,
+        defaultKnowledgeScope: a.defaultKnowledgeScope ?? null,
+        status: 'active',
+        enabled: true,
+        builtin: true,
+        version: '1.0.0',
+        sortOrder: a.sortOrder,
+      },
+    });
+    for (const skillCode of a.skills) {
+      const skill = await prisma.agentSkill.findUnique({ where: { code: skillCode } });
+      if (!skill) continue;
+      await prisma.agentSkillBinding.upsert({
+        where: { agentId_skillId: { agentId: agent.id, skillId: skill.id } },
+        update: {},
+        create: { agentId: agent.id, skillId: skill.id },
+      });
+    }
+  }
+  console.log(`[seed] default agents: ${DEFAULT_AGENTS.length}`);
 
   // 4. 超级管理员
   const username = process.env.ADMIN_USERNAME || 'admin';
