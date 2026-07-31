@@ -28,7 +28,7 @@
 | `1010d73` | Frontend trash/preview/download/health |
 | `2ed0333` | Retriever embedding fallback |
 | `6cbc753` | Stage 5 acceptance report（初稿） |
-| `3e3c528` / 本文件后续 fix commit | 报告编码修复与定稿 |
+| `2529e06` | Stage 5 acceptance report（定稿） |
 
 ---
 
