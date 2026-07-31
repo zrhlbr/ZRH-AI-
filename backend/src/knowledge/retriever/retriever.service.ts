@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OllamaEmbeddingProvider } from '../embedding/ollama-embedding.provider';
 import { PgvectorProvider } from '../vector/pgvector.provider';
@@ -35,6 +35,8 @@ export interface SearchResponse {
  */
 @Injectable()
 export class RetrieverService {
+  private readonly logger = new Logger(RetrieverService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly embedding: OllamaEmbeddingProvider,
@@ -183,12 +185,22 @@ export class RetrieverService {
     if (mode === 'keyword') {
       results = await this.keywordSearch(query, topK, filters);
     } else if (mode === 'semantic') {
-      results = await this.semanticSearch(query, topK, filters);
+      try {
+        results = await this.semanticSearch(query, topK, filters);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`semantic search fallback to keyword: ${message}`);
+        results = await this.keywordSearch(query, topK, filters);
+      }
     } else {
-      const [kw, sem] = await Promise.all([
-        this.keywordSearch(query, topK, filters),
-        this.semanticSearch(query, topK, filters),
-      ]);
+      const kw = await this.keywordSearch(query, topK, filters);
+      let sem: SearchResult[] = [];
+      try {
+        sem = await this.semanticSearch(query, topK, filters);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`hybrid semantic leg skipped: ${message}`);
+      }
       const map = new Map<number, SearchResult>();
       for (const r of kw) {
         map.set(r.chunkId, { ...r, score: r.score * 0.4, source: 'hybrid' });
