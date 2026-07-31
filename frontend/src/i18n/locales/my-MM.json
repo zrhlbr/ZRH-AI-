@@ -13,7 +13,8 @@
     "rag": "Enterprise RAG",
     "agents": "Agent Center",
     "tools": "Tool Center",
-    "mcp": "MCP Center"
+    "mcp": "MCP Center",
+    "workflows": "Workflow Center"
   },
   "common": {
     "close": "ပိတ်ရန်",
@@ -301,6 +302,33 @@
     "connect": "ချိတ်ဆက်",
     "disconnect": "ဖြတ်",
     "noSessions": "Session မရှိသေးပါ",
+    "refreshLogs": "မှတ်တမ်းပြန်ဖွင့်",
+    "logsAdminOnly": "မှတ်တမ်းသည် admin သာ",
+    "errors24h": "24h အမှား"
+  },
+  "workflows": {
+    "title": "Enterprise Workflow Engine",
+    "subtitle": "Registry · Designer · Runtime · Scheduler · History · Templates",
+    "registry": "Registry",
+    "designer": "Designer",
+    "execution": "လုပ်ဆောင်မှု",
+    "history": "မှတ်တမ်း",
+    "scheduler": "Scheduler",
+    "logs": "Audit logs",
+    "templates": "Templates",
+    "enabled": "ဖွင့်",
+    "disabled": "ပိတ်",
+    "enable": "ဖွင့်ရန်",
+    "disable": "ပိတ်ရန်",
+    "active": "လက်ရှိ Workflow",
+    "run": "ချက်ချင်းလုပ်ဆောင်",
+    "designerHint": "Start → Agent/Tool/MCP… → End. ပြင်ပကို တိုက်ရိုက်မခေါ်ပါ။",
+    "addNode": "Node ထည့်",
+    "saveGraph": "သိမ်းရန်",
+    "remove": "ဖယ်ရှား",
+    "refreshHistory": "မှတ်တမ်းပြန်ဖွင့်",
+    "refreshScheduler": "Scheduler ပြန်ဖွင့်",
+    "addSchedule": "အချိန်ဇယားထည့်",
     "refreshLogs": "မှတ်တမ်းပြန်ဖွင့်",
     "logsAdminOnly": "မှတ်တမ်းသည် admin သာ",
     "errors24h": "24h အမှား"

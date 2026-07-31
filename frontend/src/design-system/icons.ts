@@ -24,6 +24,7 @@ import {
   Boxes,
   Wrench,
   Cable,
+  Workflow,
 } from 'lucide-react';
 
 /**
@@ -57,6 +58,7 @@ export const zrhIcons = {
   agents: Bot,
   tools: Wrench,
   mcp: Cable,
+  workflows: Workflow,
 } as const;
 
 export type ZrhIconName = keyof typeof zrhIcons;

@@ -13,7 +13,8 @@
     "rag": "企业 RAG",
     "agents": "Agent Center",
     "tools": "Tool Center",
-    "mcp": "MCP Center"
+    "mcp": "MCP Center",
+    "workflows": "Workflow Center"
   },
   "common": {
     "close": "关闭",
@@ -301,6 +302,33 @@
     "connect": "连接",
     "disconnect": "断开",
     "noSessions": "暂无活跃会话",
+    "refreshLogs": "刷新日志",
+    "logsAdminOnly": "日志仅管理员可查看",
+    "errors24h": "24h 错误"
+  },
+  "workflows": {
+    "title": "企业 Workflow Engine",
+    "subtitle": "Registry · Designer · Runtime · Scheduler · History · Templates",
+    "registry": "注册表",
+    "designer": "设计器",
+    "execution": "执行",
+    "history": "历史",
+    "scheduler": "调度",
+    "logs": "审计日志",
+    "templates": "模板",
+    "enabled": "启用",
+    "disabled": "禁用",
+    "enable": "启用",
+    "disable": "停用",
+    "active": "当前流程",
+    "run": "立即执行",
+    "designerHint": "可视化节点链：Start → Agent/Tool/MCP/Condition… → End。禁止直连外部系统。",
+    "addNode": "添加节点",
+    "saveGraph": "保存流程",
+    "remove": "移除",
+    "refreshHistory": "刷新历史",
+    "refreshScheduler": "刷新调度",
+    "addSchedule": "添加周期调度",
     "refreshLogs": "刷新日志",
     "logsAdminOnly": "日志仅管理员可查看",
     "errors24h": "24h 错误"

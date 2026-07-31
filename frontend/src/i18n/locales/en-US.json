@@ -13,7 +13,8 @@
     "rag": "Enterprise RAG",
     "agents": "Agent Center",
     "tools": "Tool Center",
-    "mcp": "MCP Center"
+    "mcp": "MCP Center",
+    "workflows": "Workflow Center"
   },
   "common": {
     "close": "Close",
@@ -301,6 +302,33 @@
     "connect": "Connect",
     "disconnect": "Disconnect",
     "noSessions": "No active sessions",
+    "refreshLogs": "Refresh logs",
+    "logsAdminOnly": "Logs are admin-only",
+    "errors24h": "24h errors"
+  },
+  "workflows": {
+    "title": "Enterprise Workflow Engine",
+    "subtitle": "Registry · Designer · Runtime · Scheduler · History · Templates",
+    "registry": "Registry",
+    "designer": "Designer",
+    "execution": "Execution",
+    "history": "History",
+    "scheduler": "Scheduler",
+    "logs": "Audit logs",
+    "templates": "Templates",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "enable": "Enable",
+    "disable": "Disable",
+    "active": "Active workflow",
+    "run": "Run now",
+    "designerHint": "Visual node chain: Start → Agent/Tool/MCP/Condition… → End. No direct external calls.",
+    "addNode": "Add node",
+    "saveGraph": "Save graph",
+    "remove": "Remove",
+    "refreshHistory": "Refresh history",
+    "refreshScheduler": "Refresh scheduler",
+    "addSchedule": "Add interval schedule",
     "refreshLogs": "Refresh logs",
     "logsAdminOnly": "Logs are admin-only",
     "errors24h": "24h errors"
