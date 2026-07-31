@@ -4,6 +4,7 @@ import { KnowledgeModule } from '../knowledge/knowledge.module';
 import { RagController } from './rag.controller';
 import { RagEngineService } from './engine/rag-engine.service';
 import { RagPermissionService } from './permission/rag-permission.service';
+import { VectorRegistryService } from './vector/vector-registry.service';
 
 /**
  * Stage 6 Enterprise RAG Engine。
@@ -12,7 +13,7 @@ import { RagPermissionService } from './permission/rag-permission.service';
 @Module({
   imports: [AIModule, KnowledgeModule],
   controllers: [RagController],
-  providers: [RagEngineService, RagPermissionService],
-  exports: [RagEngineService, RagPermissionService],
+  providers: [RagEngineService, RagPermissionService, VectorRegistryService],
+  exports: [RagEngineService, RagPermissionService, VectorRegistryService],
 })
 export class RagModule {}
