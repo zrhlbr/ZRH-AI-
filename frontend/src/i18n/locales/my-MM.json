@@ -8,7 +8,8 @@
     "status": "စနစ်အခြေအနေ",
     "menu": "မီနူး",
     "chat": "AI စကားပြော",
-    "models": "AI မော်ဒယ်များ"
+    "models": "AI မော်ဒယ်များ",
+    "knowledge": "ဗဟုသုတ ပလက်ဖောင်း"
   },
   "common": {
     "close": "ပိတ်ရန်",
@@ -147,5 +148,61 @@
       "stopped": "ရပ်ထား",
       "error": "အမှား"
     }
+  },
+  "knowledge": {
+    "title": "အဖွဲ့အစည်းဗဟုသုတ ပလက်ဖောင်း",
+    "subtitle": "Document Center · အပြင်အဆင် · ခွဲခြမ်းစိတ်ဖြာ · Embedding · ရှာဖွေမှု",
+    "documents": "စာရွက်စာတမ်းများ",
+    "folders": "ဖိုင်တွဲများ",
+    "upload": "အပ်ဒိတ်",
+    "search": "ရှာဖွေရန်",
+    "favorites": "အကြိုက်ဆုံး",
+    "docTitle": "ခေါင်းစဉ်",
+    "status": "အခြေအနေ",
+    "size": "အရွယ်အစား",
+    "updated": "ပြင်ဆင်ချိန်",
+    "actions": "လုပ်ဆောင်ချက်များ",
+    "titlePlaceholder": "ခေါင်းစဉ်မထည့်လျှင် ဖိုင်အမည်သုံးမည်",
+    "author": "စာရေးသူ",
+    "authorPlaceholder": "စာရွက်စာတမ်းရေးသားသူ",
+    "source": "အရင်းအမြစ်",
+    "sourcePlaceholder": "အရင်းအမြစ် URL/စနစ်",
+    "permission": "ခွင့်ပြုချက်",
+    "permissions": {
+      "private": "ပုဂ္ဂလိက",
+      "public": "အများပြည်သူ",
+      "company": "ကုမ္ပဏီ",
+      "department": "ဌာန",
+      "role": "အခန်းကဏ္ဍ"
+    },
+    "uploadTitle": "စာရွက်စာတမ်း အပ်ဒိတ်",
+    "startUpload": "အပ်ဒိတ်စတင်",
+    "newFolderPlaceholder": "ဖိုင်တွဲအမည်အသစ်",
+    "createFolder": "ဖိုင်တွဲဖန်တီးရန်",
+    "deleteFolderConfirm": "ဖိုင်တွဲထဲမှာဘာမှမရှိမှ ဖျက်နိုင်သည်။ ဖျက်မည်လား။",
+    "moveToTrashConfirm": "အမှိုက်ပုံးသို့ရွှေ့မည်လား။ ပြန်လည်ရယူနိုင်သည်။",
+    "delete": "ဖျက်ရန်",
+    "parse": "အပြင်အဆင်လုပ်",
+    "reindex": "index ပြန်လုပ်ရန်",
+    "root": "အခြေခံဖိုင်တွဲ",
+    "searchDocuments": "စာရွက်စာတမ်းများ ရှာရန်…",
+    "searchPlaceholder": "ဗဟုသုတဘေ့စ်မှ ရှာဖွေရန်…",
+    "searchAction": "ရှာဖွေရန်",
+    "modes": {
+      "hybrid": "ရောစပ်",
+      "semantic": "အဓိပ္ပါယ်",
+      "keyword": "သော့ချက်"
+    },
+    "statuses": {
+      "parsing": "အပြင်အဆင်လုပ်နေ",
+      "chunked": "ခွဲခြမ်းစိတ်ဖြာပြီး",
+      "embedding": "Embedding လုပ်",
+      "indexed": "index ပြီး",
+      "error": "ချွတ်ယွင်း"
+    },
+    "loading": "ဖွင့်နေသည်…",
+    "noDocuments": "စာရွက်စာတမ်းမရှိပါ",
+    "noFolders": "ဖိုင်တွဲမရှိပါ",
+    "noSearchResults": "မတွေ့ပါ"
   }
 }

@@ -1,5 +1,6 @@
 import {
   Activity,
+  BookOpen,
   BrainCircuit,
   Cpu,
   Database,
@@ -48,6 +49,7 @@ export const zrhIcons = {
   shield: ShieldCheck,
   send: Send,
   refresh: RefreshCw,
+  knowledge: BookOpen,
 } as const;
 
 export type ZrhIconName = keyof typeof zrhIcons;

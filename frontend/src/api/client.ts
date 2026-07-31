@@ -28,9 +28,12 @@ const API_BASE = '/api/v1';
 async function rawRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const { accessToken } = useAuthStore.getState();
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...(init.headers as Record<string, string> | undefined),
   };
+  // FormData / URLSearchParams 需要浏览器自行设置 Content-Type（含 boundary）
+  if (!(init.body instanceof FormData) && !(init.body instanceof URLSearchParams)) {
+    headers['Content-Type'] = 'application/json';
+  }
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
   const response = await fetch(`${API_BASE}${path}`, {

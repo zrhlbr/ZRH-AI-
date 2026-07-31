@@ -37,6 +37,12 @@ const PERMISSIONS = [
   { code: 'api:ai:read', type: 'API', name: 'AI Gateway 读取接口' },
   { code: 'api:ai:write', type: 'API', name: 'AI Gateway 写入接口' },
   { code: 'api:ai:admin', type: 'API', name: 'AI Gateway 管理接口' },
+  // 阶段 5：Knowledge Platform
+  { code: 'menu:knowledge', type: 'MENU', name: '知识平台菜单' },
+  { code: 'api:knowledge:read', type: 'API', name: '知识平台读取接口' },
+  { code: 'api:knowledge:write', type: 'API', name: '知识平台写入接口' },
+  { code: 'api:knowledge:delete', type: 'API', name: '知识平台删除接口' },
+  { code: 'api:knowledge:admin', type: 'API', name: '知识平台管理接口' },
 ];
 
 const ROLE_PERMISSIONS = {
@@ -60,6 +66,10 @@ const ROLE_PERMISSIONS = {
     'api:prompts:read',
     'api:parameters:write',
     'api:ai:read',
+    'menu:knowledge',
+    'api:knowledge:read',
+    'api:knowledge:write',
+    'api:knowledge:delete',
   ],
 };
 
@@ -206,6 +216,37 @@ async function main() {
     });
   }
   console.log(`[seed] prompt templates: ${PROMPT_TEMPLATES.length}`);
+
+  // 3.8 阶段 5：Embedding / Vector Provider 注册
+  const EMBEDDING_PROVIDERS = [
+    { code: 'ollama', name: 'Ollama Embedding', description: '本地 Ollama Embedding（nomic-embed-text）', enabled: true, isDefault: true, dimension: 768, config: { model: 'nomic-embed-text' } },
+    { code: 'openai', name: 'OpenAI Embedding', description: 'OpenAI text-embedding（预留）', enabled: false, isDefault: false, dimension: 1536, config: { model: 'text-embedding-3-small' } },
+    { code: 'bge', name: 'BGE Embedding', description: 'BAAI BGE（预留）', enabled: false, isDefault: false, dimension: 768, config: {} },
+    { code: 'jina', name: 'Jina Embedding', description: 'Jina AI Embedding（预留）', enabled: false, isDefault: false, dimension: 768, config: {} },
+  ];
+  for (const p of EMBEDDING_PROVIDERS) {
+    await prisma.embeddingProvider.upsert({
+      where: { code: p.code },
+      update: { name: p.name, description: p.description, enabled: p.enabled, isDefault: p.isDefault, dimension: p.dimension, config: p.config },
+      create: p,
+    });
+  }
+  console.log(`[seed] embedding providers: ${EMBEDDING_PROVIDERS.length}`);
+
+  const VECTOR_PROVIDERS = [
+    { code: 'pgvector', name: 'PostgreSQL JSONB', description: 'PostgreSQL JSONB 向量存储（阶段 5 基础）', enabled: true, isDefault: true, config: { table: 'knowledge_vectors' } },
+    { code: 'milvus', name: 'Milvus', description: 'Milvus（预留）', enabled: false, isDefault: false, config: {} },
+    { code: 'qdrant', name: 'Qdrant', description: 'Qdrant（预留）', enabled: false, isDefault: false, config: {} },
+    { code: 'chroma', name: 'Chroma', description: 'Chroma（预留）', enabled: false, isDefault: false, config: {} },
+  ];
+  for (const p of VECTOR_PROVIDERS) {
+    await prisma.vectorProvider.upsert({
+      where: { code: p.code },
+      update: { name: p.name, description: p.description, enabled: p.enabled, isDefault: p.isDefault, config: p.config },
+      create: p,
+    });
+  }
+  console.log(`[seed] vector providers: ${VECTOR_PROVIDERS.length}`);
 
   // 4. 超级管理员
   const username = process.env.ADMIN_USERNAME || 'admin';

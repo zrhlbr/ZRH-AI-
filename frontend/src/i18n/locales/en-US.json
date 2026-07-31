@@ -8,7 +8,8 @@
     "status": "System Status",
     "menu": "Menu",
     "chat": "AI Chat",
-    "models": "AI Models"
+    "models": "AI Models",
+    "knowledge": "Knowledge Platform"
   },
   "common": {
     "close": "Close",
@@ -147,5 +148,61 @@
       "stopped": "Stopped",
       "error": "Error"
     }
+  },
+  "knowledge": {
+    "title": "Enterprise Knowledge Platform",
+    "subtitle": "Document Center · Upload · Parse · Chunk · Embedding · Search",
+    "documents": "Documents",
+    "folders": "Folders",
+    "upload": "Upload",
+    "search": "Search",
+    "favorites": "Favorites",
+    "docTitle": "Title",
+    "status": "Status",
+    "size": "Size",
+    "updated": "Updated",
+    "actions": "Actions",
+    "titlePlaceholder": "Leave blank to use filename",
+    "author": "Author",
+    "authorPlaceholder": "Document author",
+    "source": "Source",
+    "sourcePlaceholder": "Source URL / system",
+    "permission": "Permission",
+    "permissions": {
+      "private": "Private",
+      "public": "Public",
+      "company": "Company",
+      "department": "Department",
+      "role": "Role"
+    },
+    "uploadTitle": "Upload Document",
+    "startUpload": "Start Upload",
+    "newFolderPlaceholder": "New folder name",
+    "createFolder": "Create Folder",
+    "deleteFolderConfirm": "Folder must be empty to delete. Confirm?",
+    "moveToTrashConfirm": "Move to trash? You can restore later.",
+    "delete": "Delete",
+    "parse": "Parse",
+    "reindex": "Reindex",
+    "root": "Root",
+    "searchDocuments": "Search documents…",
+    "searchPlaceholder": "Search the knowledge base…",
+    "searchAction": "Search",
+    "modes": {
+      "hybrid": "Hybrid",
+      "semantic": "Semantic",
+      "keyword": "Keyword"
+    },
+    "statuses": {
+      "parsing": "Parsing",
+      "chunked": "Chunked",
+      "embedding": "Embedding",
+      "indexed": "Indexed",
+      "error": "Error"
+    },
+    "loading": "Loading…",
+    "noDocuments": "No documents yet",
+    "noFolders": "No folders yet",
+    "noSearchResults": "No results found"
   }
 }

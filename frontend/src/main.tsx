@@ -12,6 +12,7 @@ import { useAuthStore } from './store/authStore';
 
 // 聊天页（含 Markdown/Mermaid/KaTeX 渲染链）按需加载，保持首页轻量
 const ChatPage = lazy(() => import('./pages/ChatPage').then((m) => ({ default: m.ChatPage })));
+const KnowledgePage = lazy(() => import('./pages/KnowledgePage').then((m) => ({ default: m.KnowledgePage })));
 
 /** 路由守卫：未登录跳转登录页 */
 function RequireAuth() {
@@ -45,6 +46,7 @@ const router = createBrowserRouter([
           { path: '/chat', element: <Suspense fallback={null}><ChatPage /></Suspense> },
           { path: '/chat/:id', element: <Suspense fallback={null}><ChatPage /></Suspense> },
           { path: '/ai/models', element: <ModelsPage /> },
+          { path: '/knowledge/*', element: <Suspense fallback={null}><KnowledgePage /></Suspense> },
           { path: '/status', element: <StatusPage /> },
         ],
       },

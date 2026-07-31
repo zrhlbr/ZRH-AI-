@@ -32,6 +32,8 @@ model User {
   conversations Conversation[]
   folders      ConversationFolder[]
   chatParams   ChatParams?
+  knowledgeDocuments KnowledgeDocument[]
+  knowledgeFolders   KnowledgeFolder[]
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
@@ -267,4 +269,187 @@ model ChatParams {
   updatedAt     DateTime @updatedAt
 
   @@map("chat_params")
+}
+
+// ============ 阶段 5：Knowledge Platform Foundation ============
+
+model KnowledgeFolder {
+  id          Int       @id @default(autoincrement())
+  parentId    Int?
+  parent      KnowledgeFolder? @relation("FolderChildren", fields: [parentId], references: [id], onDelete: SetNull)
+  children    KnowledgeFolder[] @relation("FolderChildren")
+  name        String
+  description String?
+  ownerId     Int
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  permission  String    @default("private") // public | company | department | private | role
+  sortOrder   Int       @default(0)
+  documents   KnowledgeDocument[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([parentId])
+  @@index([ownerId])
+  @@map("knowledge_folders")
+}
+
+model KnowledgeTag {
+  id          Int                  @id @default(autoincrement())
+  name        String               @unique
+  color       String?
+  documents   KnowledgeDocumentTag[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@map("knowledge_tags")
+}
+
+model KnowledgeDocumentTag {
+  documentId  Int
+  document    KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  tagId       Int
+  tag         KnowledgeTag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([documentId, tagId])
+  @@map("knowledge_document_tags")
+}
+
+model KnowledgeDocument {
+  id               Int                     @id @default(autoincrement())
+  folderId         Int?
+  folder           KnowledgeFolder?        @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  title            String
+  filename         String
+  mimeType         String
+  sizeBytes        BigInt
+  hash             String                  // SHA-256
+  author           String?
+  source           String?
+  language         String?                 // zh-CN | en-US | my-MM
+  ownerId          Int
+  owner            User                    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  permission       String                  @default("private") // public | company | department | private | role
+  status           String                  @default("pending") // pending | parsing | chunked | embedding | indexed | error
+  currentVersionId Int?
+  versionCount     Int                     @default(0)
+  isFavorite       Boolean                 @default(false)
+  isDeleted        Boolean                 @default(false)
+  deletedAt        DateTime?
+  tags             KnowledgeDocumentTag[]
+  versions         KnowledgeDocumentVersion[]
+  chunks           KnowledgeChunk[]
+  tasks            EmbeddingTask[]
+  permissions      DocumentPermission[]
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  @@index([folderId])
+  @@index([ownerId])
+  @@index([status])
+  @@index([permission])
+  @@index([isDeleted])
+  @@index([isFavorite])
+  @@map("knowledge_documents")
+}
+
+model KnowledgeDocumentVersion {
+  id          Int               @id @default(autoincrement())
+  documentId  Int
+  document    KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  versionNumber Int             @default(1)
+  storagePath String
+  sizeBytes   BigInt
+  hash        String
+  createdBy   Int
+  createdAt   DateTime          @default(now())
+
+  chunks      KnowledgeChunk[]
+
+  @@unique([documentId, versionNumber])
+  @@index([documentId])
+  @@map("knowledge_document_versions")
+}
+
+model KnowledgeChunk {
+  id          Int                     @id @default(autoincrement())
+  documentId  Int
+  document    KnowledgeDocument       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  versionId   Int
+  version     KnowledgeDocumentVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  chunkIndex  Int
+  page        Int?
+  position    Int?                    // 在原文中的字符/字节位置
+  language    String?
+  tokenCount  Int                     @default(0)
+  hash        String                  // 内容哈希，用于去重
+  content     String                  @db.Text
+  metadata    Json?                   // 预留：标题、段落、表格等
+  createdAt   DateTime                @default(now())
+
+  @@unique([versionId, chunkIndex])
+  @@index([documentId])
+  @@index([versionId])
+  @@index([hash])
+  @@map("knowledge_chunks")
+}
+
+model EmbeddingProvider {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique // ollama | openai | bge | jina | qwen | gemini
+  name        String
+  description String?
+  enabled     Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+  dimension   Int      @default(768)
+  config      Json?    // baseUrl、apiKey、model 等
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("embedding_providers")
+}
+
+model VectorProvider {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique // pgvector | milvus | qdrant | chroma | faiss | weaviate
+  name        String
+  description String?
+  enabled     Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+  config      Json?    // collection、index、connection 等
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("vector_providers")
+}
+
+model EmbeddingTask {
+  id          Int               @id @default(autoincrement())
+  documentId  Int
+  document    KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  status      String            @default("pending") // pending | running | completed | failed
+  providerCode String
+  error       String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([documentId])
+  @@index([status])
+  @@map("embedding_tasks")
+}
+
+model DocumentPermission {
+  id          Int               @id @default(autoincrement())
+  documentId  Int
+  document    KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  targetType  String            // role | user | department
+  targetId    Int
+  permission  String            // read | write | admin
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([documentId, targetType, targetId])
+  @@index([documentId])
+  @@map("document_permissions")
 }

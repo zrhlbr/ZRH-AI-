@@ -8,7 +8,8 @@
     "status": "系统状态",
     "menu": "菜单",
     "chat": "AI 对话",
-    "models": "AI 模型"
+    "models": "AI 模型",
+    "knowledge": "知识平台"
   },
   "common": {
     "close": "关闭",
@@ -147,5 +148,61 @@
       "stopped": "停止",
       "error": "异常"
     }
+  },
+  "knowledge": {
+    "title": "企业知识平台",
+    "subtitle": "Document Center · 上传 · 解析 · 分块 · Embedding · 检索",
+    "documents": "文档",
+    "folders": "文件夹",
+    "upload": "上传",
+    "search": "检索",
+    "favorites": "收藏",
+    "docTitle": "标题",
+    "status": "状态",
+    "size": "大小",
+    "updated": "更新时间",
+    "actions": "操作",
+    "titlePlaceholder": "留空使用文件名",
+    "author": "作者",
+    "authorPlaceholder": "文档作者",
+    "source": "来源",
+    "sourcePlaceholder": "文档来源 URL/系统",
+    "permission": "权限",
+    "permissions": {
+      "private": "私有",
+      "public": "公开",
+      "company": "公司",
+      "department": "部门",
+      "role": "角色"
+    },
+    "uploadTitle": "上传文档",
+    "startUpload": "开始上传",
+    "newFolderPlaceholder": "新文件夹名称",
+    "createFolder": "创建文件夹",
+    "deleteFolderConfirm": "该文件夹必须为空才能删除，确定删除？",
+    "moveToTrashConfirm": "移入回收站？可随时恢复。",
+    "delete": "删除",
+    "parse": "解析",
+    "reindex": "重建索引",
+    "root": "根目录",
+    "searchDocuments": "搜索文档…",
+    "searchPlaceholder": "输入关键词，检索知识库…",
+    "searchAction": "检索",
+    "modes": {
+      "hybrid": "混合",
+      "semantic": "语义",
+      "keyword": "关键词"
+    },
+    "statuses": {
+      "parsing": "解析中",
+      "chunked": "已分块",
+      "embedding": "Embedding 中",
+      "indexed": "已索引",
+      "error": "失败"
+    },
+    "loading": "加载中…",
+    "noDocuments": "暂无文档",
+    "noFolders": "暂无文件夹",
+    "noSearchResults": "未找到相关结果"
   }
 }
