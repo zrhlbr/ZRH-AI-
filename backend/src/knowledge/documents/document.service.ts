@@ -191,7 +191,13 @@ export class DocumentService {
     await this.prisma.knowledgeDocument.update({ where: { id: documentId }, data: { status: 'parsing' } });
     await this.clearVersionChunks(versionId);
     const doc = parsed ?? (await this.parser.parse(buffer, mimeType, filename));
-    const candidates = this.chunk.chunk(doc.content, doc.language, { strategy: 'fixed', size: 800, overlap: 80 });
+    const candidates = this.chunk.chunk(doc.content, doc.language, {
+      strategy: 'auto',
+      size: 800,
+      overlap: 80,
+      mimeType,
+      filename,
+    });
 
     if (candidates.length > 0) {
       await this.prisma.knowledgeChunk.createMany({
