@@ -9,7 +9,8 @@
     "menu": "မီနူး",
     "chat": "AI စကားပြော",
     "models": "AI မော်ဒယ်များ",
-    "knowledge": "ဗဟုသုတ ပလက်ဖောင်း"
+    "knowledge": "ဗဟုသုတ ပလက်ဖောင်း",
+    "rag": "Enterprise RAG"
   },
   "common": {
     "close": "ပိတ်ရန်",
@@ -211,5 +212,27 @@
     "noDocuments": "စာရွက်စာတမ်းမရှိပါ",
     "noFolders": "ဖိုင်တွဲမရှိပါ",
     "noSearchResults": "မတွေ့ပါ"
+  },
+  "rag": {
+    "title": "Enterprise RAG Engine",
+    "subtitle": "Query Rewrite · Retrieve · Re-rank · Cite · Memory",
+    "ask": "မေးရန်",
+    "askAction": "RAG မေးရန်",
+    "searchAction": "ရှာဖွေရန်သာ",
+    "queryPlaceholder": "မေးခွန်းရိုက်ထည့်ပါ…",
+    "rewritten": "ပြင်ဆင်ထားသောမေးခွန်း",
+    "answer": "အဖြေ",
+    "citations": "ကိုးကားချက်များ",
+    "related": "ဆက်စပ်စာရွက်စာတမ်းများ",
+    "noCitations": "ကိုးကားချက်မရှိသေးပါ",
+    "noRelated": "ဆက်စပ်စာရွက်စာတမ်းမရှိပါ",
+    "latency": "ကြာချိန်",
+    "hitRate": "Hit rate",
+    "pendingTasks": "Embedding အလုပ်များ",
+    "modes": {
+      "hybrid": "ရောစပ်",
+      "semantic": "အဓိပ္ပါယ်",
+      "keyword": "သော့ချက်"
+    }
   }
 }

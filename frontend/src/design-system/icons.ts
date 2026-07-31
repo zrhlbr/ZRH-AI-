@@ -50,6 +50,7 @@ export const zrhIcons = {
   send: Send,
   refresh: RefreshCw,
   knowledge: BookOpen,
+  rag: BrainCircuit,
 } as const;
 
 export type ZrhIconName = keyof typeof zrhIcons;

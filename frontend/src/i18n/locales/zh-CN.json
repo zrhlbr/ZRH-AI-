@@ -9,7 +9,8 @@
     "menu": "菜单",
     "chat": "AI 对话",
     "models": "AI 模型",
-    "knowledge": "知识平台"
+    "knowledge": "知识平台",
+    "rag": "企业 RAG"
   },
   "common": {
     "close": "关闭",
@@ -211,5 +212,27 @@
     "noDocuments": "暂无文档",
     "noFolders": "暂无文件夹",
     "noSearchResults": "未找到相关结果"
+  },
+  "rag": {
+    "title": "企业级 RAG 引擎",
+    "subtitle": "Query Rewrite · Retrieve · Re-rank · Cite · Memory",
+    "ask": "问答",
+    "askAction": "RAG 问答",
+    "searchAction": "仅检索",
+    "queryPlaceholder": "输入企业问题，例如：知识库如何做权限过滤？",
+    "rewritten": "改写后查询",
+    "answer": "回答",
+    "citations": "引用来源",
+    "related": "相关文档",
+    "noCitations": "暂无引用",
+    "noRelated": "暂无相关文档",
+    "latency": "搜索耗时",
+    "hitRate": "知识命中率",
+    "pendingTasks": "待处理 Embedding 任务",
+    "modes": {
+      "hybrid": "混合",
+      "semantic": "语义",
+      "keyword": "关键词"
+    }
   }
 }

@@ -9,7 +9,8 @@
     "menu": "Menu",
     "chat": "AI Chat",
     "models": "AI Models",
-    "knowledge": "Knowledge Platform"
+    "knowledge": "Knowledge Platform",
+    "rag": "Enterprise RAG"
   },
   "common": {
     "close": "Close",
@@ -211,5 +212,27 @@
     "noDocuments": "No documents yet",
     "noFolders": "No folders yet",
     "noSearchResults": "No results found"
+  },
+  "rag": {
+    "title": "Enterprise RAG Engine",
+    "subtitle": "Query Rewrite · Retrieve · Re-rank · Cite · Memory",
+    "ask": "Ask",
+    "askAction": "RAG Ask",
+    "searchAction": "Search only",
+    "queryPlaceholder": "Ask an enterprise question…",
+    "rewritten": "Rewritten query",
+    "answer": "Answer",
+    "citations": "Citations",
+    "related": "Related documents",
+    "noCitations": "No citations yet",
+    "noRelated": "No related documents",
+    "latency": "Latency",
+    "hitRate": "Hit rate",
+    "pendingTasks": "Pending embedding tasks",
+    "modes": {
+      "hybrid": "Hybrid",
+      "semantic": "Semantic",
+      "keyword": "Keyword"
+    }
   }
 }
