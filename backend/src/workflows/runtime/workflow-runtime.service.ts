@@ -336,7 +336,7 @@ export class WorkflowRuntimeService {
     if (!run) throw new NotFoundException('run not found');
 
     const started = Date.now();
-    const graph = run.workflow.graph as WorkflowGraph;
+    const graph = run.workflow.graph as unknown as WorkflowGraph;
     const defaults =
       run.workflow.variables && typeof run.workflow.variables === 'object'
         ? ((run.workflow.variables as { defaults?: Record<string, unknown> }).defaults ?? {})
