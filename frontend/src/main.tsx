@@ -18,6 +18,7 @@ const AgentsPage = lazy(() => import('./pages/AgentsPage').then((m) => ({ defaul
 const ToolsPage = lazy(() => import('./pages/ToolsPage').then((m) => ({ default: m.ToolsPage })));
 const McpPage = lazy(() => import('./pages/McpPage').then((m) => ({ default: m.McpPage })));
 const WorkflowsPage = lazy(() => import('./pages/WorkflowsPage').then((m) => ({ default: m.WorkflowsPage })));
+const BusinessPage = lazy(() => import('./pages/BusinessPage').then((m) => ({ default: m.BusinessPage })));
 
 /** 路由守卫：未登录跳转登录页 */
 function RequireAuth() {
@@ -57,6 +58,7 @@ const router = createBrowserRouter([
           { path: '/tools/*', element: <Suspense fallback={null}><ToolsPage /></Suspense> },
           { path: '/mcp/*', element: <Suspense fallback={null}><McpPage /></Suspense> },
           { path: '/workflows/*', element: <Suspense fallback={null}><WorkflowsPage /></Suspense> },
+          { path: '/business/*', element: <Suspense fallback={null}><BusinessPage /></Suspense> },
           { path: '/status', element: <StatusPage /> },
         ],
       },

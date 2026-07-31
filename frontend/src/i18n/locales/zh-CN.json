@@ -14,7 +14,8 @@
     "agents": "Agent Center",
     "tools": "Tool Center",
     "mcp": "MCP Center",
-    "workflows": "Workflow Center"
+    "workflows": "Workflow Center",
+    "business": "Business Hub"
   },
   "common": {
     "close": "关闭",
@@ -332,5 +333,21 @@
     "refreshLogs": "刷新日志",
     "logsAdminOnly": "日志仅管理员可查看",
     "errors24h": "24h 错误"
+  },
+  "business": {
+    "title": "企业业务集成平台",
+    "subtitle": "Business → Workflow → Agent → Tool → MCP → Connector",
+    "overview": "业务总览",
+    "invoke": "业务调用",
+    "connectors": "连接器",
+    "workflows": "业务流程",
+    "audit": "审计",
+    "systems": "业务系统",
+    "active": "当前系统",
+    "runViaWorkflow": "经 Workflow 执行",
+    "archHint": "禁止直连外部系统；资金写操作仅审批预留。",
+    "refreshLogs": "刷新审计",
+    "logsAdminOnly": "审计日志仅管理员可查看",
+    "audits24h": "24h 审计"
   }
 }

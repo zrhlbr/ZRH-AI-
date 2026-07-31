@@ -14,7 +14,8 @@
     "agents": "Agent Center",
     "tools": "Tool Center",
     "mcp": "MCP Center",
-    "workflows": "Workflow Center"
+    "workflows": "Workflow Center",
+    "business": "Business Hub"
   },
   "common": {
     "close": "ပိတ်ရန်",
@@ -332,5 +333,21 @@
     "refreshLogs": "မှတ်တမ်းပြန်ဖွင့်",
     "logsAdminOnly": "မှတ်တမ်းသည် admin သာ",
     "errors24h": "24h အမှား"
+  },
+  "business": {
+    "title": "Business Integration Platform",
+    "subtitle": "Business → Workflow → Agent → Tool → MCP → Connector",
+    "overview": "Overview",
+    "invoke": "Invoke",
+    "connectors": "Connectors",
+    "workflows": "Business Workflows",
+    "audit": "Audit",
+    "systems": "Systems",
+    "active": "လက်ရှိစနစ်",
+    "runViaWorkflow": "Workflow ဖြင့်လုပ်ဆောင်",
+    "archHint": "ပြင်ပကို တိုက်ရိုက်မခေါ်ပါ။ ငွေရေးရေးသားမှုသည် approval လိုအပ်သည်။",
+    "refreshLogs": "Audit ပြန်ဖွင့်",
+    "logsAdminOnly": "Audit သည် admin သာ",
+    "audits24h": "24h audits"
   }
 }

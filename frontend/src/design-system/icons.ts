@@ -25,6 +25,7 @@ import {
   Wrench,
   Cable,
   Workflow,
+  Building2,
 } from 'lucide-react';
 
 /**
@@ -59,6 +60,7 @@ export const zrhIcons = {
   tools: Wrench,
   mcp: Cable,
   workflows: Workflow,
+  business: Building2,
 } as const;
 
 export type ZrhIconName = keyof typeof zrhIcons;

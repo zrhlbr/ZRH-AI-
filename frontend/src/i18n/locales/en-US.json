@@ -14,7 +14,8 @@
     "agents": "Agent Center",
     "tools": "Tool Center",
     "mcp": "MCP Center",
-    "workflows": "Workflow Center"
+    "workflows": "Workflow Center",
+    "business": "Business Hub"
   },
   "common": {
     "close": "Close",
@@ -332,5 +333,21 @@
     "refreshLogs": "Refresh logs",
     "logsAdminOnly": "Logs are admin-only",
     "errors24h": "24h errors"
+  },
+  "business": {
+    "title": "Business Integration Platform",
+    "subtitle": "Business → Workflow → Agent → Tool → MCP → Connector",
+    "overview": "Overview",
+    "invoke": "Invoke",
+    "connectors": "Connectors",
+    "workflows": "Business Workflows",
+    "audit": "Audit",
+    "systems": "Systems",
+    "active": "Active system",
+    "runViaWorkflow": "Run via Workflow",
+    "archHint": "No direct external calls; money writes require approval workflows.",
+    "refreshLogs": "Refresh audit",
+    "logsAdminOnly": "Audit logs are admin-only",
+    "audits24h": "24h audits"
   }
 }

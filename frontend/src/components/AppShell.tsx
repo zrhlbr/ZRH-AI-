@@ -33,6 +33,7 @@ export function AppShell() {
     { to: '/tools', key: 'menu:tools', label: t('nav.tools'), icon: zrhIcons.tools },
     { to: '/mcp', key: 'menu:mcp', label: t('nav.mcp'), icon: zrhIcons.mcp },
     { to: '/workflows', key: 'menu:workflows', label: t('nav.workflows'), icon: zrhIcons.workflows },
+    { to: '/business', key: 'menu:business', label: t('nav.business'), icon: zrhIcons.business },
     { to: '/ai/models', key: 'menu:ai-models', label: t('nav.models'), icon: zrhIcons.cpu },
     { to: '/status', key: 'menu:status', label: t('nav.status'), icon: zrhIcons.dashboard },
   ].filter((item) => profile?.permissions.includes(item.key));
