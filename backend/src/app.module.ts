@@ -12,6 +12,7 @@ import { KnowledgeModule } from './knowledge/knowledge.module';
 import { RagModule } from './rag/rag.module';
 import { AgentsModule } from './agents/agents.module';
 import { ToolsModule } from './tools/tools.module';
+import { McpModule } from './mcp/mcp.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { RateLimitGuard } from './common/guards/rate-limit.guard';
@@ -20,7 +21,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 @Module({
-  imports: [PrismaModule, RedisModule, OllamaModule, HealthModule, AuthModule, SystemModule, ChatModule, AIModule, KnowledgeModule, RagModule, AgentsModule, ToolsModule],
+  imports: [PrismaModule, RedisModule, OllamaModule, HealthModule, AuthModule, SystemModule, ChatModule, AIModule, KnowledgeModule, RagModule, AgentsModule, ToolsModule, McpModule],
   providers: [
     // 全局鉴权：JWT → 权限码（@Public() 除外）→ 限流
     { provide: APP_GUARD, useClass: JwtAuthGuard },
