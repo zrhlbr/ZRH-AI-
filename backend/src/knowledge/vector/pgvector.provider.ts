@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import {
   IVectorProvider,
@@ -15,37 +15,79 @@ import {
 @Injectable()
 export class PgvectorProvider implements IVectorProvider {
   readonly code = 'pgvector';
+  private readonly logger = new Logger(PgvectorProvider.name);
+  private dimension = 768;
 
   constructor(private readonly prisma: PrismaService) {}
 
   async initialize(dimension: number): Promise<void> {
-    // JSONB 表已随迁移创建，维度仅作校验/记录
-    await this.prisma.$executeRawUnsafe(`COMMENT ON TABLE "knowledge_vectors" IS 'dimension=${dimension}'`);
+    this.dimension = dimension > 0 ? dimension : this.dimension;
+    await this.prisma.$executeRawUnsafe(
+      `COMMENT ON TABLE "knowledge_vectors" IS 'dimension=${this.dimension}'`,
+    );
+  }
+
+  private assertVector(embedding: number[]): void {
+    if (!Array.isArray(embedding) || embedding.length === 0) {
+      throw new Error('embedding vector is empty');
+    }
+    if (this.dimension > 0 && embedding.length !== this.dimension) {
+      this.logger.warn(`embedding dim ${embedding.length} != expected ${this.dimension}`);
+    }
+    for (const v of embedding) {
+      if (typeof v !== 'number' || Number.isNaN(v)) {
+        throw new Error('embedding contains non-numeric values');
+      }
+    }
   }
 
   async insert(records: VectorRecord[]): Promise<void> {
     if (records.length === 0) return;
-    const values = records
-      .map((r) => `(${r.chunkId}, '${JSON.stringify(r.embedding)}'::jsonb)`)
-      .join(',');
-    await this.prisma.$executeRawUnsafe(
-      `INSERT INTO "knowledge_vectors" ("chunk_id", "embedding") VALUES ${values}
-       ON CONFLICT ("chunk_id") DO UPDATE SET "embedding" = EXCLUDED."embedding", "createdAt" = CURRENT_TIMESTAMP`,
-    );
+    for (const r of records) {
+      this.assertVector(r.embedding);
+      const payload = JSON.stringify(r.embedding);
+      await this.prisma.$executeRawUnsafe(
+        `INSERT INTO "knowledge_vectors" ("chunk_id", "embedding")
+         VALUES ($1, $2::jsonb)
+         ON CONFLICT ("chunk_id") DO UPDATE
+         SET "embedding" = EXCLUDED."embedding", "createdAt" = CURRENT_TIMESTAMP`,
+        r.chunkId,
+        payload,
+      );
+    }
   }
 
   async delete(chunkIds: number[]): Promise<void> {
     if (chunkIds.length === 0) return;
+    const ids = chunkIds.filter((id) => Number.isInteger(id) && id > 0);
+    if (ids.length === 0) return;
     await this.prisma.$executeRawUnsafe(
-      `DELETE FROM "knowledge_vectors" WHERE "chunk_id" IN (${chunkIds.join(',')})`,
+      `DELETE FROM "knowledge_vectors" WHERE "chunk_id" = ANY($1::int[])`,
+      ids,
     );
   }
 
+  private parseEmbedding(raw: unknown): number[] | null {
+    let value: unknown = raw;
+    if (typeof value === 'string') {
+      try {
+        value = JSON.parse(value);
+      } catch {
+        return null;
+      }
+    }
+    if (!Array.isArray(value) || value.length === 0) return null;
+    if (!value.every((v) => typeof v === 'number' && !Number.isNaN(v))) return null;
+    return value as number[];
+  }
+
   private cosineSimilarity(a: number[], b: number[]): number {
+    const len = Math.min(a.length, b.length);
+    if (len === 0) return 0;
     let dot = 0;
     let normA = 0;
     let normB = 0;
-    for (let i = 0; i < a.length; i++) {
+    for (let i = 0; i < len; i++) {
       dot += a[i] * b[i];
       normA += a[i] * a[i];
       normB += b[i] * b[i];
@@ -55,16 +97,23 @@ export class PgvectorProvider implements IVectorProvider {
   }
 
   async search(embedding: number[], topK: number): Promise<VectorSearchResult[]> {
+    this.assertVector(embedding);
+    const k = Math.max(1, Math.min(topK || 10, 100));
     const rows = (await this.prisma.$queryRawUnsafe(
       `SELECT "chunk_id", "embedding" FROM "knowledge_vectors"`,
-    )) as Array<{ chunk_id: number; embedding: number[] }>;
+    )) as Array<{ chunk_id: number; embedding: unknown }>;
 
-    const scored = rows.map((r) => ({
-      chunkId: r.chunk_id,
-      score: this.cosineSimilarity(embedding, r.embedding),
-    }));
+    const scored: VectorSearchResult[] = [];
+    for (const r of rows) {
+      const vector = this.parseEmbedding(r.embedding);
+      if (!vector) continue;
+      scored.push({
+        chunkId: Number(r.chunk_id),
+        score: this.cosineSimilarity(embedding, vector),
+      });
+    }
     scored.sort((a, b) => b.score - a.score);
-    return scored.slice(0, topK);
+    return scored.slice(0, k);
   }
 
   async rebuild(): Promise<void> {
@@ -73,8 +122,11 @@ export class PgvectorProvider implements IVectorProvider {
 
   async health(): Promise<VectorProviderHealth> {
     try {
-      await this.prisma.$queryRawUnsafe(`SELECT COUNT(*) FROM "knowledge_vectors"`);
-      return { status: 'online' };
+      const rows = (await this.prisma.$queryRawUnsafe(
+        `SELECT COUNT(*)::int AS count FROM "knowledge_vectors"`,
+      )) as Array<{ count: number }>;
+      const count = Number(rows[0]?.count ?? 0);
+      return { status: 'online', count };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       return { status: 'error', error: message };

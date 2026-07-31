@@ -16,6 +16,7 @@ export interface VectorSearchResult {
 export interface VectorProviderHealth {
   status: 'online' | 'offline' | 'error';
   error?: string;
+  count?: number;
 }
 
 export interface IVectorProvider {
