@@ -1,5 +1,13 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsIn, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+
+function toBoolean(value: unknown): boolean | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  if (typeof value === 'boolean') return value;
+  if (value === 'true' || value === '1' || value === 1) return true;
+  if (value === 'false' || value === '0' || value === 0) return false;
+  return undefined;
+}
 
 export type PermissionScopeDto = 'public' | 'company' | 'department' | 'private' | 'role';
 
@@ -50,8 +58,15 @@ export class ListDocumentsQueryDto {
   status?: string;
 
   @IsOptional()
+  @Transform(({ value }) => toBoolean(value))
   @IsBoolean()
   favorite?: boolean;
+
+  /** 仅列出当前用户回收站文档 */
+  @IsOptional()
+  @Transform(({ value }) => toBoolean(value))
+  @IsBoolean()
+  trash?: boolean;
 
   @IsOptional()
   @Type(() => Number)

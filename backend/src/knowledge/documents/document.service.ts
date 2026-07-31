@@ -165,8 +165,19 @@ export class DocumentService {
       versionId: version.id,
       taskId: task.id,
       title: doc.title,
-      status: doc.status,
+      status: 'chunked',
     };
+  }
+
+  /** 重解析前清理版本下旧 chunk + 向量，避免唯一约束冲突 */
+  private async clearVersionChunks(versionId: number) {
+    const chunks = await this.prisma.knowledgeChunk.findMany({
+      where: { versionId },
+      select: { id: true },
+    });
+    if (chunks.length === 0) return;
+    await this.vector.delete(chunks.map((c) => c.id));
+    await this.prisma.knowledgeChunk.deleteMany({ where: { versionId } });
   }
 
   private async runParseAndChunk(
@@ -178,23 +189,26 @@ export class DocumentService {
     parsed?: { content: string; language?: string; pages?: number },
   ) {
     await this.prisma.knowledgeDocument.update({ where: { id: documentId }, data: { status: 'parsing' } });
+    await this.clearVersionChunks(versionId);
     const doc = parsed ?? (await this.parser.parse(buffer, mimeType, filename));
     const candidates = this.chunk.chunk(doc.content, doc.language, { strategy: 'fixed', size: 800, overlap: 80 });
 
-    await this.prisma.knowledgeChunk.createMany({
-      data: candidates.map((c) => ({
-        documentId,
-        versionId,
-        chunkIndex: c.chunkIndex,
-        page: c.page ?? null,
-        position: c.position ?? null,
-        language: c.language ?? null,
-        tokenCount: c.tokenCount,
-        hash: this.chunk.hash(c.content),
-        content: c.content,
-        metadata: c.metadata as Prisma.InputJsonValue,
-      })),
-    });
+    if (candidates.length > 0) {
+      await this.prisma.knowledgeChunk.createMany({
+        data: candidates.map((c) => ({
+          documentId,
+          versionId,
+          chunkIndex: c.chunkIndex,
+          page: c.page ?? null,
+          position: c.position ?? null,
+          language: c.language ?? null,
+          tokenCount: c.tokenCount,
+          hash: this.chunk.hash(c.content),
+          content: c.content,
+          metadata: c.metadata as Prisma.InputJsonValue,
+        })),
+      });
+    }
 
     await this.prisma.knowledgeDocument.update({ where: { id: documentId }, data: { status: 'chunked' } });
   }
@@ -228,10 +242,23 @@ export class DocumentService {
 
   // ---------- Document CRUD ----------
 
-  async listDocuments(userId: number, opts: { folderId?: number; search?: string; status?: string; favorite?: boolean; page?: number; pageSize?: number }) {
+  async listDocuments(
+    userId: number,
+    opts: {
+      folderId?: number;
+      search?: string;
+      status?: string;
+      favorite?: boolean;
+      trash?: boolean;
+      page?: number;
+      pageSize?: number;
+    },
+  ) {
     const page = opts.page ?? 1;
     const pageSize = opts.pageSize ?? 20;
-    const baseFilter = await this.permissions.buildDocumentFilter(userId);
+    const baseFilter = opts.trash
+      ? ({ isDeleted: true, ownerId: userId } as Prisma.KnowledgeDocumentWhereInput)
+      : await this.permissions.buildDocumentFilter(userId);
     const where: Prisma.KnowledgeDocumentWhereInput = {
       ...baseFilter,
       ...(opts.folderId !== undefined ? { folderId: opts.folderId } : {}),
@@ -344,18 +371,25 @@ export class DocumentService {
   }
 
   async deleteDocument(userId: number, id: number, permanent = false) {
-    const doc = await this.prisma.knowledgeDocument.findUnique({ where: { id } });
+    const doc = await this.prisma.knowledgeDocument.findUnique({
+      where: { id },
+      include: { versions: true },
+    });
     if (!doc) throw new NotFoundException('document not found');
     if (doc.ownerId !== userId) throw new ForbiddenException('no permission');
     if (permanent) {
+      for (const version of doc.versions) {
+        await this.clearVersionChunks(version.id);
+        await this.storage.delete(version.storagePath);
+      }
       await this.prisma.knowledgeDocument.delete({ where: { id } });
-      return { deleted: true };
+      return { deleted: true, permanent: true };
     }
     await this.prisma.knowledgeDocument.update({
       where: { id },
       data: { isDeleted: true, deletedAt: new Date() },
     });
-    return { deleted: true };
+    return { deleted: true, permanent: false };
   }
 
   async restoreDocument(userId: number, id: number) {
@@ -389,7 +423,7 @@ export class DocumentService {
     if (!version) throw new NotFoundException('version not found');
     const buffer = await this.storage.read(version.storagePath);
     await this.runParseAndChunk(doc.id, version.id, buffer, doc.mimeType, doc.filename);
-    return { status: 'chunked' };
+    return { documentId: doc.id, status: 'chunked' };
   }
 
   async reindexDocument(userId: number, id: number) {
@@ -398,15 +432,18 @@ export class DocumentService {
     const version = doc.versions.find((v) => v.id === doc.currentVersionId) ?? doc.versions[0];
     if (!version) throw new NotFoundException('version not found');
 
-    // 清理旧向量
+    // 清理旧向量（保留 chunk，仅重建 embedding）
     const chunks = await this.prisma.knowledgeChunk.findMany({ where: { versionId: version.id } });
+    if (chunks.length === 0) {
+      throw new BadRequestException('no chunks to reindex; parse document first');
+    }
     await this.vector.delete(chunks.map((c) => c.id));
 
     const task = await this.tasks.create(doc.id, this.embedding.code);
     this.runEmbedding(doc.id, version.id).catch((err: Error) => {
       this.logger.error(`reindex failed doc=${doc.id}: ${err.message}`);
     });
-    return { taskId: task.id };
+    return { documentId: doc.id, taskId: task.id, status: 'embedding' };
   }
 
   // ---------- Download ----------
