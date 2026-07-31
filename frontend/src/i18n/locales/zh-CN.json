@@ -11,7 +11,9 @@
     "models": "AI 模型",
     "knowledge": "知识平台",
     "rag": "企业 RAG",
-    "agents": "Agent Center"
+    "agents": "Agent Center",
+    "tools": "Tool Center",
+    "mcp": "MCP Center"
   },
   "common": {
     "close": "关闭",
@@ -258,6 +260,49 @@
     "refreshLogs": "刷新日志",
     "logsAdminOnly": "日志仅管理员可查看",
     "active": "活跃",
+    "errors24h": "24h 错误"
+  },
+  "tools": {
+    "title": "企业 Tool Calling 中心",
+    "subtitle": "Registry · Runtime · Calling · Router · Permissions · Logs",
+    "registry": "Tool 注册表",
+    "execute": "执行",
+    "router": "路由",
+    "permissions": "权限",
+    "logs": "日志",
+    "categories": "分类",
+    "enabled": "启用",
+    "disabled": "禁用",
+    "enable": "启用",
+    "disable": "停用",
+    "activeTool": "当前 Tool",
+    "taskPlaceholder": "描述任务，例如：计算 12*(3+4) 或检索知识…",
+    "call": "Tool Calling",
+    "runDirect": "直接执行",
+    "routerHint": "根据任务关键词自动选择 Tool。",
+    "previewRoute": "预览路由",
+    "allRoles": "全部角色（持有 execute 权限）",
+    "refreshLogs": "刷新日志",
+    "logsAdminOnly": "日志仅管理员可查看",
+    "errors24h": "24h 错误"
+  },
+  "mcp": {
+    "title": "MCP Gateway 中心",
+    "subtitle": "Registry · Gateway · Sessions · Health · Logs（连接器预留）",
+    "registry": "MCP 注册表",
+    "sessions": "会话",
+    "logs": "日志",
+    "servers": "Servers",
+    "enabled": "启用",
+    "disabled": "禁用",
+    "enable": "启用",
+    "disable": "停用",
+    "reserved": "预留",
+    "connect": "连接",
+    "disconnect": "断开",
+    "noSessions": "暂无活跃会话",
+    "refreshLogs": "刷新日志",
+    "logsAdminOnly": "日志仅管理员可查看",
     "errors24h": "24h 错误"
   }
 }

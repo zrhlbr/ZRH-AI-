@@ -11,7 +11,9 @@
     "models": "AI မော်ဒယ်များ",
     "knowledge": "ဗဟုသုတ ပလက်ဖောင်း",
     "rag": "Enterprise RAG",
-    "agents": "Agent Center"
+    "agents": "Agent Center",
+    "tools": "Tool Center",
+    "mcp": "MCP Center"
   },
   "common": {
     "close": "ပိတ်ရန်",
@@ -258,6 +260,49 @@
     "refreshLogs": "မှတ်တမ်းပြန်ဖွင့်",
     "logsAdminOnly": "မှတ်တမ်းသည် admin သာ",
     "active": "Active",
+    "errors24h": "24h အမှား"
+  },
+  "tools": {
+    "title": "Enterprise Tool Calling Center",
+    "subtitle": "Registry · Runtime · Calling · Router · Permissions · Logs",
+    "registry": "Tool Registry",
+    "execute": "လုပ်ဆောင်ရန်",
+    "router": "Router",
+    "permissions": "ခွင့်ပြုချက်",
+    "logs": "မှတ်တမ်း",
+    "categories": "အမျိုးအစား",
+    "enabled": "ဖွင့်",
+    "disabled": "ပိတ်",
+    "enable": "ဖွင့်ရန်",
+    "disable": "ပိတ်ရန်",
+    "activeTool": "လက်ရှိ Tool",
+    "taskPlaceholder": "အလုပ်ဖော်ပြပါ…",
+    "call": "Tool Calling",
+    "runDirect": "တိုက်ရိုက်လုပ်ဆောင်",
+    "routerHint": "အလုပ်အလိုက် Tool ရွေးချယ်သည်။",
+    "previewRoute": "လမ်းကြောင်းကြည့်",
+    "allRoles": "execute ခွင့်ရှိသော roles အားလုံး",
+    "refreshLogs": "မှတ်တမ်းပြန်ဖွင့်",
+    "logsAdminOnly": "မှတ်တမ်းသည် admin သာ",
+    "errors24h": "24h အမှား"
+  },
+  "mcp": {
+    "title": "MCP Gateway Center",
+    "subtitle": "Registry · Gateway · Sessions · Health · Logs (connectors reserved)",
+    "registry": "MCP Registry",
+    "sessions": "Sessions",
+    "logs": "မှတ်တမ်း",
+    "servers": "Servers",
+    "enabled": "ဖွင့်",
+    "disabled": "ပိတ်",
+    "enable": "ဖွင့်ရန်",
+    "disable": "ပိတ်ရန်",
+    "reserved": "ကြိုတင်ထား",
+    "connect": "ချိတ်ဆက်",
+    "disconnect": "ဖြတ်",
+    "noSessions": "Session မရှိသေးပါ",
+    "refreshLogs": "မှတ်တမ်းပြန်ဖွင့်",
+    "logsAdminOnly": "မှတ်တမ်းသည် admin သာ",
     "errors24h": "24h အမှား"
   }
 }

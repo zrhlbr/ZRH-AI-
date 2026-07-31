@@ -22,6 +22,8 @@ import {
   Sparkles,
   User,
   Boxes,
+  Wrench,
+  Cable,
 } from 'lucide-react';
 
 /**
@@ -53,6 +55,8 @@ export const zrhIcons = {
   knowledge: BookOpen,
   rag: BrainCircuit,
   agents: Bot,
+  tools: Wrench,
+  mcp: Cable,
 } as const;
 
 export type ZrhIconName = keyof typeof zrhIcons;

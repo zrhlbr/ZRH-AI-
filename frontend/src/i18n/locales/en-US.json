@@ -11,7 +11,9 @@
     "models": "AI Models",
     "knowledge": "Knowledge Platform",
     "rag": "Enterprise RAG",
-    "agents": "Agent Center"
+    "agents": "Agent Center",
+    "tools": "Tool Center",
+    "mcp": "MCP Center"
   },
   "common": {
     "close": "Close",
@@ -258,6 +260,49 @@
     "refreshLogs": "Refresh logs",
     "logsAdminOnly": "Logs are admin-only",
     "active": "Active",
+    "errors24h": "24h errors"
+  },
+  "tools": {
+    "title": "Enterprise Tool Calling Center",
+    "subtitle": "Registry · Runtime · Calling · Router · Permissions · Logs",
+    "registry": "Tool Registry",
+    "execute": "Execute",
+    "router": "Router",
+    "permissions": "Permissions",
+    "logs": "Logs",
+    "categories": "Categories",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "enable": "Enable",
+    "disable": "Disable",
+    "activeTool": "Active tool",
+    "taskPlaceholder": "Describe a task, e.g. calculate 12*(3+4) or search knowledge…",
+    "call": "Tool Calling",
+    "runDirect": "Run Direct",
+    "routerHint": "Auto-select tools from task keywords.",
+    "previewRoute": "Preview route",
+    "allRoles": "All roles with execute permission",
+    "refreshLogs": "Refresh logs",
+    "logsAdminOnly": "Logs are admin-only",
+    "errors24h": "24h errors"
+  },
+  "mcp": {
+    "title": "MCP Gateway Center",
+    "subtitle": "Registry · Gateway · Sessions · Health · Logs (connectors reserved)",
+    "registry": "MCP Registry",
+    "sessions": "Sessions",
+    "logs": "Logs",
+    "servers": "Servers",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "enable": "Enable",
+    "disable": "Disable",
+    "reserved": "Reserved",
+    "connect": "Connect",
+    "disconnect": "Disconnect",
+    "noSessions": "No active sessions",
+    "refreshLogs": "Refresh logs",
+    "logsAdminOnly": "Logs are admin-only",
     "errors24h": "24h errors"
   }
 }
