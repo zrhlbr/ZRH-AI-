@@ -9,6 +9,11 @@ import { EmbeddingWorkerService } from './worker/embedding-worker.service';
 import { QueryRewriteService } from './rewrite/query-rewrite.service';
 import { RagRetrieverService } from './retriever/rag-retriever.service';
 import { RerankService } from './rerank/rerank.service';
+import { ContextBuilderService } from './context/context-builder.service';
+import { PromptBuilderService } from './prompt/prompt-builder.service';
+import { CitationService } from './citation/citation.service';
+import { ConversationMemoryService } from './memory/conversation-memory.service';
+import { RagHealthService } from './health/rag-health.service';
 
 /**
  * Stage 6 Enterprise RAG Engine。
@@ -25,6 +30,11 @@ import { RerankService } from './rerank/rerank.service';
     QueryRewriteService,
     RagRetrieverService,
     RerankService,
+    ContextBuilderService,
+    PromptBuilderService,
+    CitationService,
+    ConversationMemoryService,
+    RagHealthService,
   ],
   exports: [RagEngineService, RagPermissionService, VectorRegistryService],
 })
