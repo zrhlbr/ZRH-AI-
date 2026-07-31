@@ -1,0 +1,59 @@
+{
+  "cases": [
+    {
+      "name": "1000行代码",
+      "sizeBytes": 32861,
+      "conversationId": 224,
+      "sendMs": 9633,
+      "responseLength": 353,
+      "savePassed": true,
+      "exportPassed": true,
+      "browserRenderHint": "verified in Playwright E2E earlier",
+      "errors": []
+    },
+    {
+      "name": "500KB Markdown",
+      "sizeBytes": 1089093,
+      "conversationId": 225,
+      "sendMs": 11835,
+      "responseLength": 143,
+      "savePassed": true,
+      "exportPassed": true,
+      "browserRenderHint": "verified in Playwright E2E earlier",
+      "errors": []
+    },
+    {
+      "name": "Mermaid大图",
+      "sizeBytes": 2171,
+      "conversationId": 226,
+      "sendMs": 8723,
+      "responseLength": 224,
+      "savePassed": true,
+      "exportPassed": true,
+      "browserRenderHint": "verified in Playwright E2E earlier",
+      "errors": []
+    },
+    {
+      "name": "大型表格",
+      "sizeBytes": 8790,
+      "conversationId": 227,
+      "sendMs": 9409,
+      "responseLength": 79,
+      "savePassed": true,
+      "exportPassed": true,
+      "browserRenderHint": "verified in Playwright E2E earlier",
+      "errors": []
+    },
+    {
+      "name": "中英缅混排",
+      "sizeBytes": 124,
+      "conversationId": 228,
+      "sendMs": 8380,
+      "responseLength": 541,
+      "savePassed": true,
+      "exportPassed": true,
+      "browserRenderHint": "verified in Playwright E2E earlier",
+      "errors": []
+    }
+  ]
+}

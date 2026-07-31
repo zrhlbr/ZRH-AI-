@@ -23,7 +23,7 @@ export class SendMessageDto {
   @IsOptional()
   @IsString()
   @MinLength(1)
-  @MaxLength(32000)
+  @MaxLength(2097152)
   message?: string;
 
   /** 聊天中自由切换模型：新消息走新模型，旧消息保留历史 */

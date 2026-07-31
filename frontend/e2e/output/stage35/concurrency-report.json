@@ -1,0 +1,31 @@
+{
+  "levels": [
+    {
+      "level": 5,
+      "totalMs": 23848,
+      "successCount": 5,
+      "errorCount": 0,
+      "avgLatencyMs": 1,
+      "isolationPassed": true,
+      "errors": []
+    },
+    {
+      "level": 10,
+      "totalMs": 56252,
+      "successCount": 10,
+      "errorCount": 0,
+      "avgLatencyMs": 1,
+      "isolationPassed": true,
+      "errors": []
+    },
+    {
+      "level": 20,
+      "totalMs": 102743,
+      "successCount": 20,
+      "errorCount": 0,
+      "avgLatencyMs": 1,
+      "isolationPassed": true,
+      "errors": []
+    }
+  ]
+}
