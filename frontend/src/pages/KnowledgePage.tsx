@@ -14,6 +14,9 @@ import {
   Heart,
   RotateCcw,
   Cpu,
+  Download,
+  Eye,
+  Activity,
 } from 'lucide-react';
 import { ZButton, ZCard, ZInput, ZBadge, ZTable, ZTabs } from '../components/ui';
 import { TechBackground } from '../components/background/TechBackground';
@@ -22,6 +25,7 @@ import {
   knowledgeApi,
   KnowledgeDocumentItem,
   KnowledgeFolder,
+  KnowledgeHealth,
   SearchResultItem,
   DocumentStatus,
 } from '../api/knowledge';
@@ -66,6 +70,7 @@ export function KnowledgePage() {
   const [activeFolderId, setActiveFolderId] = useState<number | undefined>(undefined);
   const [searchKeyword, setSearchKeyword] = useState('');
   const [onlyFavorite, setOnlyFavorite] = useState(false);
+  const [showTrash, setShowTrash] = useState(false);
 
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadMeta, setUploadMeta] = useState({ title: '', author: '', source: '', permission: 'private' as const });
@@ -78,6 +83,8 @@ export function KnowledgePage() {
   const [mode, setMode] = useState<'keyword' | 'semantic' | 'hybrid'>('hybrid');
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
+  const [preview, setPreview] = useState<{ title: string; content: string } | null>(null);
+  const [health, setHealth] = useState<KnowledgeHealth | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -85,12 +92,19 @@ export function KnowledgePage() {
     setLoading(true);
     setError(null);
     try {
-      const [f, d] = await Promise.all([
+      const [f, d, h] = await Promise.all([
         knowledgeApi.listFolders(),
-        knowledgeApi.listDocuments({ folderId: activeFolderId, search: searchKeyword || undefined, favorite: onlyFavorite || undefined }),
+        knowledgeApi.listDocuments({
+          folderId: showTrash ? undefined : activeFolderId,
+          search: searchKeyword || undefined,
+          favorite: !showTrash && onlyFavorite ? true : undefined,
+          trash: showTrash || undefined,
+        }),
+        knowledgeApi.status().catch(() => null),
       ]);
       setFolders(f);
       setDocuments(d.items);
+      if (h) setHealth(h);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -100,7 +114,7 @@ export function KnowledgePage() {
 
   useEffect(() => {
     void load();
-  }, [activeFolderId, onlyFavorite]);
+  }, [activeFolderId, onlyFavorite, showTrash]);
 
   // 搜索防抖
   useEffect(() => {
@@ -174,11 +188,52 @@ export function KnowledgePage() {
   };
 
   const handleDeleteDocument = async (doc: KnowledgeDocumentItem) => {
-    const permanent = doc.status === 'error' ? true : !window.confirm(t('knowledge.moveToTrashConfirm'));
-    if (!permanent && doc.status !== 'error') return;
+    if (showTrash) {
+      if (!window.confirm(t('knowledge.deletePermanentConfirm'))) return;
+      try {
+        await knowledgeApi.deleteDocument(doc.id, true);
+        await load();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      }
+      return;
+    }
+    if (!window.confirm(t('knowledge.moveToTrashConfirm'))) return;
     try {
-      await knowledgeApi.deleteDocument(doc.id, permanent);
+      await knowledgeApi.deleteDocument(doc.id, false);
       await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const handleRestoreDocument = async (doc: KnowledgeDocumentItem) => {
+    try {
+      await knowledgeApi.restoreDocument(doc.id);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const handlePreview = async (id: number) => {
+    try {
+      const data = await knowledgeApi.previewDocument(id);
+      setPreview({ title: data.title, content: data.content });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  const handleDownload = async (id: number) => {
+    try {
+      const { blob, filename } = await knowledgeApi.downloadDocument(id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -245,23 +300,38 @@ export function KnowledgePage() {
     )},
     { key: 'actions', header: t('knowledge.actions'), className: 'text-right', render: (d: KnowledgeDocumentItem) => (
       <div className="flex items-center justify-end gap-1">
-        <button
-          type="button"
-          onClick={() => void handleToggleFavorite(d)}
-          className={`rounded p-1 ${d.isFavorite ? 'text-red-400' : 'text-zrh-text-dim hover:text-zrh-text'}`}
-          title={t('knowledge.favorite')}
-        >
-          <Heart className="h-4 w-4" fill={d.isFavorite ? 'currentColor' : 'none'} />
-        </button>
-        {canAdmin && d.status !== 'parsing' && d.status !== 'embedding' && (
+        {!showTrash && (
           <>
-            <ZButton variant="ghost" size="sm" onClick={() => void handleParse(d.id)} title={t('knowledge.parse')}>
-              <Cpu className="h-3.5 w-3.5" />
+            <button
+              type="button"
+              onClick={() => void handleToggleFavorite(d)}
+              className={`rounded p-1 ${d.isFavorite ? 'text-red-400' : 'text-zrh-text-dim hover:text-zrh-text'}`}
+              title={t('knowledge.favorite')}
+            >
+              <Heart className="h-4 w-4" fill={d.isFavorite ? 'currentColor' : 'none'} />
+            </button>
+            <ZButton variant="ghost" size="sm" onClick={() => void handlePreview(d.id)} title={t('knowledge.preview')}>
+              <Eye className="h-3.5 w-3.5" />
             </ZButton>
-            <ZButton variant="ghost" size="sm" onClick={() => void handleReindex(d.id)} title={t('knowledge.reindex')}>
-              <RotateCcw className="h-3.5 w-3.5" />
+            <ZButton variant="ghost" size="sm" onClick={() => void handleDownload(d.id)} title={t('knowledge.download')}>
+              <Download className="h-3.5 w-3.5" />
             </ZButton>
+            {canAdmin && d.status !== 'parsing' && d.status !== 'embedding' && (
+              <>
+                <ZButton variant="ghost" size="sm" onClick={() => void handleParse(d.id)} title={t('knowledge.parse')}>
+                  <Cpu className="h-3.5 w-3.5" />
+                </ZButton>
+                <ZButton variant="ghost" size="sm" onClick={() => void handleReindex(d.id)} title={t('knowledge.reindex')}>
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </ZButton>
+              </>
+            )}
           </>
+        )}
+        {showTrash && canWrite && (
+          <ZButton variant="ghost" size="sm" onClick={() => void handleRestoreDocument(d)} title={t('knowledge.restore')}>
+            <RotateCcw className="h-3.5 w-3.5" />
+          </ZButton>
         )}
         {canDelete && (
           <ZButton variant="ghost" size="sm" onClick={() => void handleDeleteDocument(d)} title={t('knowledge.delete')}>
@@ -306,13 +376,26 @@ export function KnowledgePage() {
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <ZButton variant={onlyFavorite ? 'secondary' : 'ghost'} size="sm" onClick={() => setOnlyFavorite((v) => !v)}>
-                <Heart className="h-3.5 w-3.5" fill={onlyFavorite ? 'currentColor' : 'none'} />
-                {t('knowledge.favorites')}
+              {!showTrash && (
+                <ZButton variant={onlyFavorite ? 'secondary' : 'ghost'} size="sm" onClick={() => setOnlyFavorite((v) => !v)}>
+                  <Heart className="h-3.5 w-3.5" fill={onlyFavorite ? 'currentColor' : 'none'} />
+                  {t('knowledge.favorites')}
+                </ZButton>
+              )}
+              <ZButton
+                variant={showTrash ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => {
+                  setShowTrash((v) => !v);
+                  setOnlyFavorite(false);
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {t('knowledge.trash')}
               </ZButton>
               <ZButton variant="ghost" size="sm" onClick={() => void load()} disabled={loading}>
                 <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-                {t('common.refresh')}
+                {t('status.refresh')}
               </ZButton>
             </div>
           </div>
@@ -509,9 +592,33 @@ export function KnowledgePage() {
           <p className="mt-1 text-xs text-zrh-text-dim sm:text-sm">{t('knowledge.subtitle')}</p>
         </motion.div>
 
+        {health && (
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-zrh-border bg-zrh-surface-raised/40 px-3 py-2 text-xs text-zrh-text-dim">
+            <span className="inline-flex items-center gap-1 text-zrh-text">
+              <Activity className="h-3.5 w-3.5 text-zrh-accent" />
+              {t('knowledge.health')}
+            </span>
+            <span>{t('knowledge.documents')}: {health.documents}</span>
+            <span>Chunks: {health.chunks}</span>
+            <span>Vectors: {health.vectors}</span>
+            <ZBadge tone={health.embedding.ok ? 'ok' : 'err'}>Embedding</ZBadge>
+            <ZBadge tone={health.vector.ok ? 'ok' : 'err'}>Vector</ZBadge>
+          </div>
+        )}
+
         {error && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-400">
             {error}
+          </div>
+        )}
+
+        {preview && (
+          <div className="rounded-lg border border-zrh-border bg-zrh-surface-raised/60 p-4">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-zrh-text">{preview.title}</h2>
+              <ZButton variant="ghost" size="sm" onClick={() => setPreview(null)}>{t('common.close')}</ZButton>
+            </div>
+            <pre className="max-h-72 overflow-auto whitespace-pre-wrap text-xs text-zrh-text-dim sm:text-sm">{preview.content}</pre>
           </div>
         )}
 

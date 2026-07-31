@@ -25,21 +25,24 @@ export class ApiError extends Error {
 
 const API_BASE = '/api/v1';
 
-async function rawRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+export type ApiRequestInit = RequestInit & { timeoutMs?: number };
+
+async function rawRequest<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
   const { accessToken } = useAuthStore.getState();
+  const { timeoutMs = 10000, signal, ...rest } = init;
   const headers: Record<string, string> = {
-    ...(init.headers as Record<string, string> | undefined),
+    ...(rest.headers as Record<string, string> | undefined),
   };
   // FormData / URLSearchParams 需要浏览器自行设置 Content-Type（含 boundary）
-  if (!(init.body instanceof FormData) && !(init.body instanceof URLSearchParams)) {
+  if (!(rest.body instanceof FormData) && !(rest.body instanceof URLSearchParams)) {
     headers['Content-Type'] = 'application/json';
   }
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
   const response = await fetch(`${API_BASE}${path}`, {
-    ...init,
+    ...rest,
     headers,
-    signal: AbortSignal.timeout(10000),
+    signal: signal ?? AbortSignal.timeout(timeoutMs),
   });
 
   const envelope = (await response.json().catch(() => null)) as ApiEnvelope<T> | null;
@@ -70,7 +73,7 @@ async function tryRefresh(): Promise<boolean> {
   }
 }
 
-export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
   try {
     return await rawRequest<T>(path, init);
   } catch (error) {
