@@ -54,10 +54,10 @@ export function LoginPage() {
             className="relative z-10 text-center"
           >
             <h1 className="text-5xl font-bold tracking-[0.25em] text-zrh-accent lg:text-6xl">
-              {brand.logo}
+              {brand.name}
             </h1>
-            <p className="mt-4 text-sm tracking-[0.3em] text-zrh-text-dim">{brand.name}</p>
-            <p className="mt-2 text-xs text-zrh-text-dim">{brand.subtitle}</p>
+            <p className="mt-4 text-sm text-zrh-text-dim">{brand.groupZh}</p>
+            <p className="mt-1 text-xs tracking-[0.25em] text-zrh-text-dim/80">{brand.groupEn}</p>
           </motion.div>
         </div>
 

@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "ZRH AI",
-    "tagline": "Private Local AI Platform"
+    "tagline": "ZRH Technology Group · Enterprise Private AI Platform"
   },
   "nav": {
     "home": "Home",
@@ -59,8 +59,8 @@
     "backend": "Backend Status",
     "database": "Database Status",
     "redis": "Redis Status",
-    "ollama": "Ollama Status",
-    "models": "Model List",
+    "ollama": "AI Runtime",
+    "models": "Engine List",
     "memory": "Memory",
     "cores": "cores",
     "load": "Load",
@@ -73,7 +73,7 @@
     "version": "Version",
     "timestamp": "Timestamp",
     "latency": "Latency",
-    "modelName": "Model",
+    "modelName": "Engine",
     "modelSize": "Size",
     "modelModified": "Modified",
     "noData": "No data"
@@ -85,10 +85,10 @@
     "en-US": "English"
   },
   "home": {
-    "stage": "Stage 4 · AI Gateway & Model Management",
+    "stage": "ZRH AI Enterprise · Enterprise Private AI Platform",
     "notice": "The base framework is ready. Business features will be enabled in later stages.",
     "aiInputPlaceholder": "Ask ZRH AI…",
-    "aiInputStageHint": "Ask anything to start chatting with ZRH AI (powered by local Ollama).",
+    "aiInputStageHint": "Ask anything to start chatting with ZRH AI. Built by ZRH Technology Group.",
     "send": "Send"
   },
   "chat": {
@@ -125,15 +125,18 @@
     "error": "Error",
     "tokens": "tokens",
     "emptyTitle": "Start a new conversation",
-    "emptyHint": "Pick a model and ask a question. Every chat is saved to the database.",
-    "model": "Model",
-    "modelSwitch": "Switch model",
+    "emptyHint": "Pick an engine and ask a question. Every chat is saved to the database.",
+    "welcome": "Hello, I am ZRH AI,\nindependently developed by ZRH Technology Group,\nand deployed on the ZRH AI Enterprise private AI platform.\n\nGlad to serve you.\nPlease tell me what you need.",
+    "brandGroup": "ZRH Technology Group",
+    "aiRuntime": "AI Runtime",
+    "model": "Engine",
+    "modelSwitch": "Switch engine",
     "promptTemplate": "Role Prompt",
     "defaultPrompt": "Default Prompt",
-    "modelsStatus": "Model Status",
-    "modelCount": "Models",
+    "modelsStatus": "Engine Status",
+    "modelCount": "Engines",
     "chatCount": "Chats",
-    "messageCount": "Messages",
+    "messageCount": "msgs",
     "params": "Parameters",
     "temperature": "Temperature",
     "topP": "Top P",

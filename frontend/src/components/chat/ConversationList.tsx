@@ -190,6 +190,17 @@ export function ConversationList() {
   );
 }
 
+function formatConvTime(iso: string): string {
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return '';
+  return d.toLocaleString(undefined, {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 function ConversationRow({
   conv,
   active,
@@ -230,8 +241,12 @@ function ConversationRow({
           <p className="min-w-0 flex-1 truncate text-xs text-zrh-text">{conv.title}</p>
         </div>
         <div className="mt-0.5 flex items-center justify-between gap-2">
-          <p className="min-w-0 flex-1 truncate text-[10px] text-zrh-text-dim/70">{conv.preview || conv.model}</p>
-          <span className="shrink-0 text-[9px] text-zrh-text-dim/50">{conv.messageCount}</span>
+          <p className="min-w-0 flex-1 truncate text-[10px] text-zrh-text-dim/70">
+            {formatConvTime(conv.lastMessageAt || conv.createdAt)}
+          </p>
+          <span className="shrink-0 text-[9px] text-zrh-text-dim/50">
+            {conv.messageCount} {t('chat.messageCount')}
+          </span>
         </div>
 
         {/* 悬浮操作 */}

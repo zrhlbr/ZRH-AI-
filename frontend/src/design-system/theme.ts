@@ -37,9 +37,11 @@ export const THEME_STORAGE_KEY = 'zrh-ai-theme';
 /** 品牌常量（品牌资产不做翻译，全球统一） */
 export const brand = {
   name: 'ZRH AI',
-  logo: 'ZRH',
-  subtitle: 'Local Private AI Platform',
-  copyright: '© ZRH Technology',
+  logo: 'ZRH AI',
+  subtitle: 'ZRH Technology Group',
+  groupZh: 'ZRH 科技集团',
+  groupEn: 'ZRH TECHNOLOGY GROUP',
+  copyright: '© ZRH Technology Group',
 } as const;
 
 /** 设计系统统一出口 */

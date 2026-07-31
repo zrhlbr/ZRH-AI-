@@ -5,6 +5,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import { api, SystemMetric } from '../../api/client';
 import type { ChatParams, ModelRuntimeStatus } from '../../api/chat';
+import { toEngineLabelByIndex } from '../../utils/engineAlias';
 
 /** 模型实时状态徽标 */
 function ModelStatusBadge({ status }: { status: ModelRuntimeStatus }) {
@@ -140,17 +141,18 @@ export function ChatSidebar() {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-y-auto">
-      {/* 模型状态 */}
+      {/* 引擎状态（显示层别名，不暴露底层模型名） */}
       <Section title={t('chat.modelsStatus')}>
         <ul className="flex flex-col gap-1.5">
-          {modelsStatus.map((m) => (
+          {modelsStatus.map((m, index) => (
             <li key={m.name} className="flex items-center justify-between gap-2 rounded-lg border border-zrh-border/40 bg-black/20 px-2.5 py-2">
               <div className="min-w-0">
-                <p className="truncate text-[11px] text-zrh-text">{m.displayName}</p>
-                <p className="truncate text-[9px] text-zrh-text-dim/70">
-                  {m.name}
-                  {m.vramBytes ? ` · VRAM ${(m.vramBytes / 1024 / 1024 / 1024).toFixed(1)}GB` : ''}
-                </p>
+                <p className="truncate text-[11px] text-zrh-text">{toEngineLabelByIndex(m.name, index)}</p>
+                {m.vramBytes ? (
+                  <p className="truncate text-[9px] text-zrh-text-dim/70">
+                    VRAM {(m.vramBytes / 1024 / 1024 / 1024).toFixed(1)}GB
+                  </p>
+                ) : null}
               </div>
               <ModelStatusBadge status={m.status} />
             </li>
@@ -211,7 +213,7 @@ export function ChatSidebar() {
           sys.gpu?.available ? `${sys.gpu.utilizationPercent}%` : undefined)}
         {sysRow('Docker', sys.docker ? Boolean(sys.docker.available) : null,
           sys.docker?.available ? `Engine ${sys.docker.engineVersion ?? ''}` : undefined)}
-        {sysRow('Ollama', sys.ollama === 'online')}
+        {sysRow(t('chat.aiRuntime'), sys.ollama === 'online')}
       </Section>
 
       {/* 动画开关 */}

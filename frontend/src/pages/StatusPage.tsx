@@ -10,6 +10,7 @@ import {
   SystemMetric,
 } from '../api/client';
 import { useAuthStore } from '../store/authStore';
+import { toEngineLabelByIndex } from '../utils/engineAlias';
 
 interface StatusData {
   health: HealthReport | null;
@@ -169,7 +170,12 @@ export function StatusPage() {
         {data.models && (
           <ZTable
             columns={[
-              { key: 'name', header: t('status.modelName'), render: (m: OllamaModel) => m.name },
+              {
+                key: 'name',
+                header: t('status.modelName'),
+                // 真实模型名仅在 /ai/models 管理页展示；此处统一引擎别名
+                render: (m: OllamaModel, index: number) => toEngineLabelByIndex(m.name, index),
+              },
               {
                 key: 'size',
                 header: t('status.modelSize'),

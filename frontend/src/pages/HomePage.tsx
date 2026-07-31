@@ -12,6 +12,7 @@ import { api, HealthReport, OllamaModel, OllamaStatus, SystemMetric } from '../a
 import { chatApi, ChatStats } from '../api/chat';
 import { useAuthStore } from '../store/authStore';
 import { useChatStore } from '../store/chatStore';
+import { toEngineLabelByIndex } from '../utils/engineAlias';
 
 type PanelState = 'loading' | 'online' | 'offline' | 'nodata';
 
@@ -54,7 +55,7 @@ function bytes(n: unknown): string {
 
 /**
  * 首页科技大屏（阶段 2 基础版）
- * 中央 AI 输入区 + 右侧实时状态（CPU/GPU/Memory/Docker/Redis/PostgreSQL/Ollama/Models）。
+ * 中央 AI 输入区 + 右侧实时状态（CPU/GPU/Memory/Docker/Redis/PostgreSQL/AI Runtime/Engines）。
  */
 export function HomePage() {
   const { t } = useTranslation();
@@ -154,7 +155,7 @@ export function HomePage() {
       state: panels.health ? (panels.health.database === 'online' ? 'online' : 'offline') : 'loading',
     },
     {
-      label: 'Ollama',
+      label: t('status.ollama'),
       icon: zrhIcons.ai,
       state: panels.ollama ? (panels.ollama.status === 'online' ? 'online' : 'offline') : 'loading',
       detail:
@@ -186,8 +187,9 @@ export function HomePage() {
               <h1 className="text-3xl font-bold tracking-[0.2em] text-zrh-accent sm:text-4xl">
                 {brand.name}
               </h1>
-              <p className="mt-2 text-xs tracking-widest text-zrh-text-dim sm:text-sm">
-                {brand.subtitle}
+              <p className="mt-1 text-xs text-zrh-text-dim sm:text-sm">{brand.groupZh}</p>
+              <p className="mt-0.5 text-[10px] tracking-[0.18em] text-zrh-text-dim/80 sm:text-xs">
+                {brand.groupEn}
               </p>
               {/* 实时统计：模型数量 / 聊天数量 */}
               {chatStats && (
@@ -259,7 +261,7 @@ export function HomePage() {
                 </div>
               ))}
 
-              {/* Models */}
+              {/* Engines — 显示层别名 */}
               <div className="px-2 py-2.5">
                 <div className="mb-2 flex items-center gap-2.5">
                   <zrhIcons.ai className="h-4 w-4 text-zrh-accent/80" aria-hidden />
@@ -270,9 +272,11 @@ export function HomePage() {
                 )}
                 {panels.models && (
                   <ul className="flex flex-col gap-1 pl-6">
-                    {panels.models.map((m) => (
+                    {panels.models.map((m, index) => (
                       <li key={m.digest || m.name} className="flex items-center justify-between gap-2">
-                        <span className="truncate text-[11px] text-zrh-text">{m.name}</span>
+                        <span className="truncate text-[11px] text-zrh-text">
+                          {toEngineLabelByIndex(m.name, index)}
+                        </span>
                         <span className="shrink-0 text-[10px] text-zrh-text-dim">
                           {(m.size / 1024 / 1024 / 1024).toFixed(1)} GB
                         </span>

@@ -60,23 +60,23 @@ export const MessageItem = memo(function MessageItem({ message, isLast, streamin
   return (
     <div className="flex justify-start" data-role="assistant">
       <div className="zrh-glass zrh-glow-border max-w-[92%] rounded-2xl rounded-bl-sm px-4 py-3 sm:max-w-[85%]">
-        <div className="mb-1.5 flex items-center gap-2">
-          <span className="text-[10px] font-semibold tracking-widest text-zrh-accent">ZRH AI</span>
-          {message.model && (
-            <span className="rounded-full border border-zrh-border/60 px-2 py-0.5 text-[9px] text-zrh-text-dim">
-              {message.model}
-            </span>
-          )}
-          {message.status === 'stopped' && (
-            <span className="rounded-full border border-amber-500/40 px-2 py-0.5 text-[9px] text-amber-400">
-              {t('chat.stopped')}
-            </span>
-          )}
-          {message.status === 'error' && (
-            <span className="rounded-full border border-red-500/40 px-2 py-0.5 text-[9px] text-red-400">
-              {t('chat.error')}
-            </span>
-          )}
+        <div className="mb-1.5 flex flex-col gap-0.5">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold tracking-widest text-zrh-accent">ZRH AI</span>
+            {message.status === 'stopped' && (
+              <span className="rounded-full border border-amber-500/40 px-2 py-0.5 text-[9px] text-amber-400">
+                {t('chat.stopped')}
+              </span>
+            )}
+            {message.status === 'error' && (
+              <span className="rounded-full border border-red-500/40 px-2 py-0.5 text-[9px] text-red-400">
+                {t('chat.error')}
+              </span>
+            )}
+          </div>
+          <span className="text-[9px] tracking-wide text-zrh-text-dim/80">
+            {i18n.language.startsWith('zh') ? 'ZRH 科技集团' : 'ZRH Technology Group'}
+          </span>
         </div>
 
         <MarkdownRenderer content={message.content} />

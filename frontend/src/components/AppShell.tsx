@@ -81,8 +81,9 @@ export function AppShell() {
         <div className="flex items-center gap-2.5 border-b border-zrh-border px-5 py-4">
           <BrandIcon className="h-5 w-5 text-zrh-accent" aria-hidden />
           <div>
-            <p className="text-sm font-bold tracking-widest text-zrh-accent">{brand.logo}</p>
-            <p className="text-[10px] text-zrh-text-dim">{brand.subtitle}</p>
+            <p className="text-sm font-bold tracking-widest text-zrh-accent">{brand.name}</p>
+            <p className="text-[10px] text-zrh-text-dim">{brand.groupZh}</p>
+            <p className="text-[9px] tracking-wider text-zrh-text-dim/70">{brand.groupEn}</p>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-3">{nav}</div>
@@ -110,9 +111,12 @@ export function AppShell() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-zrh-border px-5 py-4">
-                <span className="text-sm font-bold tracking-widest text-zrh-accent">
-                  {brand.logo}
-                </span>
+                <div>
+                  <span className="block text-sm font-bold tracking-widest text-zrh-accent">
+                    {brand.name}
+                  </span>
+                  <span className="block text-[9px] text-zrh-text-dim">{brand.groupEn}</span>
+                </div>
                 <button type="button" onClick={() => setDrawerOpen(false)} aria-label={t('common.close')}>
                   <X className="h-5 w-5 text-zrh-text-dim" />
                 </button>
@@ -137,7 +141,7 @@ export function AppShell() {
                 <Menu className="h-5 w-5" />
               </button>
               <span className="text-sm font-bold tracking-widest text-zrh-accent lg:hidden">
-                {brand.logo}
+                {brand.name}
               </span>
             </div>
 

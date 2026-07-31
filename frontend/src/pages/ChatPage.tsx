@@ -9,6 +9,7 @@ import { MessageItem } from '../components/chat/MessageItem';
 import { MarkdownRenderer } from '../components/chat/MarkdownRenderer';
 import { useChatStore } from '../store/chatStore';
 import { zrhIcons } from '../design-system/icons';
+import { brand } from '../design-system/theme';
 
 const LEFT_KEY = 'zrh-ai-chat-left-w';
 const RIGHT_KEY = 'zrh-ai-chat-right-w';
@@ -87,8 +88,10 @@ function MessageList() {
         {!loadingMessages && messages.length === 0 && !showStreaming && (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
             <zrhIcons.ai className="h-10 w-10 text-zrh-accent/40" aria-hidden />
-            <p className="text-sm text-zrh-text-dim">{t('chat.emptyTitle')}</p>
-            <p className="max-w-xs text-xs text-zrh-text-dim/70">{t('chat.emptyHint')}</p>
+            <p className="text-sm font-semibold tracking-widest text-zrh-accent">{brand.name}</p>
+            <p className="max-w-md whitespace-pre-line text-xs leading-relaxed text-zrh-text-dim/80">
+              {t('chat.welcome')}
+            </p>
           </div>
         )}
 
@@ -114,7 +117,10 @@ function MessageList() {
         {showStreaming && (
           <div className="flex justify-start">
             <div className="zrh-glass zrh-glow-border max-w-[92%] rounded-2xl rounded-bl-sm px-4 py-3 sm:max-w-[85%]">
-              <span className="mb-1.5 block text-[10px] font-semibold tracking-widest text-zrh-accent">ZRH AI</span>
+              <div className="mb-1.5 flex flex-col gap-0.5">
+                <span className="text-[10px] font-semibold tracking-widest text-zrh-accent">{brand.name}</span>
+                <span className="text-[9px] tracking-wide text-zrh-text-dim/80">{t('chat.brandGroup')}</span>
+              </div>
               {streaming.content || streaming.baseContent ? (
                 <MarkdownRenderer content={streaming.baseContent + streaming.content} streaming />
               ) : (
@@ -213,6 +219,19 @@ export function ChatPage() {
 
           {/* 中央聊天区 */}
           <section className="flex min-w-0 flex-1 flex-col">
+            <div className="hidden items-center gap-3 border-b border-zrh-border/60 bg-zrh-bg/40 px-4 py-2.5 xl:flex">
+              <zrhIcons.ai className="h-6 w-6 text-zrh-accent" aria-hidden />
+              <div className="min-w-0">
+                <p className="text-sm font-bold tracking-widest text-zrh-accent">{brand.name}</p>
+                <p className="text-[10px] text-zrh-text-dim">
+                  <span className="mr-2">{brand.groupZh}</span>
+                  <span className="tracking-wider">{brand.groupEn}</span>
+                </p>
+              </div>
+              {activeTitle && (
+                <p className="ml-auto max-w-xs truncate text-[11px] text-zrh-text-dim">{activeTitle}</p>
+              )}
+            </div>
             <MessageList />
             <ChatInput />
           </section>

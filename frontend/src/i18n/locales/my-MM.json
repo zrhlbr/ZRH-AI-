@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "ZRH AI",
-    "tagline": "ပြည်တွင်းပိုင် AI ပလက်ဖောင်း"
+    "tagline": "ZRH Technology Group · Enterprise Private AI Platform"
   },
   "nav": {
     "home": "ပင်မစာမျက်နှာ",
@@ -59,8 +59,8 @@
     "backend": "ဘက်အင်အခြေအနေ",
     "database": "ဒေတာဘေ့စ်အခြေအနေ",
     "redis": "Redis အခြေအနေ",
-    "ollama": "Ollama အခြေအနေ",
-    "models": "မော်ဒယ်စာရင်း",
+    "ollama": "AI Runtime",
+    "models": "Engine List",
     "memory": "မမိုရီ",
     "cores": "ကိုးး",
     "load": "ဝန်မှုံ",
@@ -73,7 +73,7 @@
     "version": "ဗားရှင်း",
     "timestamp": "အချိန်တံဆိပ်",
     "latency": "ကြာချိန်",
-    "modelName": "မော်ဒယ်",
+    "modelName": "Engine",
     "modelSize": "အရွယ်အစား",
     "modelModified": "ပြုပြင်ချိန်",
     "noData": "ဒေတာမရှိပါ"
@@ -85,10 +85,10 @@
     "en-US": "English"
   },
   "home": {
-    "stage": "အဆင့် ၄ · AI Gateway နှင့် မော်ဒယ်စီမံခန့်ခွဲမှု",
+    "stage": "ZRH AI Enterprise · Enterprise Private AI Platform",
     "notice": "အခြေခံဘောင်အဆင့် အဆင်ပြေပါပြီ။ လုပ်ငန်းလုပ်ဆောင်ချက်များကို နောက်အဆင့်များတွင် ဖွင့်ပေးပါမည်။",
     "aiInputPlaceholder": "ZRH AI ကို မေးမြန်းပါ…",
-    "aiInputStageHint": "ZRH AI နှင့် စကားပြောရန် မေးခွန်းရိုက်ထည့်ပါ (local Ollama ဖြင့် အစစ်အမှန်မောင်းနှင်သည်)။",
+    "aiInputStageHint": "ZRH AI နှင့် စကားပြောရန် မေးခွန်းရိုက်ထည့်ပါ။ ZRH Technology Group မှ တီထွင်ထားသည်။",
     "send": "ပို့ရန်"
   },
   "chat": {
@@ -125,15 +125,18 @@
     "error": "အမှား",
     "tokens": "tokens",
     "emptyTitle": "စကားပြောအသစ် စတင်ပါ",
-    "emptyHint": "မော်ဒယ်ရွေးပြီး မေးခွန်းမေးပါ။ စကားပြောအားလုံး database တွင် သိမ်းဆည်းပါသည်။",
-    "model": "မော်ဒယ်",
-    "modelSwitch": "မော်ဒယ်ပြောင်းရန်",
+    "emptyHint": "Engine ရွေးပြီး မေးခွန်းမေးပါ။ စကားပြောအားလုံး သိမ်းဆည်းပါသည်။",
+    "welcome": "မင်္ဂလာပါ၊ ကျွန်ုပ်သည် ZRH AI ဖြစ်ပါသည်၊\nZRH Technology Group မှ ကိုယ်တိုင်တီထွင်ထားပြီး၊\nZRH AI Enterprise ပုဂ္ဂလိက AI ပလက်ဖောင်းတွင် တပ်ဆင်ထားပါသည်။\n\nကူညီရန် အသင့်ရှိပါသည်။\nသင့်လိုအပ်ချက်ကို ပြောပြပါ။",
+    "brandGroup": "ZRH Technology Group",
+    "aiRuntime": "AI Runtime",
+    "model": "Engine",
+    "modelSwitch": "Engine ပြောင်းရန်",
     "promptTemplate": "အခန်းကဏ္ဍ Prompt",
     "defaultPrompt": "မူလ Prompt",
-    "modelsStatus": "မော်ဒယ်အခြေအနေ",
-    "modelCount": "မော်ဒယ်အရေအတွက်",
+    "modelsStatus": "Engine အခြေအနေ",
+    "modelCount": "Engine အရေအတွက်",
     "chatCount": "စကားပြောအရေအတွက်",
-    "messageCount": "စာချွန်အရေအတွက်",
+    "messageCount": "စာချွန်",
     "params": "ပါရာမီတာများ",
     "temperature": "Temperature",
     "topP": "Top P",

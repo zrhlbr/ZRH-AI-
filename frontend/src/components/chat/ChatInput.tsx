@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Cpu, Play, RefreshCw, Send, Square } from 'lucide-react';
 import { useChatStore } from '../../store/chatStore';
+import { toEngineLabelByIndex } from '../../utils/engineAlias';
 
-/** 模型切换器：聊天中自由切换，新消息走新模型 */
+/** 引擎切换器：UI 仅显示品牌引擎名，传参仍用真实模型名 */
 function ModelSwitcher() {
   const { t } = useTranslation();
   const { models, modelsStatus, activeModel, switchModel, streaming } = useChatStore();
@@ -18,6 +19,8 @@ function ModelSwitcher() {
     return () => document.removeEventListener('mousedown', close);
   }, []);
 
+  const enabledModels = models.filter((m) => m.enabled);
+  const activeIndex = Math.max(0, enabledModels.findIndex((m) => m.name === activeModel));
   const statusOf = (name: string) => modelsStatus.find((s) => s.name === name)?.status;
   const dotClass = (status?: string) =>
     status === 'running'
@@ -35,19 +38,20 @@ function ModelSwitcher() {
         data-testid="model-switcher"
         disabled={streaming.active}
         onClick={() => setOpen((v) => !v)}
+        aria-label={t('chat.modelSwitch')}
         className="flex items-center gap-1.5 rounded-lg border border-zrh-border/60 bg-black/20 px-2.5 py-1.5 text-[11px] text-zrh-text transition-colors hover:border-zrh-accent/50 disabled:opacity-50"
       >
         <span className={`h-1.5 w-1.5 rounded-full ${dotClass(statusOf(activeModel))}`} aria-hidden />
         <Cpu className="h-3.5 w-3.5 text-zrh-accent/80" aria-hidden />
-        <span className="max-w-32 truncate">{activeModel || t('chat.model')}</span>
+        <span className="max-w-36 truncate">
+          {activeModel ? toEngineLabelByIndex(activeModel, activeIndex) : t('chat.model')}
+        </span>
         <ChevronDown className={`h-3 w-3 text-zrh-text-dim transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
       </button>
 
       {open && (
         <ul className="absolute bottom-full left-0 z-30 mb-1.5 w-56 overflow-hidden rounded-xl border border-zrh-border bg-zrh-surface shadow-xl">
-          {models
-            .filter((m) => m.enabled)
-            .map((m) => (
+          {enabledModels.map((m, index) => (
               <li key={m.name}>
                 <button
                   type="button"
@@ -60,10 +64,7 @@ function ModelSwitcher() {
                   }`}
                 >
                   <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClass(statusOf(m.name))}`} aria-hidden />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate">{m.displayName}</span>
-                    <span className="block truncate text-[10px] text-zrh-text-dim">{m.name}</span>
-                  </span>
+                  <span className="min-w-0 flex-1 truncate">{toEngineLabelByIndex(m.name, index)}</span>
                   {!m.installed && <span className="text-[9px] text-zrh-text-dim">{t('chat.modelStatus.stopped')}</span>}
                 </button>
               </li>

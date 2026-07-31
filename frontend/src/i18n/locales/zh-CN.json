@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "ZRH AI",
-    "tagline": "本地私有化 AI 平台"
+    "tagline": "ZRH 科技集团 · 企业级私有人工智能平台"
   },
   "nav": {
     "home": "首页",
@@ -59,8 +59,8 @@
     "backend": "后端状态",
     "database": "数据库状态",
     "redis": "Redis 状态",
-    "ollama": "Ollama 状态",
-    "models": "模型清单",
+    "ollama": "AI 运行时",
+    "models": "引擎清单",
     "memory": "内存",
     "cores": "核",
     "load": "负载",
@@ -73,7 +73,7 @@
     "version": "版本",
     "timestamp": "时间戳",
     "latency": "延迟",
-    "modelName": "模型",
+    "modelName": "引擎",
     "modelSize": "大小",
     "modelModified": "修改时间",
     "noData": "暂无数据"
@@ -85,10 +85,10 @@
     "en-US": "English"
   },
   "home": {
-    "stage": "阶段 4 · AI Gateway & 模型管理",
+    "stage": "ZRH AI Enterprise · 企业级私有人工智能平台",
     "notice": "基础框架已就绪。业务功能将在后续阶段开放。",
     "aiInputPlaceholder": "向 ZRH AI 提问…",
-    "aiInputStageHint": "输入问题，立即开始与 ZRH AI 对话（本地 Ollama 真实驱动）。",
+    "aiInputStageHint": "输入问题，立即开始与 ZRH AI 对话。由 ZRH 科技集团自主研发。",
     "send": "发送"
   },
   "chat": {
@@ -125,15 +125,18 @@
     "error": "异常",
     "tokens": "tokens",
     "emptyTitle": "开始新的对话",
-    "emptyHint": "选择模型并输入问题，所有对话都会保存到数据库。",
-    "model": "模型",
-    "modelSwitch": "切换模型",
+    "emptyHint": "选择引擎并输入问题，所有对话都会保存到数据库。",
+    "welcome": "你好，我是 ZRH AI，\n由 ZRH 科技集团（ZRH Technology Group）自主研发，\n部署于 ZRH AI Enterprise 企业级私有人工智能平台。\n\n很高兴为您服务。\n请直接告诉我您的需求。",
+    "brandGroup": "ZRH 科技集团",
+    "aiRuntime": "AI 运行时",
+    "model": "引擎",
+    "modelSwitch": "切换引擎",
     "promptTemplate": "角色 Prompt",
     "defaultPrompt": "默认 Prompt",
-    "modelsStatus": "模型状态",
-    "modelCount": "模型数量",
+    "modelsStatus": "引擎状态",
+    "modelCount": "引擎数量",
     "chatCount": "聊天数量",
-    "messageCount": "消息数量",
+    "messageCount": "消息",
     "params": "参数设置",
     "temperature": "Temperature",
     "topP": "Top P",
