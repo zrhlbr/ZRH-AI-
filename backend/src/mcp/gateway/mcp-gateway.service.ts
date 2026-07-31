@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { McpRegistryService } from '../registry/mcp-registry.service';
 import { McpSessionView } from '../types/mcp.types';
@@ -65,7 +66,7 @@ export class McpGatewayService {
           transport: server.transport,
           stub: server.transport === 'stub' || server.reserved,
           note: 'Stage 8 framework session; connector implementation pending',
-        },
+        } as Prisma.InputJsonValue,
       },
       include: { server: { select: { code: true, name: true } } },
     });

@@ -3,9 +3,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateToolDto, UpdateToolDto } from '../dto/tool.dto';
 import { ToolCategoryView, ToolDefinitionView } from '../types/tool.types';
+
+function asJson(value: unknown): Prisma.InputJsonValue | undefined {
+  if (value === undefined) return undefined;
+  return value as Prisma.InputJsonValue;
+}
 
 @Injectable()
 export class ToolRegistryService {
@@ -52,10 +58,6 @@ export class ToolRegistryService {
     };
   }
 
-  private includeCategory() {
-    return { category: true } as const;
-  }
-
   /** RBAC：roleAccess 为空则任意持有 api:tools:execute 的角色可用 */
   canAccess(tool: { roleAccess: string | null }, roleCode: string): boolean {
     if (!tool.roleAccess) return true;
@@ -90,7 +92,7 @@ export class ToolRegistryService {
         ...(opts.category ? { category: { code: opts.category } } : {}),
       },
       orderBy: [{ name: 'asc' }],
-      include: this.includeCategory(),
+      include: { category: true },
     });
     return rows.map((r) => this.toView(r));
   }
@@ -98,7 +100,7 @@ export class ToolRegistryService {
   async getByCode(code: string): Promise<ToolDefinitionView> {
     const row = await this.prisma.toolDefinition.findUnique({
       where: { code },
-      include: this.includeCategory(),
+      include: { category: true },
     });
     if (!row) throw new NotFoundException(`tool not found: ${code}`);
     return this.toView(row);
@@ -107,7 +109,7 @@ export class ToolRegistryService {
   async getRawByCode(code: string) {
     const row = await this.prisma.toolDefinition.findUnique({
       where: { code },
-      include: this.includeCategory(),
+      include: { category: true },
     });
     if (!row) throw new NotFoundException(`tool not found: ${code}`);
     return row;
@@ -129,17 +131,17 @@ export class ToolRegistryService {
         description: dto.description,
         categoryId: category.id,
         executorCode: dto.executorCode.trim(),
-        inputSchema: dto.inputSchema ?? undefined,
-        outputSchema: dto.outputSchema ?? undefined,
+        inputSchema: asJson(dto.inputSchema),
+        outputSchema: asJson(dto.outputSchema),
         timeoutMs: dto.timeoutMs ?? 15000,
         maxRetries: dto.maxRetries ?? 1,
         roleAccess: dto.roleAccess,
         enabled: dto.enabled ?? true,
         version: dto.version ?? '1.0.0',
         builtin: false,
-        config: dto.config ?? undefined,
+        config: asJson(dto.config),
       },
-      include: this.includeCategory(),
+      include: { category: true },
     });
     return this.toView(created);
   }
@@ -160,16 +162,16 @@ export class ToolRegistryService {
         name: dto.name?.trim(),
         description: dto.description,
         categoryId,
-        inputSchema: dto.inputSchema === undefined ? undefined : dto.inputSchema,
-        outputSchema: dto.outputSchema === undefined ? undefined : dto.outputSchema,
+        inputSchema: dto.inputSchema === undefined ? undefined : asJson(dto.inputSchema),
+        outputSchema: dto.outputSchema === undefined ? undefined : asJson(dto.outputSchema),
         timeoutMs: dto.timeoutMs,
         maxRetries: dto.maxRetries,
         roleAccess: dto.roleAccess,
         enabled: dto.enabled,
         version: dto.version,
-        config: dto.config === undefined ? undefined : dto.config,
+        config: dto.config === undefined ? undefined : asJson(dto.config),
       },
-      include: this.includeCategory(),
+      include: { category: true },
     });
     return this.toView(updated);
   }
@@ -179,7 +181,7 @@ export class ToolRegistryService {
     const updated = await this.prisma.toolDefinition.update({
       where: { code },
       data: { enabled },
-      include: this.includeCategory(),
+      include: { category: true },
     });
     return this.toView(updated);
   }

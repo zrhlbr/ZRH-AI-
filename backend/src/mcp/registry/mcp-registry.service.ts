@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateMcpServerDto } from '../dto/mcp.dto';
 import { McpServerView } from '../types/mcp.types';
@@ -93,7 +94,7 @@ export class McpRegistryService {
         enabled: dto.enabled,
         version: dto.version,
         roleAccess: dto.roleAccess,
-        config: dto.config === undefined ? undefined : dto.config,
+        config: dto.config === undefined ? undefined : (dto.config as Prisma.InputJsonValue),
         status: dto.enabled === false ? 'offline' : undefined,
       },
     });

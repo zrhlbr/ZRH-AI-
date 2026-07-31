@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ToolRegistryService } from '../registry/tool-registry.service';
 import { BuiltinExecutorsService } from './builtin-executors.service';
@@ -98,8 +99,8 @@ export class ToolRuntimeService {
             userId: input.userId,
             agentCode: input.agentCode,
             status: 'success',
-            input: args,
-            output: output as object,
+            input: args as Prisma.InputJsonValue,
+            output: output as Prisma.InputJsonValue,
             latencyMs,
           },
         });
@@ -122,7 +123,7 @@ export class ToolRuntimeService {
               userId: input.userId,
               agentCode: input.agentCode,
               status: isTimeout ? 'timeout' : 'error',
-              input: args,
+              input: args as Prisma.InputJsonValue,
               error: lastError.slice(0, 2000),
               latencyMs,
             },
