@@ -5,6 +5,7 @@ import { RagController } from './rag.controller';
 import { RagEngineService } from './engine/rag-engine.service';
 import { RagPermissionService } from './permission/rag-permission.service';
 import { VectorRegistryService } from './vector/vector-registry.service';
+import { EmbeddingWorkerService } from './worker/embedding-worker.service';
 
 /**
  * Stage 6 Enterprise RAG Engine。
@@ -13,7 +14,7 @@ import { VectorRegistryService } from './vector/vector-registry.service';
 @Module({
   imports: [AIModule, KnowledgeModule],
   controllers: [RagController],
-  providers: [RagEngineService, RagPermissionService, VectorRegistryService],
+  providers: [RagEngineService, RagPermissionService, VectorRegistryService, EmbeddingWorkerService],
   exports: [RagEngineService, RagPermissionService, VectorRegistryService],
 })
 export class RagModule {}

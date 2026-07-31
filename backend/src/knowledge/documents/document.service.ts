@@ -153,12 +153,8 @@ export class DocumentService {
     // 自动解析 + 分块
     await this.runParseAndChunk(doc.id, version.id, file.buffer, file.mimetype, file.originalname, parsed);
 
-    // 创建 embedding 任务
+    // 创建 embedding 任务（由 Stage 6 Embedding Worker 后台执行）
     const task = await this.tasks.create(doc.id, this.embedding.code);
-    // 异步执行 embedding
-    this.runEmbedding(doc.id, version.id).catch((err: Error) => {
-      this.logger.error(`embedding failed doc=${doc.id}: ${err.message}`);
-    });
 
     return {
       documentId: doc.id,
@@ -219,10 +215,35 @@ export class DocumentService {
     await this.prisma.knowledgeDocument.update({ where: { id: documentId }, data: { status: 'chunked' } });
   }
 
-  private async runEmbedding(documentId: number, versionId: number) {
-    const task = (await this.tasks.listByDocument(documentId))[0];
-    if (!task) return;
-    await this.tasks.start(task.id);
+  /** Stage 6 Worker 入口：处理单个 embedding / rebuild 任务 */
+  async processEmbeddingTask(taskId: number): Promise<{ taskId: number; status: string }> {
+    const task = await this.prisma.embeddingTask.findUnique({ where: { id: taskId } });
+    if (!task) throw new NotFoundException('embedding task not found');
+    if (task.status === 'running' || task.status === 'completed') {
+      return { taskId, status: task.status };
+    }
+
+    const doc = await this.prisma.knowledgeDocument.findUnique({
+      where: { id: task.documentId },
+      include: { versions: true },
+    });
+    if (!doc) {
+      await this.tasks.fail(taskId, 'document not found');
+      return { taskId, status: 'failed' };
+    }
+    const version = doc.versions.find((v) => v.id === doc.currentVersionId) ?? doc.versions[0];
+    if (!version) {
+      await this.tasks.fail(taskId, 'version not found');
+      return { taskId, status: 'failed' };
+    }
+
+    await this.runEmbedding(taskId, doc.id, version.id);
+    const updated = await this.prisma.embeddingTask.findUnique({ where: { id: taskId } });
+    return { taskId, status: updated?.status ?? 'failed' };
+  }
+
+  private async runEmbedding(taskId: number, documentId: number, versionId: number) {
+    await this.tasks.start(taskId);
     try {
       await this.prisma.knowledgeDocument.update({ where: { id: documentId }, data: { status: 'embedding' } });
       await this.vector.initialize(this.embedding.dimension);
@@ -238,10 +259,10 @@ export class DocumentService {
       }
 
       await this.prisma.knowledgeDocument.update({ where: { id: documentId }, data: { status: 'indexed' } });
-      await this.tasks.complete(task.id);
+      await this.tasks.complete(taskId);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      await this.tasks.fail(task.id, message);
+      await this.tasks.fail(taskId, message);
       await this.prisma.knowledgeDocument.update({ where: { id: documentId }, data: { status: 'error' } });
     }
   }
@@ -446,10 +467,7 @@ export class DocumentService {
     await this.vector.delete(chunks.map((c) => c.id));
 
     const task = await this.tasks.create(doc.id, this.embedding.code);
-    this.runEmbedding(doc.id, version.id).catch((err: Error) => {
-      this.logger.error(`reindex failed doc=${doc.id}: ${err.message}`);
-    });
-    return { documentId: doc.id, taskId: task.id, status: 'embedding' };
+    return { documentId: doc.id, taskId: task.id, status: 'pending' };
   }
 
   // ---------- Download ----------
