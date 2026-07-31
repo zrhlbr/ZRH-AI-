@@ -703,3 +703,128 @@ model McpRunLog {
   @@index([serverId, createdAt])
   @@map("mcp_run_logs")
 }
+
+// ============ 阶段 9：Workflow Engine ============
+
+model WorkflowCategory {
+  id          Int                  @id @default(autoincrement())
+  code        String               @unique
+  name        String
+  description String?
+  sortOrder   Int                  @default(0)
+  workflows   WorkflowDefinition[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@map("workflow_categories")
+}
+
+model WorkflowDefinition {
+  id          Int                 @id @default(autoincrement())
+  code        String              @unique
+  name        String
+  description String?
+  categoryId  Int
+  category    WorkflowCategory    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  version     String              @default("1.0.0")
+  enabled     Boolean             @default(true)
+  builtin     Boolean             @default(false)
+  template    Boolean             @default(false)
+  status      String              @default("active") // draft | active | disabled
+  graph       Json // { nodes: [], edges: [] }
+  variables   Json? // variable schema / defaults
+  roleAccess  String?
+  timeoutMs   Int                 @default(120000)
+  maxRetries  Int                 @default(0)
+  runs        WorkflowRun[]
+  schedules   WorkflowSchedule[]
+  audits      WorkflowAuditLog[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([enabled, status])
+  @@index([categoryId])
+  @@index([template])
+  @@map("workflow_definitions")
+}
+
+model WorkflowRun {
+  id         Int               @id @default(autoincrement())
+  workflowId Int
+  workflow   WorkflowDefinition @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  userId     Int
+  status     String            @default("pending") // pending | queued | running | paused | waiting_approval | success | error | cancelled | timeout
+  mode       String            @default("sync") // sync | async | queue
+  trigger    String            @default("manual") // manual | schedule | cron | event
+  input      Json?
+  output     Json?
+  variables  Json?
+  error      String?
+  latencyMs  Int               @default(0)
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime          @default(now())
+  nodeRuns   WorkflowNodeRun[]
+  audits     WorkflowAuditLog[]
+
+  @@index([workflowId, createdAt])
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("workflow_runs")
+}
+
+model WorkflowNodeRun {
+  id         Int         @id @default(autoincrement())
+  runId      Int
+  run        WorkflowRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  nodeId     String
+  nodeType   String
+  status     String // pending | running | success | error | skipped | waiting
+  input      Json?
+  output     Json?
+  error      String?
+  latencyMs  Int         @default(0)
+  attempt    Int         @default(1)
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime    @default(now())
+
+  @@index([runId, createdAt])
+  @@map("workflow_node_runs")
+}
+
+model WorkflowSchedule {
+  id           Int                 @id @default(autoincrement())
+  workflowId   Int
+  workflow     WorkflowDefinition  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  name         String
+  enabled      Boolean             @default(true)
+  kind         String              @default("cron") // once | cron | interval | event_reserved
+  cronExpr     String?
+  intervalSec  Int?
+  nextRunAt    DateTime?
+  lastRunAt    DateTime?
+  config       Json?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([enabled, nextRunAt])
+  @@index([workflowId])
+  @@map("workflow_schedules")
+}
+
+model WorkflowAuditLog {
+  id         Int                 @id @default(autoincrement())
+  workflowId Int
+  workflow   WorkflowDefinition  @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  runId      Int?
+  run        WorkflowRun?        @relation(fields: [runId], references: [id], onDelete: SetNull)
+  userId     Int
+  action     String
+  detail     String?
+  createdAt  DateTime            @default(now())
+
+  @@index([workflowId, createdAt])
+  @@index([runId])
+  @@map("workflow_audit_logs")
+}

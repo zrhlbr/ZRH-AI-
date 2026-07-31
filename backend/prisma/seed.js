@@ -63,6 +63,11 @@ const PERMISSIONS = [
   { code: 'api:mcp:read', type: 'API', name: 'MCP 读取接口' },
   { code: 'api:mcp:write', type: 'API', name: 'MCP 连接接口' },
   { code: 'api:mcp:admin', type: 'API', name: 'MCP 管理接口' },
+  // 阶段 9：Workflow Engine
+  { code: 'menu:workflows', type: 'MENU', name: 'Workflow Center 菜单' },
+  { code: 'api:workflows:read', type: 'API', name: 'Workflow 读取接口' },
+  { code: 'api:workflows:execute', type: 'API', name: 'Workflow 执行接口' },
+  { code: 'api:workflows:admin', type: 'API', name: 'Workflow 管理接口' },
 ];
 
 const ROLE_PERMISSIONS = {
@@ -101,6 +106,9 @@ const ROLE_PERMISSIONS = {
     'api:tools:execute',
     'menu:mcp',
     'api:mcp:read',
+    'menu:workflows',
+    'api:workflows:read',
+    'api:workflows:execute',
   ],
 };
 
@@ -534,6 +542,200 @@ async function main() {
     });
   }
   console.log(`[seed] mcp servers: ${MCP_SERVERS.length}`);
+
+  // 3.12 阶段 9：Workflow categories + default templates
+  const linearGraph = (steps) => {
+    const nodes = [{ id: 'start', type: 'start', label: 'Start', config: {} }];
+    const edges = [];
+    let prev = 'start';
+    steps.forEach((step, i) => {
+      const id = step.id || `n${i + 1}`;
+      nodes.push({
+        id,
+        type: step.type,
+        label: step.label,
+        config: step.config || {},
+      });
+      edges.push({ id: `e_${prev}_${id}`, from: prev, to: id });
+      prev = id;
+    });
+    nodes.push({ id: 'end', type: 'end', label: 'End', config: {} });
+    edges.push({ id: `e_${prev}_end`, from: prev, to: 'end' });
+    return { nodes, edges };
+  };
+
+  const WF_CATEGORIES = [
+    { code: 'knowledge', name: 'Knowledge', description: '知识与文档', sortOrder: 1 },
+    { code: 'language', name: 'Language', description: '语言与翻译', sortOrder: 2 },
+    { code: 'agent', name: 'Agent', description: 'Agent 协作', sortOrder: 3 },
+    { code: 'ops', name: 'Operations', description: '运维巡检', sortOrder: 4 },
+    { code: 'integration', name: 'Integration', description: '工具与 MCP', sortOrder: 5 },
+  ];
+  for (const c of WF_CATEGORIES) {
+    await prisma.workflowCategory.upsert({
+      where: { code: c.code },
+      update: { name: c.name, description: c.description, sortOrder: c.sortOrder },
+      create: c,
+    });
+  }
+  const wfCat = Object.fromEntries(
+    (await prisma.workflowCategory.findMany()).map((c) => [c.code, c.id]),
+  );
+
+  const WF_TEMPLATES = [
+    {
+      code: 'tpl_knowledge_search',
+      name: '知识检索流程',
+      category: 'knowledge',
+      description: '经 Tool Manager 执行 Knowledge Search',
+      graph: linearGraph([
+        { type: 'tool', label: 'Knowledge Search', config: { toolCode: 'knowledge_search', args: { query: '{{input.query}}', topK: 5 } } },
+      ]),
+      variables: { defaults: { query: 'overview' } },
+    },
+    {
+      code: 'tpl_document_parse',
+      name: '文档解析流程',
+      category: 'knowledge',
+      description: '经 Tool Manager 解析文档内容',
+      graph: linearGraph([
+        { type: 'tool', label: 'Document Parser', config: { toolCode: 'document_parser', args: { content: '{{input.content}}', filename: 'note.md' } } },
+      ]),
+      variables: { defaults: { content: '# Hello ZRH' } },
+    },
+    {
+      code: 'tpl_translation',
+      name: '多语言翻译流程',
+      category: 'language',
+      description: 'Agent Center Translation Agent → Tool Manager',
+      graph: linearGraph([
+        { type: 'agent', label: 'Translation Agent', config: { agentCode: 'translation', message: '{{input.text}}' } },
+      ]),
+      variables: { defaults: { text: '你好，世界' } },
+    },
+    {
+      code: 'tpl_agent_collab',
+      name: 'Agent 协作流程',
+      category: 'agent',
+      description: 'Assistant → Knowledge 协作（经 Agent Center）',
+      graph: linearGraph([
+        { type: 'agent', label: 'Assistant', config: { agentCode: 'assistant', message: '{{input.message}}' } },
+        { type: 'agent', label: 'Knowledge', config: { agentCode: 'knowledge', message: '{{input.message}}' } },
+      ]),
+      variables: { defaults: { message: '总结企业知识库能力' } },
+    },
+    {
+      code: 'tpl_rag_ask',
+      name: 'RAG 问答流程',
+      category: 'knowledge',
+      description: '经 Tool Manager 执行 RAG Search',
+      graph: linearGraph([
+        { type: 'tool', label: 'RAG Search', config: { toolCode: 'rag_search', args: { query: '{{input.query}}', mode: 'hybrid' } } },
+      ]),
+      variables: { defaults: { query: '什么是 ZRH AI' } },
+    },
+    {
+      code: 'tpl_document_import',
+      name: '文档导入流程',
+      category: 'knowledge',
+      description: 'File Manager → Document Parser（经 Tool Manager）',
+      graph: linearGraph([
+        { type: 'tool', label: 'File Manager', config: { toolCode: 'file_manager', args: { action: 'list', path: '' } } },
+        { type: 'tool', label: 'Document Parser', config: { toolCode: 'document_parser', args: { content: '{{input.content}}', filename: 'import.md' } } },
+      ]),
+      variables: { defaults: { content: '# Import document' } },
+    },
+    {
+      code: 'tpl_embedding_rebuild',
+      name: 'Embedding 重建流程',
+      category: 'ops',
+      description: '健康检查 + 只读统计（经 Tool Manager，不直连向量库）',
+      graph: linearGraph([
+        { type: 'tool', label: 'System Health', config: { toolCode: 'system_health', args: {} } },
+        { type: 'tool', label: 'DB Overview', config: { toolCode: 'database_query', args: { metric: 'overview' } } },
+      ]),
+      variables: { defaults: {} },
+    },
+    {
+      code: 'tpl_toolchain',
+      name: '工具链调用流程',
+      category: 'integration',
+      description: 'Calculator → System Health 工具链',
+      graph: linearGraph([
+        { type: 'tool', label: 'Calculator', config: { toolCode: 'calculator', args: { expression: '{{input.expression}}' } } },
+        { type: 'tool', label: 'System Health', config: { toolCode: 'system_health', args: {} } },
+      ]),
+      variables: { defaults: { expression: '1+2*3' } },
+    },
+    {
+      code: 'tpl_mcp_execute',
+      name: 'MCP 工具执行流程',
+      category: 'integration',
+      description: '经 MCP Gateway stub 执行（不直连外部）',
+      graph: linearGraph([
+        { type: 'mcp', label: 'Filesystem MCP', config: { serverCode: 'filesystem', action: 'list', autoEnable: true } },
+      ]),
+      variables: { defaults: {} },
+    },
+    {
+      code: 'tpl_health_patrol',
+      name: '系统健康巡检流程',
+      category: 'ops',
+      description: '健康检查 + 条件分支 + 只读统计',
+      graph: {
+        nodes: [
+          { id: 'start', type: 'start', label: 'Start', config: {} },
+          { id: 'health', type: 'tool', label: 'System Health', config: { toolCode: 'system_health', args: {} } },
+          { id: 'cond', type: 'condition', label: 'Health OK?', config: { expression: 'vars.lastOk == true', trueTo: 'db', falseTo: 'end' } },
+          { id: 'db', type: 'tool', label: 'DB Overview', config: { toolCode: 'database_query', args: { metric: 'overview' } } },
+          { id: 'end', type: 'end', label: 'End', config: {} },
+        ],
+        edges: [
+          { id: 'e1', from: 'start', to: 'health' },
+          { id: 'e2', from: 'health', to: 'cond' },
+          { id: 'e3', from: 'cond', to: 'db', when: 'true' },
+          { id: 'e4', from: 'cond', to: 'end', when: 'false' },
+          { id: 'e5', from: 'db', to: 'end' },
+        ],
+      },
+      variables: { defaults: {} },
+    },
+  ];
+
+  for (const t of WF_TEMPLATES) {
+    await prisma.workflowDefinition.upsert({
+      where: { code: t.code },
+      update: {
+        name: t.name,
+        description: t.description,
+        categoryId: wfCat[t.category],
+        enabled: true,
+        builtin: true,
+        template: true,
+        status: 'active',
+        graph: t.graph,
+        variables: t.variables,
+        version: '1.0.0',
+        timeoutMs: 120000,
+      },
+      create: {
+        code: t.code,
+        name: t.name,
+        description: t.description,
+        categoryId: wfCat[t.category],
+        enabled: true,
+        builtin: true,
+        template: true,
+        status: 'active',
+        graph: t.graph,
+        variables: t.variables,
+        version: '1.0.0',
+        timeoutMs: 120000,
+        maxRetries: 0,
+      },
+    });
+  }
+  console.log(`[seed] workflow templates: ${WF_TEMPLATES.length}`);
 
   // 4. 超级管理员
   const username = process.env.ADMIN_USERNAME || 'admin';
