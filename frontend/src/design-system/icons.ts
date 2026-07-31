@@ -1,6 +1,7 @@
 import {
   Activity,
   BookOpen,
+  Bot,
   BrainCircuit,
   Cpu,
   Database,
@@ -51,6 +52,7 @@ export const zrhIcons = {
   refresh: RefreshCw,
   knowledge: BookOpen,
   rag: BrainCircuit,
+  agents: Bot,
 } as const;
 
 export type ZrhIconName = keyof typeof zrhIcons;

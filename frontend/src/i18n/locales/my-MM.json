@@ -10,7 +10,8 @@
     "chat": "AI စကားပြော",
     "models": "AI မော်ဒယ်များ",
     "knowledge": "ဗဟုသုတ ပလက်ဖောင်း",
-    "rag": "Enterprise RAG"
+    "rag": "Enterprise RAG",
+    "agents": "Agent Center"
   },
   "common": {
     "close": "ပိတ်ရန်",
@@ -234,5 +235,29 @@
       "semantic": "အဓိပ္ပါယ်",
       "keyword": "သော့ချက်"
     }
+  },
+  "agents": {
+    "title": "Enterprise AI Agent Center",
+    "subtitle": "Registry · Runtime · Memory · Skills · Router · Logs",
+    "registry": "Registry",
+    "chat": "စကားទូទៅ",
+    "memory": "မှတ်ဉာဏ်",
+    "skills": "ကျွမ်းကျင်မှု",
+    "logs": "မှတ်တမ်း",
+    "enabled": "ဖွင့်",
+    "disabled": "ပိတ်",
+    "enable": "ဖွင့်ရန်",
+    "disable": "ပိတ်ရန်",
+    "activeAgent": "လက်ရှိ Agent",
+    "router": "Router",
+    "chatPlaceholder": "အလုပ်ဖော်ပြပါ…",
+    "send": "Agent သို့ပို့ရန်",
+    "citations": "ကိုးကားချက်များ",
+    "noMemory": "မှတ်ဉာဏ်မရှိသေးပါ",
+    "reserved": "ကြိုတင်ထား",
+    "refreshLogs": "မှတ်တမ်းပြန်ဖွင့်",
+    "logsAdminOnly": "မှတ်တမ်းသည် admin သာ",
+    "active": "Active",
+    "errors24h": "24h အမှား"
   }
 }

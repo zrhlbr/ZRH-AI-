@@ -14,6 +14,7 @@ import { useAuthStore } from './store/authStore';
 const ChatPage = lazy(() => import('./pages/ChatPage').then((m) => ({ default: m.ChatPage })));
 const KnowledgePage = lazy(() => import('./pages/KnowledgePage').then((m) => ({ default: m.KnowledgePage })));
 const RagPage = lazy(() => import('./pages/RagPage').then((m) => ({ default: m.RagPage })));
+const AgentsPage = lazy(() => import('./pages/AgentsPage').then((m) => ({ default: m.AgentsPage })));
 
 /** 路由守卫：未登录跳转登录页 */
 function RequireAuth() {
@@ -49,6 +50,7 @@ const router = createBrowserRouter([
           { path: '/ai/models', element: <ModelsPage /> },
           { path: '/knowledge/*', element: <Suspense fallback={null}><KnowledgePage /></Suspense> },
           { path: '/rag/*', element: <Suspense fallback={null}><RagPage /></Suspense> },
+          { path: '/agents/*', element: <Suspense fallback={null}><AgentsPage /></Suspense> },
           { path: '/status', element: <StatusPage /> },
         ],
       },

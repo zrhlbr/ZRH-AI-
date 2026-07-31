@@ -10,7 +10,8 @@
     "chat": "AI 对话",
     "models": "AI 模型",
     "knowledge": "知识平台",
-    "rag": "企业 RAG"
+    "rag": "企业 RAG",
+    "agents": "Agent Center"
   },
   "common": {
     "close": "关闭",
@@ -234,5 +235,29 @@
       "semantic": "语义",
       "keyword": "关键词"
     }
+  },
+  "agents": {
+    "title": "企业 AI 员工中心",
+    "subtitle": "Registry · Runtime · Memory · Skills · Router · Logs",
+    "registry": "Agent 注册表",
+    "chat": "对话",
+    "memory": "记忆",
+    "skills": "技能",
+    "logs": "日志",
+    "enabled": "启用",
+    "disabled": "禁用",
+    "enable": "启用",
+    "disable": "停用",
+    "activeAgent": "当前 Agent",
+    "router": "路由",
+    "chatPlaceholder": "描述任务，例如：帮我翻译这段中文到缅文…",
+    "send": "发送给 Agent",
+    "citations": "引用来源",
+    "noMemory": "暂无记忆",
+    "reserved": "预留",
+    "refreshLogs": "刷新日志",
+    "logsAdminOnly": "日志仅管理员可查看",
+    "active": "活跃",
+    "errors24h": "24h 错误"
   }
 }

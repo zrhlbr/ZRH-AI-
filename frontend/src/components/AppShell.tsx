@@ -29,6 +29,7 @@ export function AppShell() {
     { to: '/chat', key: 'menu:chat', label: t('nav.chat'), icon: zrhIcons.ai },
     { to: '/knowledge', key: 'menu:knowledge', label: t('nav.knowledge'), icon: zrhIcons.knowledge },
     { to: '/rag', key: 'menu:rag', label: t('nav.rag'), icon: zrhIcons.rag },
+    { to: '/agents', key: 'menu:agents', label: t('nav.agents'), icon: zrhIcons.agents },
     { to: '/ai/models', key: 'menu:ai-models', label: t('nav.models'), icon: zrhIcons.cpu },
     { to: '/status', key: 'menu:status', label: t('nav.status'), icon: zrhIcons.dashboard },
   ].filter((item) => profile?.permissions.includes(item.key));

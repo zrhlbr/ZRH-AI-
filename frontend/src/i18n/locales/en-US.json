@@ -10,7 +10,8 @@
     "chat": "AI Chat",
     "models": "AI Models",
     "knowledge": "Knowledge Platform",
-    "rag": "Enterprise RAG"
+    "rag": "Enterprise RAG",
+    "agents": "Agent Center"
   },
   "common": {
     "close": "Close",
@@ -234,5 +235,29 @@
       "semantic": "Semantic",
       "keyword": "Keyword"
     }
+  },
+  "agents": {
+    "title": "Enterprise AI Agent Center",
+    "subtitle": "Registry · Runtime · Memory · Skills · Router · Logs",
+    "registry": "Registry",
+    "chat": "Chat",
+    "memory": "Memory",
+    "skills": "Skills",
+    "logs": "Logs",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "enable": "Enable",
+    "disable": "Disable",
+    "activeAgent": "Active agent",
+    "router": "Router",
+    "chatPlaceholder": "Describe a task, e.g. translate this to Burmese…",
+    "send": "Send to Agent",
+    "citations": "Citations",
+    "noMemory": "No memory yet",
+    "reserved": "Reserved",
+    "refreshLogs": "Refresh logs",
+    "logsAdminOnly": "Logs are admin-only",
+    "active": "Active",
+    "errors24h": "24h errors"
   }
 }
