@@ -17,9 +17,11 @@ Isolate V1.2 P1 (User Center / Admin / Super Admin) for full test-environment ac
 | Item | Value |
 |------|--------|
 | Branch | `test/v1.2` |
-| Test tag | `v1.2.0-test` |
+| Commit | `49faadea87883d9b95903a1741e2f56866401c12` |
+| Message | `feat(v1.2): user center and enterprise admin platform` |
+| Test tag | `v1.2.0-test` → above commit |
 | Production tag | **not created** (`v1.2.0` deferred) |
-| `main` | Remains on V1.1 line until release decision |
+| `main` | `2888b59` — V1.1 line unchanged |
 
 ---
 

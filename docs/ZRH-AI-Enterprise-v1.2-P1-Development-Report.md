@@ -25,8 +25,10 @@
 |----|-----|
 | V1.1 产品冻结 | `5244b4f6e26d8a607367205d558dc867ea13d27d`（tag `v1.1.0`） |
 | 分支 | `test/v1.2`（独立测试线） |
+| Commit | `49faadea87883d9b95903a1741e2f56866401c12` |
 | Commit message | `feat(v1.2): user center and enterprise admin platform` |
 | Test tag | `v1.2.0-test` |
+| `main` | `2888b59`（未前进） |
 | Production tag `v1.2.0` | **未打**（测试完整验收后再决定） |
 | Production deploy | **未执行** |
 
