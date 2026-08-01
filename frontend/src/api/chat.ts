@@ -26,6 +26,19 @@ export interface ConversationListResult {
   items: ConversationItem[];
 }
 
+export interface ChatCitation {
+  index: number;
+  documentId: number;
+  chunkId: number;
+  title: string;
+  filename: string;
+  page?: number | null;
+  chunkIndex: number;
+  snippet: string;
+  score: number;
+  fileUrl?: string | null;
+}
+
 export interface ChatMessage {
   id: number;
   conversationId: number;
@@ -38,6 +51,9 @@ export interface ChatMessage {
   status: 'done' | 'stopped' | 'error';
   feedback: 'like' | 'dislike' | null;
   createdAt: string;
+  ragHit?: boolean | null;
+  citations?: ChatCitation[] | null;
+  rewrittenQuery?: string | null;
 }
 
 export interface ConversationDetail {
@@ -105,8 +121,27 @@ export interface ChatStats {
 /** SSE 事件 */
 export type ChatStreamEvent =
   | { type: 'meta'; conversationId: number; userMessageId?: number; appendToMessageId?: number; replacedMessageId?: number; model: string }
+  | {
+      type: 'rag';
+      hit: boolean;
+      rewrittenQuery?: string;
+      citations?: ChatCitation[];
+      relatedDocuments?: Array<{ id: number; title: string; filename: string; score: number }>;
+      metrics?: Record<string, number>;
+      error?: boolean;
+    }
   | { type: 'delta'; content: string }
-  | { type: 'done'; conversationId: number; messageId: number | null; status: 'done' | 'stopped'; promptTokens?: number | null; completionTokens?: number | null; durationMs?: number | null }
+  | {
+      type: 'done';
+      conversationId: number;
+      messageId: number | null;
+      status: 'done' | 'stopped';
+      promptTokens?: number | null;
+      completionTokens?: number | null;
+      durationMs?: number | null;
+      ragHit?: boolean | null;
+      citations?: ChatCitation[];
+    }
   | { type: 'error'; message: string };
 
 export const chatApi = {

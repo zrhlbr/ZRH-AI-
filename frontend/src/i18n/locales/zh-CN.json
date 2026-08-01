@@ -124,6 +124,8 @@
     "stopped": "已停止",
     "error": "异常",
     "tokens": "tokens",
+    "sources": "参考来源",
+    "knowledgeGrounded": "已依据知识库",
     "emptyTitle": "开始新的对话",
     "emptyHint": "选择引擎并输入问题，所有对话都会保存到数据库。",
     "welcome": "你好，我是 ZRH AI，\n由 ZRH 科技集团（ZRH Technology Group）自主研发，\n部署于 ZRH AI Enterprise 企业级私有人工智能平台。\n\n很高兴为您服务。\n请直接告诉我您的需求。",

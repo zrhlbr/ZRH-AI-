@@ -153,6 +153,12 @@ model Message {
   durationMs       Int? // 生成耗时
   status           String       @default("done") // done | stopped | error
   feedback         String? // like | dislike | null
+  /// Chat↔RAG：本轮是否命中知识库
+  ragHit           Boolean?
+  /// Chat↔RAG：引用列表（RagCitation[]）
+  citations        Json?
+  /// Chat↔RAG：改写后的查询（审计）
+  rewrittenQuery   String?
   createdAt        DateTime     @default(now())
 
   @@index([conversationId, id])

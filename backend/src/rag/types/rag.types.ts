@@ -51,3 +51,18 @@ export interface RagAskResult {
   metrics: RagAskMetrics;
   conversationId?: number;
 }
+
+/** Chat / Agent 共用：只检索不生成 */
+export interface RagPrepareResult {
+  hit: boolean;
+  rewrittenQuery: string;
+  ranked: RagRetrieveHit[];
+  citations: RagCitation[];
+  relatedDocuments: Array<{ id: number; title: string; filename: string; score: number }>;
+  knowledgeContext: string;
+  topScore: number;
+  metrics: Pick<
+    RagAskMetrics,
+    'rewriteMs' | 'retrieveMs' | 'rerankMs' | 'retrieveCount' | 'rerankCount' | 'citationCount' | 'hitRate'
+  >;
+}

@@ -1,7 +1,8 @@
 import { memo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Check, Copy, RefreshCw, ThumbsDown, ThumbsUp, Trash2 } from 'lucide-react';
-import type { ChatMessage } from '../../api/chat';
+import { Check, Copy, Link2, RefreshCw, ThumbsDown, ThumbsUp, Trash2 } from 'lucide-react';
+import type { ChatCitation, ChatMessage } from '../../api/chat';
 import { useChatStore } from '../../store/chatStore';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
@@ -81,6 +82,10 @@ export const MessageItem = memo(function MessageItem({ message, isLast, streamin
 
         <MarkdownRenderer content={message.content} />
 
+        {message.ragHit && !!message.citations?.length && (
+          <CitationList citations={message.citations} />
+        )}
+
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zrh-border/40 pt-2">
           <span className="text-[10px] text-zrh-text-dim">
             {new Date(message.createdAt).toLocaleString(i18n.language, {
@@ -92,6 +97,9 @@ export const MessageItem = memo(function MessageItem({ message, isLast, streamin
           </span>
           {duration && <span className="text-[10px] text-zrh-text-dim">{duration}</span>}
           {tokens && <span className="text-[10px] text-zrh-text-dim">{tokens}</span>}
+          {message.ragHit && (
+            <span className="text-[10px] text-zrh-accent/90">{t('chat.knowledgeGrounded')}</span>
+          )}
 
           <span className="flex-1" />
 
@@ -134,6 +142,36 @@ export const MessageItem = memo(function MessageItem({ message, isLast, streamin
     </div>
   );
 });
+
+function CitationList({ citations }: { citations: ChatCitation[] }) {
+  const { t } = useTranslation();
+  return (
+    <div className="mt-3 border-t border-zrh-border/40 pt-2">
+      <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-medium tracking-wide text-zrh-text-dim">
+        <Link2 className="h-3 w-3 text-zrh-accent" aria-hidden />
+        {t('chat.sources')}
+      </p>
+      <ul className="space-y-1.5">
+        {citations.map((c) => (
+          <li key={`${c.documentId}-${c.chunkId}-${c.index}`}>
+            <Link
+              to="/knowledge"
+              className="block rounded-md px-1.5 py-1 transition-colors hover:bg-zrh-surface-raised/80"
+              title={c.snippet}
+            >
+              <span className="text-[11px] text-zrh-text">
+                <span className="text-zrh-accent">[#{c.index}]</span> {c.title || c.filename}
+              </span>
+              {c.snippet ? (
+                <p className="mt-0.5 line-clamp-2 text-[10px] leading-relaxed text-zrh-text-dim">{c.snippet}</p>
+              ) : null}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 function ActionButton({
   children,

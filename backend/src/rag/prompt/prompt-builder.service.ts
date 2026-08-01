@@ -6,6 +6,8 @@ export interface PromptBuildInput {
   knowledgeContext: string;
   memoryMessages?: Array<{ role: 'user' | 'assistant'; content: string }>;
   citationInstruction?: boolean;
+  /** 额外 system 指令（如 Chat 角色 Prompt） */
+  extraSystemPrompt?: string | null;
 }
 
 /**
@@ -14,15 +16,20 @@ export interface PromptBuildInput {
 @Injectable()
 export class PromptBuilderService {
   private readonly systemPrompt = [
-    'You are ZRH AI Enterprise RAG assistant.',
-    'Answer using the provided knowledge context when relevant.',
-    'If context is insufficient, say what is missing instead of inventing facts.',
-    'Prefer concise Markdown answers.',
+    'You are ZRH AI, independently developed by ZRH Technology Group, deployed on ZRH AI Enterprise.',
+    'Answer using the provided knowledge context when relevant; prioritize knowledge-base facts over general memory.',
+    'If context is insufficient for the asked fact, say the knowledge base does not cover it instead of inventing details.',
+    'Prefer concise Markdown answers in the user language.',
     'When you use knowledge, cite sources as [#n] matching the context markers.',
+    'Do not claim to be OpenAI, Google, Anthropic, Alibaba, or other third-party AI brands.',
   ].join(' ');
 
   build(input: PromptBuildInput): AIMessage[] {
     const messages: AIMessage[] = [{ role: 'system', content: this.systemPrompt }];
+
+    if (input.extraSystemPrompt?.trim()) {
+      messages.push({ role: 'system', content: input.extraSystemPrompt.trim() });
+    }
 
     if (input.memoryMessages?.length) {
       const memoryText = input.memoryMessages
@@ -47,7 +54,7 @@ export class PromptBuilderService {
       });
     }
 
-    if (input.citationInstruction !== false) {
+    if (input.citationInstruction !== false && input.knowledgeContext?.trim()) {
       messages.push({
         role: 'system',
         content:

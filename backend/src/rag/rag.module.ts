@@ -36,6 +36,6 @@ import { RagHealthService } from './health/rag-health.service';
     ConversationMemoryService,
     RagHealthService,
   ],
-  exports: [RagEngineService, RagPermissionService, VectorRegistryService],
+  exports: [RagEngineService, RagPermissionService, VectorRegistryService, PromptBuilderService],
 })
 export class RagModule {}

@@ -10,6 +10,9 @@ import { Subscription } from 'rxjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { AIGatewayService } from '../ai/gateway/ai-gateway.service';
 import { AuthUser } from '../common/guards/jwt-auth.guard';
+import { RagEngineService } from '../rag/engine/rag-engine.service';
+import { PromptBuilderService } from '../rag/prompt/prompt-builder.service';
+import { RagCitation } from '../rag/types/rag.types';
 import {
   ConversationListQueryDto,
   MessagesQueryDto,
@@ -30,10 +33,10 @@ const HISTORY_LIMIT = 30;
 const CONTINUE_HINT = 'continue';
 
 /**
- * AI 对话核心服务（阶段 4）
- * - 所有 AI 回复统一经由 AIGatewayService，禁止直接调用 Ollama
- * - SSE / Chunk Streaming 逐字输出，支持停止 / 继续 / 重新生成
- * - 日志只记录事件（开始/停止/切换/异常），不记录消息内容
+ * AI 对话核心服务（阶段 4 + V1.1 Chat↔RAG）
+ * - send/regenerate 默认经 Enterprise RAG prepare，命中则注入知识上下文再 Gateway.stream
+ * - 未命中透明回退原 Chat 路径；continue 不重检索
+ * - 所有 LLM 生成仍经 AIGatewayService，禁止直接调用 Ollama
  */
 @Injectable()
 export class ChatService {
@@ -44,7 +47,13 @@ export class ChatService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gateway: AIGatewayService,
+    private readonly rag: RagEngineService,
+    private readonly ragPrompts: PromptBuilderService,
   ) {}
+
+  private chatRagEnabled(): boolean {
+    return (process.env.CHAT_RAG_ENABLED ?? 'true').toLowerCase() !== 'false';
+  }
 
   // ---------- 对话 CRUD ----------
 
@@ -405,13 +414,84 @@ export class ChatService {
         sse({ type: 'meta', conversationId: conversation.id, replacedMessageId: last.id, model });
       }
 
-      // 3. System Prompt
+      // 3. System Prompt（未命中 RAG 时使用；命中时可叠加）
       const systemPrompt = await this.gateway.resolveSystemPrompt(conversation.systemPrompt, dto.promptCode ?? conversation.promptCode);
 
       // 4. 生成参数
       const params = await this.getParams(user.id);
 
-      // 5. 统一经 Gateway 启动流式生成
+      // 5. Enterprise RAG prepare（send/regenerate）；continue 不重检索
+      let ragHit: boolean | null = null;
+      let ragCitations: RagCitation[] = [];
+      let ragRewrittenQuery: string | null = null;
+      let messages: AIMessage[];
+
+      const userQuery =
+        mode === 'send'
+          ? (dto.message ?? '').trim()
+          : [...recent].reverse().find((m) => m.role === 'user')?.content?.trim() ?? '';
+
+      if (this.chatRagEnabled() && mode !== 'continue' && userQuery) {
+        try {
+          const prepared = await this.rag.prepare({
+            userId: user.id,
+            query: userQuery,
+            mode: 'hybrid',
+          });
+          ragHit = prepared.hit;
+          ragCitations = prepared.citations;
+          ragRewrittenQuery = prepared.rewrittenQuery;
+
+          if (prepared.hit) {
+            sse({
+              type: 'rag',
+              hit: true,
+              rewrittenQuery: prepared.rewrittenQuery,
+              citations: prepared.citations,
+              relatedDocuments: prepared.relatedDocuments,
+              metrics: prepared.metrics,
+            });
+            const historyForRag = recent
+              .filter((m) => m.role === 'user' || m.role === 'assistant')
+              .slice(0, -1)
+              .slice(-6)
+              .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+            messages = this.ragPrompts.build({
+              userQuery,
+              knowledgeContext: prepared.knowledgeContext,
+              memoryMessages: historyForRag,
+              extraSystemPrompt: systemPrompt || undefined,
+            });
+            this.logger.log(
+              `chat rag hit user=${user.id} conv=${conversation.id} citations=${prepared.citations.length} top1=${prepared.ranked[0]?.score?.toFixed(3) ?? '-'}`,
+            );
+          } else {
+            sse({ type: 'rag', hit: false });
+            messages = [
+              ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
+              ...recent.map((m) => ({ role: m.role as 'user' | 'assistant' | 'system', content: m.content })),
+            ];
+            this.logger.log(`chat rag miss user=${user.id} conv=${conversation.id}`);
+          }
+        } catch (ragErr) {
+          this.logger.warn(
+            `chat rag prepare failed, fallback plain stream: ${ragErr instanceof Error ? ragErr.message : String(ragErr)}`,
+          );
+          sse({ type: 'rag', hit: false, error: true });
+          ragHit = false;
+          messages = [
+            ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
+            ...recent.map((m) => ({ role: m.role as 'user' | 'assistant' | 'system', content: m.content })),
+          ];
+        }
+      } else {
+        messages = [
+          ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
+          ...recent.map((m) => ({ role: m.role as 'user' | 'assistant' | 'system', content: m.content })),
+        ];
+      }
+
+      // 6. 统一经 Gateway 启动流式生成
       const key = `${user.id}:${conversation.id}`;
       const existing = this.active.get(key);
       if (existing && !existing.stoppedByUser) {
@@ -426,12 +506,9 @@ export class ChatService {
         }
       });
 
-      const messages: AIMessage[] = [
-        ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
-        ...recent.map((m) => ({ role: m.role as 'user' | 'assistant' | 'system', content: m.content })),
-      ];
-
-      this.logger.log(`generation start user=${user.id} conv=${conversation.id} model=${model} mode=${mode}`);
+      this.logger.log(
+        `generation start user=${user.id} conv=${conversation.id} model=${model} mode=${mode} ragHit=${ragHit}`,
+      );
       const { stream } = await this.gateway.stream(messages, {
         conversationId: conversation.id,
         modelRef: model,
@@ -444,7 +521,7 @@ export class ChatService {
         seed: params.seed,
       });
 
-      // 6. 订阅并转发 chunk
+      // 7. 订阅并转发 chunk
       let promptTokens: number | null = null;
       let completionTokens: number | null = null;
       let durationMs: number | null = null;
@@ -470,9 +547,20 @@ export class ChatService {
         });
       });
 
-      // 7. 持久化 assistant 消息
+      // 8. 持久化 assistant 消息（命中时写入 citations）
       const status = gen.stoppedByUser ? 'stopped' : 'done';
       const finalDurationMs = durationMs ?? Date.now() - startedAt;
+      const ragFields =
+        ragHit === true
+          ? {
+              ragHit: true,
+              citations: ragCitations as unknown as Prisma.InputJsonValue,
+              rewrittenQuery: ragRewrittenQuery,
+            }
+          : ragHit === false
+            ? { ragHit: false }
+            : {};
+
       if (appendToMessageId) {
         await this.prisma.message.update({
           where: { id: appendToMessageId },
@@ -496,6 +584,7 @@ export class ChatService {
             durationMs: finalDurationMs,
             promptTokens,
             completionTokens,
+            ...ragFields,
           },
         });
         assistantMessageId = assistantMessage.id;
@@ -514,9 +603,11 @@ export class ChatService {
         promptTokens,
         completionTokens,
         durationMs: finalDurationMs,
+        ragHit,
+        citations: ragHit ? ragCitations : undefined,
       });
       this.logger.log(
-        `generation ${status} user=${user.id} conv=${conversation.id} model=${model} durationMs=${finalDurationMs}`,
+        `generation ${status} user=${user.id} conv=${conversation.id} model=${model} durationMs=${finalDurationMs} ragHit=${ragHit}`,
       );
     } catch (error) {
       const isAbort = gen.stoppedByUser;

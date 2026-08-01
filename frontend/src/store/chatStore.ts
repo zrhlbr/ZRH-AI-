@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import {
   chatApi,
   streamChat,
+  ChatCitation,
   ChatMessage,
   ChatModelInfo,
   ChatModelStatus,
@@ -17,6 +18,8 @@ interface StreamingState {
   content: string;
   appendToMessageId: number | null;
   baseContent: string;
+  ragHit: boolean | null;
+  citations: ChatCitation[];
 }
 
 interface ChatState {
@@ -91,7 +94,15 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   hasMore: false,
   loadingMessages: false,
 
-  streaming: { active: false, conversationId: null, content: '', appendToMessageId: null, baseContent: '' },
+  streaming: {
+    active: false,
+    conversationId: null,
+    content: '',
+    appendToMessageId: null,
+    baseContent: '',
+    ragHit: null,
+    citations: [],
+  },
   error: null,
 
   models: [],
@@ -328,7 +339,15 @@ async function runStream(
   const { activeId, activeModel, selectedPromptCode } = get();
   abortController = new AbortController();
   set({
-    streaming: { active: true, conversationId: activeId, content: '', appendToMessageId: null, baseContent: '' },
+    streaming: {
+      active: true,
+      conversationId: activeId,
+      content: '',
+      appendToMessageId: null,
+      baseContent: '',
+      ragHit: null,
+      citations: [],
+    },
     error: null,
   });
 
@@ -337,6 +356,8 @@ async function runStream(
   let finalMessageId: number | null = null;
   let finalConversationId: number | null = activeId;
   let userMessage: ChatMessage | null = null;
+  let ragHit: boolean | null = null;
+  let citations: ChatCitation[] = [];
 
   try {
     await streamChat({
@@ -378,12 +399,20 @@ async function runStream(
             activeId: s.activeId ?? event.conversationId,
             activeModel: event.model,
           }));
+        } else if (event.type === 'rag') {
+          ragHit = event.hit;
+          citations = event.hit && event.citations ? event.citations : [];
+          set((s) => ({
+            streaming: { ...s.streaming, ragHit: event.hit, citations },
+          }));
         } else if (event.type === 'delta') {
           streamedContent += event.content;
           set((s) => ({ streaming: { ...s.streaming, content: streamedContent } }));
         } else if (event.type === 'done') {
           finalMessageId = event.messageId;
           finalConversationId = event.conversationId;
+          if (event.ragHit != null) ragHit = event.ragHit;
+          if (event.citations?.length) citations = event.citations;
           if (event.messageId) {
             const assistantMessage: ChatMessage = {
               id: event.messageId,
@@ -397,6 +426,8 @@ async function runStream(
               status: event.status,
               feedback: null,
               createdAt: new Date().toISOString(),
+              ragHit,
+              citations: ragHit ? citations : null,
             };
             set((s) => ({
               messages: event.messageId && s.streaming.appendToMessageId
@@ -416,7 +447,15 @@ async function runStream(
   } finally {
     abortController = null;
     set((s) => ({
-      streaming: { active: false, conversationId: null, content: '', appendToMessageId: null, baseContent: '' },
+      streaming: {
+        active: false,
+        conversationId: null,
+        content: '',
+        appendToMessageId: null,
+        baseContent: '',
+        ragHit: null,
+        citations: [],
+      },
       messages: finalMessageId
         ? s.messages
         : s.streaming.content

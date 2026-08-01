@@ -118,7 +118,12 @@ function MessageList() {
           <div className="flex justify-start">
             <div className="zrh-glass zrh-glow-border max-w-[92%] rounded-2xl rounded-bl-sm px-4 py-3 sm:max-w-[85%]">
               <div className="mb-1.5 flex flex-col gap-0.5">
-                <span className="text-[10px] font-semibold tracking-widest text-zrh-accent">{brand.name}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold tracking-widest text-zrh-accent">{brand.name}</span>
+                  {streaming.ragHit && (
+                    <span className="text-[9px] text-zrh-accent/90">{t('chat.knowledgeGrounded')}</span>
+                  )}
+                </div>
                 <span className="text-[9px] tracking-wide text-zrh-text-dim/80">{t('chat.brandGroup')}</span>
               </div>
               {streaming.content || streaming.baseContent ? (
@@ -129,6 +134,11 @@ function MessageList() {
                   <i />
                   <i />
                 </span>
+              )}
+              {streaming.ragHit && streaming.citations.length > 0 && (
+                <p className="mt-2 text-[10px] text-zrh-text-dim">
+                  {t('chat.sources')}: {streaming.citations.map((c) => c.title || c.filename).join(' · ')}
+                </p>
               )}
             </div>
           </div>

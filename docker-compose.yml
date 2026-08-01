@@ -79,6 +79,9 @@ services:
       WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3010}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-}
+      # Chat ↔ Enterprise RAG（默认开启；false 时行为与旧 Chat 一致）
+      CHAT_RAG_ENABLED: ${CHAT_RAG_ENABLED:-true}
+      CHAT_RAG_MIN_SCORE: ${CHAT_RAG_MIN_SCORE:-0.28}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

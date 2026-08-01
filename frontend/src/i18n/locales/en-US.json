@@ -124,6 +124,8 @@
     "stopped": "Stopped",
     "error": "Error",
     "tokens": "tokens",
+    "sources": "Sources",
+    "knowledgeGrounded": "Grounded in knowledge base",
     "emptyTitle": "Start a new conversation",
     "emptyHint": "Pick an engine and ask a question. Every chat is saved to the database.",
     "welcome": "Hello, I am ZRH AI,\nindependently developed by ZRH Technology Group,\nand deployed on the ZRH AI Enterprise private AI platform.\n\nGlad to serve you.\nPlease tell me what you need.",
