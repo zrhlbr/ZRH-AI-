@@ -1,13 +1,16 @@
-import { StrictMode, Suspense, lazy } from 'react';
+import { StrictMode, Suspense, lazy, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import './i18n';
 import './index.css';
 import { AppShell } from './components/AppShell';
 import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { HomePage } from './pages/HomePage';
 import { StatusPage } from './pages/StatusPage';
 import { ModelsPage } from './pages/ModelsPage';
+import { AccountPage } from './pages/AccountPage';
 import { useAuthStore } from './store/authStore';
 
 // 聊天页（含 Markdown/Mermaid/KaTeX 渲染链）按需加载，保持首页轻量
@@ -19,6 +22,10 @@ const ToolsPage = lazy(() => import('./pages/ToolsPage').then((m) => ({ default:
 const McpPage = lazy(() => import('./pages/McpPage').then((m) => ({ default: m.McpPage })));
 const WorkflowsPage = lazy(() => import('./pages/WorkflowsPage').then((m) => ({ default: m.WorkflowsPage })));
 const BusinessPage = lazy(() => import('./pages/BusinessPage').then((m) => ({ default: m.BusinessPage })));
+const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
+const SuperAdminPage = lazy(() =>
+  import('./pages/SuperAdminPage').then((m) => ({ default: m.SuperAdminPage })),
+);
 
 /** 路由守卫：未登录跳转登录页 */
 function RequireAuth() {
@@ -30,18 +37,27 @@ function RequireAuth() {
 }
 
 /** 已登录（含资料）访问登录页 → 回首页 */
-function RedirectIfAuthed() {
+function RedirectIfAuthed({ children }: { children: ReactNode }) {
   const accessToken = useAuthStore((s) => s.accessToken);
   const profile = useAuthStore((s) => s.profile);
   // 必须等待 profile 就绪，否则首页权限判断会在资料到达前执行
   if (accessToken && profile) {
     return <Navigate to="/" replace />;
   }
-  return <LoginPage />;
+  return <>{children}</>;
 }
 
 const router = createBrowserRouter([
-  { path: '/login', element: <RedirectIfAuthed /> },
+  { path: '/login', element: <RedirectIfAuthed><LoginPage /></RedirectIfAuthed> },
+  { path: '/register', element: <RedirectIfAuthed><RegisterPage /></RedirectIfAuthed> },
+  {
+    path: '/forgot-password',
+    element: (
+      <RedirectIfAuthed>
+        <ForgotPasswordPage />
+      </RedirectIfAuthed>
+    ),
+  },
   {
     element: <RequireAuth />,
     children: [
@@ -59,6 +75,9 @@ const router = createBrowserRouter([
           { path: '/mcp/*', element: <Suspense fallback={null}><McpPage /></Suspense> },
           { path: '/workflows/*', element: <Suspense fallback={null}><WorkflowsPage /></Suspense> },
           { path: '/business/*', element: <Suspense fallback={null}><BusinessPage /></Suspense> },
+          { path: '/account', element: <AccountPage /> },
+          { path: '/admin/*', element: <Suspense fallback={null}><AdminPage /></Suspense> },
+          { path: '/superadmin/*', element: <Suspense fallback={null}><SuperAdminPage /></Suspense> },
           { path: '/status', element: <StatusPage /> },
         ],
       },

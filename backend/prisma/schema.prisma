@@ -25,6 +25,11 @@ model User {
   username     String         @unique
   displayName  String
   passwordHash String
+  /// V1.2：可选登录标识（邮箱 / 手机）
+  email        String?        @unique
+  phone        String?        @unique
+  emailVerifiedAt DateTime?
+  phoneVerifiedAt DateTime?
   status       String         @default("active") // active | disabled
   roleId       Int
   role         Role           @relation(fields: [roleId], references: [id])
@@ -36,6 +41,13 @@ model User {
   chatParams   ChatParams?
   knowledgeDocuments KnowledgeDocument[]
   knowledgeFolders   KnowledgeFolder[]
+  /// V1.2 User Center
+  profile           UserProfile?
+  loginLogs         UserLoginLog[]
+  devices           UserDevice[]
+  sessions          UserSession[]
+  notifications     UserNotification[]
+  passwordResets    PasswordResetToken[]
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
@@ -928,4 +940,157 @@ model BusinessAuditLog {
   @@index([systemId, createdAt])
   @@index([userId, createdAt])
   @@map("business_audit_logs")
+}
+
+// ============ V1.2 P1：User Center / Admin / Super Admin ============
+
+model UserProfile {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nickname    String?
+  avatarUrl   String?
+  country     String?
+  language    String   @default("zh-CN") // zh-CN | my-MM | en-US
+  bio         String?
+  timezone    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("user_profiles")
+}
+
+model UserLoginLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  method    String   // username | email | phone
+  success   Boolean
+  ip        String?
+  userAgent String?
+  detail    String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("user_login_logs")
+}
+
+model UserDevice {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId   String
+  name       String?
+  platform   String?
+  userAgent  String?
+  lastIp     String?
+  lastSeenAt DateTime  @default(now())
+  trusted    Boolean   @default(false)
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([userId, deviceId])
+  @@index([userId])
+  @@map("user_devices")
+}
+
+model UserSession {
+  id               Int       @id @default(autoincrement())
+  userId           Int
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String?   @unique
+  ip               String?
+  userAgent        String?
+  rememberMe       Boolean   @default(false)
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  lastActiveAt     DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@map("user_sessions")
+}
+
+model UserNotification {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  level     String    @default("info") // info | warn | critical
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@map("user_notifications")
+}
+
+model SystemAnnouncement {
+  id          Int       @id @default(autoincrement())
+  title       String
+  body        String
+  locale      String    @default("zh-CN")
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  createdBy   Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([published, publishedAt])
+  @@map("system_announcements")
+}
+
+model SystemConfig {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  group     String   @default("general") // general | smtp | oauth | cloudflare | ai | license
+  secret    Boolean  @default(false)
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([group])
+  @@map("system_configs")
+}
+
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  channel   String    // email | phone | admin
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model VerificationCode {
+  id        Int       @id @default(autoincrement())
+  target    String    // email or phone
+  channel   String    // email | phone
+  purpose   String    // register | reset | bind
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([target, purpose, createdAt])
+  @@map("verification_codes")
+}
+
+model InviteCode {
+  id        Int       @id @default(autoincrement())
+  code      String    @unique
+  roleCode  String    @default("USER")
+  maxUses   Int       @default(1)
+  usedCount Int       @default(0)
+  enabled   Boolean   @default(true)
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@map("invite_codes")
 }

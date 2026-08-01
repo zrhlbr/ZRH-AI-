@@ -35,6 +35,9 @@ export function AppShell() {
     { to: '/workflows', key: 'menu:workflows', label: t('nav.workflows'), icon: zrhIcons.workflows },
     { to: '/business', key: 'menu:business', label: t('nav.business'), icon: zrhIcons.business },
     { to: '/ai/models', key: 'menu:ai-models', label: t('nav.models'), icon: zrhIcons.cpu },
+    { to: '/account', key: 'menu:account', label: t('nav.account'), icon: zrhIcons.user },
+    { to: '/admin', key: 'menu:admin', label: t('nav.admin'), icon: zrhIcons.shield },
+    { to: '/superadmin', key: 'menu:superadmin', label: t('nav.superadmin'), icon: zrhIcons.database },
     { to: '/status', key: 'menu:status', label: t('nav.status'), icon: zrhIcons.dashboard },
   ].filter((item) => profile?.permissions.includes(item.key));
 
@@ -164,9 +167,13 @@ export function AppShell() {
               <LanguageSwitcher />
               {/* 用户菜单 */}
               <div className="flex items-center gap-2 border-l border-zrh-border pl-2 sm:pl-3">
-                <span className="hidden text-xs text-zrh-text-dim md:inline">
+                <button
+                  type="button"
+                  className="hidden text-xs text-zrh-text-dim hover:text-zrh-accent md:inline"
+                  onClick={() => navigate('/account')}
+                >
                   {profile?.displayName ?? profile?.username}
-                </span>
+                </button>
                 <ZButton variant="ghost" size="sm" onClick={() => void logout()}>
                   {t('auth.logout')}
                 </ZButton>

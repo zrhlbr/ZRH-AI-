@@ -1,5 +1,5 @@
-import { FormEvent, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { FormEvent, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { TechBackground } from '../components/background/TechBackground';
@@ -9,28 +9,50 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { brand } from '../design-system/theme';
 import { fadeInUp, baseTransition } from '../design-system/animations';
 import { api, ApiError } from '../api/client';
+import { v12Api } from '../api/v12';
 import { useAuthStore } from '../store/authStore';
 
+const REMEMBER_KEY = 'zrh-ai-remember-account';
+
 /**
- * 登录页 — 左侧数字地球科技背景，右侧管理员登录面板。
+ * 登录中心 — 账号 / 手机号 / 邮箱 + Remember Me + 三语言
  */
 export function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { setTokens, setProfile } = useAuthStore();
 
-  const [username, setUsername] = useState('');
+  const [account, setAccount] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(REMEMBER_KEY);
+      if (saved) {
+        setAccount(saved);
+        setRememberMe(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      const tokens = await api.login(username.trim(), password);
+      const tokens = await v12Api.login(account.trim(), password, rememberMe);
       setTokens(tokens.accessToken, tokens.refreshToken);
+      try {
+        if (rememberMe) window.localStorage.setItem(REMEMBER_KEY, account.trim());
+        else window.localStorage.removeItem(REMEMBER_KEY);
+      } catch {
+        // ignore
+      }
       const profile = await api.profile();
       setProfile(profile);
       navigate('/', { replace: true });
@@ -77,17 +99,18 @@ export function LoginPage() {
 
             <div className="zrh-glass zrh-glow-border zrh-hud rounded-2xl p-6 sm:p-8">
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-zrh-text">{t('auth.adminLogin')}</h2>
+                <h2 className="text-lg font-semibold text-zrh-text">{t('auth.loginTitle')}</h2>
                 <LanguageSwitcher />
               </div>
 
               <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-4">
                 <ZInput
-                  label={t('auth.username')}
-                  name="username"
+                  label={t('auth.account')}
+                  name="account"
                   autoComplete="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={account}
+                  onChange={(e) => setAccount(e.target.value)}
+                  placeholder={t('auth.accountHint')}
                   required
                 />
                 <ZInput
@@ -100,6 +123,15 @@ export function LoginPage() {
                   required
                 />
 
+                <label className="flex items-center gap-2 text-xs text-zrh-text-dim">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
+                  {t('auth.rememberMe')}
+                </label>
+
                 {error && (
                   <p className="rounded-lg border border-zrh-err/40 bg-zrh-err/10 px-3 py-2 text-xs text-zrh-err">
                     {t('auth.loginFailed')}: {error}
@@ -110,6 +142,15 @@ export function LoginPage() {
                   {loading ? t('auth.loggingIn') : t('auth.login')}
                 </ZButton>
               </form>
+
+              <div className="mt-4 flex items-center justify-between text-xs text-zrh-text-dim">
+                <Link to="/register" className="text-zrh-accent hover:underline">
+                  {t('auth.register')}
+                </Link>
+                <Link to="/forgot-password" className="hover:text-zrh-accent">
+                  {t('auth.forgotPassword')}
+                </Link>
+              </div>
             </div>
 
             <p className="mt-6 text-center text-[10px] text-zrh-text-dim">{brand.copyright}</p>

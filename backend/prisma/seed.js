@@ -1,7 +1,7 @@
 /**
  * ZRH AI 数据库种子脚本（幂等，可重复执行）
- * - 三个角色：SUPER_ADMIN / ADMIN / USER
- * - 权限目录：菜单 / 按钮 / API 三类
+ * - 角色：SUPER_ADMIN / ADMIN / USER / VIP / ENTERPRISE
+ * - 权限目录：菜单 / 按钮 / API 三类（含 V1.2 User Center / Admin / Super Admin）
  * - 超级管理员初始账号（用户名/密码来自环境变量）
  */
 const { PrismaClient } = require('@prisma/client');
@@ -73,51 +73,76 @@ const PERMISSIONS = [
   { code: 'api:business:read', type: 'API', name: 'Business 读取接口' },
   { code: 'api:business:execute', type: 'API', name: 'Business 执行接口' },
   { code: 'api:business:admin', type: 'API', name: 'Business 管理接口' },
+  // V1.2 P1：User Center / Admin / Super Admin
+  { code: 'menu:account', type: 'MENU', name: '用户中心菜单' },
+  { code: 'menu:admin', type: 'MENU', name: 'Admin 后台菜单' },
+  { code: 'menu:superadmin', type: 'MENU', name: 'Super Admin 菜单' },
+  { code: 'api:user-center:read', type: 'API', name: '用户中心读取' },
+  { code: 'api:user-center:write', type: 'API', name: '用户中心写入' },
+  { code: 'api:users:read', type: 'API', name: '用户管理读取' },
+  { code: 'api:users:admin', type: 'API', name: '用户管理变更' },
+  { code: 'api:roles:read', type: 'API', name: '角色权限读取' },
+  { code: 'api:admin:read', type: 'API', name: 'Admin 读取' },
+  { code: 'api:admin:write', type: 'API', name: 'Admin 写入' },
+  { code: 'api:superadmin:read', type: 'API', name: 'Super Admin 读取' },
+  { code: 'api:superadmin:write', type: 'API', name: 'Super Admin 写入' },
+];
+
+const USER_BASE_PERMISSIONS = [
+  'menu:home',
+  'menu:status',
+  'menu:chat',
+  'menu:account',
+  'button:status:refresh',
+  'api:system:cpu',
+  'api:system:memory',
+  'api:system:network',
+  'api:system:storage',
+  'api:system:docker',
+  'api:ollama:read',
+  'api:auth:profile',
+  'api:user-center:read',
+  'api:user-center:write',
+  'api:chat:read',
+  'api:chat:write',
+  'api:chat:delete',
+  'api:prompts:read',
+  'api:parameters:write',
+  'api:ai:read',
+  'menu:knowledge',
+  'api:knowledge:read',
+  'api:knowledge:write',
+  'api:knowledge:delete',
+  'menu:rag',
+  'api:rag:read',
+  'api:rag:write',
+  'menu:agents',
+  'api:agents:read',
+  'api:agents:chat',
+  'menu:tools',
+  'api:tools:read',
+  'api:tools:execute',
+  'menu:mcp',
+  'api:mcp:read',
+  'menu:workflows',
+  'api:workflows:read',
+  'api:workflows:execute',
+  'menu:business',
+  'api:business:read',
+  'api:business:execute',
 ];
 
 const ROLE_PERMISSIONS = {
   SUPER_ADMIN: PERMISSIONS.map((p) => p.code), // 全部权限
-  ADMIN: PERMISSIONS.filter((p) => p.code !== 'button:user:manage').map((p) => p.code),
-  USER: [
-    'menu:home',
-    'menu:status',
-    'menu:chat',
-    'button:status:refresh',
-    'api:system:cpu',
-    'api:system:memory',
-    'api:system:network',
-    'api:system:storage',
-    'api:system:docker',
-    'api:ollama:read',
-    'api:auth:profile',
-    'api:chat:read',
-    'api:chat:write',
-    'api:chat:delete',
-    'api:prompts:read',
-    'api:parameters:write',
-    'api:ai:read',
-    'menu:knowledge',
-    'api:knowledge:read',
-    'api:knowledge:write',
-    'api:knowledge:delete',
-    'menu:rag',
-    'api:rag:read',
-    'api:rag:write',
-    'menu:agents',
-    'api:agents:read',
-    'api:agents:chat',
-    'menu:tools',
-    'api:tools:read',
-    'api:tools:execute',
-    'menu:mcp',
-    'api:mcp:read',
-    'menu:workflows',
-    'api:workflows:read',
-    'api:workflows:execute',
-    'menu:business',
-    'api:business:read',
-    'api:business:execute',
-  ],
+  ADMIN: PERMISSIONS.filter(
+    (p) =>
+      p.code !== 'button:user:manage' &&
+      p.code !== 'menu:superadmin' &&
+      !p.code.startsWith('api:superadmin:'),
+  ).map((p) => p.code),
+  USER: USER_BASE_PERMISSIONS,
+  VIP: USER_BASE_PERMISSIONS,
+  ENTERPRISE: USER_BASE_PERMISSIONS,
 };
 
 // 阶段 3：默认模型配置（与 Ollama 实时清单合并）
@@ -168,10 +193,12 @@ async function main() {
     ['SUPER_ADMIN', '超级管理员'],
     ['ADMIN', '普通管理员'],
     ['USER', '普通用户'],
+    ['VIP', 'VIP 用户'],
+    ['ENTERPRISE', '企业用户'],
   ]) {
     roles[code] = await prisma.role.upsert({ where: { code }, update: { name }, create: { code, name } });
   }
-  console.log('[seed] roles: SUPER_ADMIN / ADMIN / USER');
+  console.log('[seed] roles: SUPER_ADMIN / ADMIN / USER / VIP / ENTERPRISE');
 
   // 3. 角色-权限映射（全量重建，幂等）
   for (const [roleCode, permCodes] of Object.entries(ROLE_PERMISSIONS)) {
