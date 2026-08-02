@@ -1,10 +1,12 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { NavLink, Navigate, useLocation } from 'react-router-dom';
+import { Link, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ZBadge, ZButton, ZCard, ZInput } from '../components/ui';
+import { ZBadge, ZButton, ZCard, ZEmpty, ZInput, ZSkeleton } from '../components/ui';
 import { ApiError } from '../api/client';
 import { AdminDashboard, v12Api } from '../api/v12';
 import { useAuthStore } from '../store/authStore';
+import { brand } from '../design-system/theme';
+import { BrandMark } from '../design-system/BrandMark';
 
 function DashboardView() {
   const { t } = useTranslation();
@@ -18,8 +20,23 @@ function DashboardView() {
       .catch((err) => setError(err instanceof ApiError ? err.message : 'error'));
   }, []);
 
-  if (error) return <p className="text-xs text-zrh-err">{error}</p>;
-  if (!data) return <p className="text-xs text-zrh-text-dim">{t('common.loading')}</p>;
+  if (error) {
+    return (
+      <ZEmpty title={t('common.error')} description={error} action={<ZButton size="sm" onClick={() => window.location.reload()}>{t('common.retry')}</ZButton>} />
+    );
+  }
+  if (!data) {
+    return (
+      <div className="space-y-4">
+        <ZSkeleton className="h-7 w-40" />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <ZSkeleton key={i} className="h-24 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const cards = [
     { label: t('admin.usersToday'), value: data.users.today },
@@ -30,33 +47,58 @@ function DashboardView() {
     { label: t('admin.announcements'), value: data.announcements },
   ];
 
+  const infra = (data.infra || {}) as Record<string, unknown>;
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-lg font-semibold text-zrh-accent">{t('admin.dashboard')}</h1>
+    <div className="space-y-5">
+      <div className="flex items-start gap-3">
+        <BrandMark size={48} className="mt-0.5 h-12 w-12 shrink-0 rounded-xl" />
+        <div>
+          <h1 className="font-display text-lg font-semibold tracking-wide text-zrh-accent">{t('admin.dashboard')}</h1>
+          <p className="mt-1 text-xs text-zrh-text-dim">
+            {brand.name} · {brand.subtitle}
+          </p>
+        </div>
+      </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {cards.map((c) => (
-          <ZCard key={c.label} padded className="!p-4">
-            <p className="text-[11px] text-zrh-text-dim">{c.label}</p>
-            <p className="mt-1 text-2xl font-semibold text-zrh-text">{c.value}</p>
+          <ZCard key={c.label} padded className="!p-4" glow>
+            <p className="text-[11px] uppercase tracking-wider text-zrh-text-dim">{c.label}</p>
+            <p className="mt-2 font-display text-3xl font-semibold text-zrh-text">{c.value}</p>
           </ZCard>
         ))}
       </div>
       <div className="grid gap-3 lg:grid-cols-2">
-        <ZCard title="GPU / CPU / Memory / Docker" glow>
-          <pre className="max-h-64 overflow-auto text-[10px] text-zrh-text-dim">
-            {JSON.stringify(data.infra, null, 2)}
-          </pre>
+        <ZCard title={t('admin.monitor')} glow>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            {['cpu', 'memory', 'gpu', 'docker', 'redis', 'postgres'].map((key) => {
+              const val = infra[key];
+              const text =
+                val == null
+                  ? '—'
+                  : typeof val === 'object'
+                    ? JSON.stringify(val)
+                    : String(val);
+              return (
+                <div key={key} className="rounded-lg border border-zrh-border/80 bg-zrh-bg/40 px-3 py-2">
+                  <p className="text-[10px] uppercase tracking-wider text-zrh-text-dim">{key}</p>
+                  <p className="mt-1 truncate text-zrh-text" title={text}>
+                    {text}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
         </ZCard>
         <ZCard title={t('admin.modules')} glow>
           <ul className="space-y-1.5 text-xs">
             {Object.entries(data.modules).map(([k, v]) => (
-              <li key={k} className="flex items-center justify-between">
+              <li key={k} className="flex items-center justify-between rounded-md px-1 py-1 hover:bg-zrh-surface-raised">
                 <span className="capitalize text-zrh-text">{k}</span>
-                <ZBadge tone={v ? 'ok' : 'dim'}>{v ? 'ON' : 'OFF'}</ZBadge>
+                <ZBadge tone={v ? 'ok' : 'dim'}>{v ? t('common.on') : t('common.off')}</ZBadge>
               </li>
             ))}
           </ul>
-          {data.ai.note && <p className="mt-3 text-[11px] text-zrh-text-dim">{data.ai.note}</p>}
         </ZCard>
       </div>
     </div>
@@ -275,13 +317,54 @@ function AnnouncementsView() {
   );
 }
 
-function PlaceholderView({ title }: { title: string }) {
+/** Enterprise module console — links to live product pages (no placeholder demos) */
+function ModuleHubView({
+  title,
+  description,
+  href,
+  cta,
+}: {
+  title: string;
+  description: string;
+  href: string;
+  cta: string;
+}) {
+  return (
+    <div className="space-y-4">
+      <h1 className="font-display text-lg font-semibold tracking-wide text-zrh-accent">{title}</h1>
+      <ZCard glow hud>
+        <p className="text-sm text-zrh-text">{description}</p>
+        <div className="mt-4">
+          <Link to={href}>
+            <ZButton size="sm">{cta}</ZButton>
+          </Link>
+        </div>
+      </ZCard>
+    </div>
+  );
+}
+
+function LogsView() {
   const { t } = useTranslation();
   return (
-    <ZCard title={title} glow>
-      <p className="text-xs text-zrh-text-dim">{t('admin.manageShell')}</p>
-      <p className="mt-2 text-[11px] text-zrh-text-dim">{t('admin.noTouchV11')}</p>
-    </ZCard>
+    <div className="space-y-4">
+      <h1 className="font-display text-lg font-semibold text-zrh-accent">{t('admin.logs')}</h1>
+      <ZCard title={t('admin.auditTrail')} glow>
+        <p className="text-xs leading-relaxed text-zrh-text-dim">{t('admin.logsHint')}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link to="/account">
+            <ZButton size="sm" variant="secondary">
+              {t('nav.account')}
+            </ZButton>
+          </Link>
+          <Link to="/status">
+            <ZButton size="sm" variant="ghost">
+              {t('nav.status')}
+            </ZButton>
+          </Link>
+        </div>
+      </ZCard>
+    </div>
   );
 }
 
@@ -292,7 +375,7 @@ export function AdminPage() {
   const location = useLocation();
 
   if (!hasPermission('menu:admin') && !hasPermission('api:admin:read')) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   const items = [
@@ -320,17 +403,77 @@ export function AdminPage() {
   else if (path.startsWith('/admin/roles')) body = <RolesView />;
   else if (path.startsWith('/admin/permissions')) body = <PermissionsView />;
   else if (path.startsWith('/admin/announcements')) body = <AnnouncementsView />;
-  else if (path.startsWith('/admin/knowledge')) body = <PlaceholderView title={t('admin.knowledge')} />;
-  else if (path.startsWith('/admin/models')) body = <PlaceholderView title={t('admin.models')} />;
-  else if (path.startsWith('/admin/agents')) body = <PlaceholderView title={t('admin.agents')} />;
-  else if (path.startsWith('/admin/workflows')) body = <PlaceholderView title={t('admin.workflows')} />;
-  else if (path.startsWith('/admin/mcp')) body = <PlaceholderView title={t('admin.mcp')} />;
-  else if (path.startsWith('/admin/business')) body = <PlaceholderView title={t('admin.business')} />;
-  else if (path.startsWith('/admin/logs')) body = <PlaceholderView title={t('admin.logs')} />;
-  else if (path.startsWith('/admin/monitor')) body = <PlaceholderView title={t('admin.monitor')} />;
-  else if (path.startsWith('/admin/settings')) body = <PlaceholderView title={t('admin.settings')} />;
-  else if (path.startsWith('/admin/seo')) body = <PlaceholderView title={t('admin.seo')} />;
-  else if (path.startsWith('/admin/i18n')) body = <PlaceholderView title={t('admin.i18n')} />;
+  else if (path.startsWith('/admin/knowledge'))
+    body = (
+      <ModuleHubView
+        title={t('admin.knowledge')}
+        description={t('admin.hubKnowledge')}
+        href="/knowledge"
+        cta={t('admin.openModule')}
+      />
+    );
+  else if (path.startsWith('/admin/models'))
+    body = (
+      <ModuleHubView
+        title={t('admin.models')}
+        description={t('admin.hubModels')}
+        href="/ai/models"
+        cta={t('admin.openModule')}
+      />
+    );
+  else if (path.startsWith('/admin/agents'))
+    body = (
+      <ModuleHubView title={t('admin.agents')} description={t('admin.hubAgents')} href="/agents" cta={t('admin.openModule')} />
+    );
+  else if (path.startsWith('/admin/workflows'))
+    body = (
+      <ModuleHubView
+        title={t('admin.workflows')}
+        description={t('admin.hubWorkflows')}
+        href="/workflows"
+        cta={t('admin.openModule')}
+      />
+    );
+  else if (path.startsWith('/admin/mcp'))
+    body = (
+      <ModuleHubView title={t('admin.mcp')} description={t('admin.hubMcp')} href="/mcp" cta={t('admin.openModule')} />
+    );
+  else if (path.startsWith('/admin/business'))
+    body = (
+      <ModuleHubView
+        title={t('admin.business')}
+        description={t('admin.hubBusiness')}
+        href="/business"
+        cta={t('admin.openModule')}
+      />
+    );
+  else if (path.startsWith('/admin/logs')) body = <LogsView />;
+  else if (path.startsWith('/admin/monitor'))
+    body = (
+      <ModuleHubView
+        title={t('admin.monitor')}
+        description={t('admin.hubMonitor')}
+        href="/status"
+        cta={t('admin.openModule')}
+      />
+    );
+  else if (path.startsWith('/admin/settings'))
+    body = (
+      <ModuleHubView
+        title={t('admin.settings')}
+        description={t('admin.hubSettings')}
+        href="/superadmin/configs"
+        cta={t('admin.openModule')}
+      />
+    );
+  else if (path.startsWith('/admin/seo'))
+    body = (
+      <ModuleHubView title={t('admin.seo')} description={t('admin.hubSeo')} href="/admin" cta={t('admin.backDashboard')} />
+    );
+  else if (path.startsWith('/admin/i18n'))
+    body = (
+      <ModuleHubView title={t('admin.i18n')} description={t('admin.hubI18n')} href="/admin" cta={t('admin.backDashboard')} />
+    );
   else if (!/^\/admin\/?$/.test(path)) body = <Navigate to="/admin" replace />;
 
   return (

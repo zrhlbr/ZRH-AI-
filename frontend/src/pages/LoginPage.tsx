@@ -7,6 +7,7 @@ import { DigitalGlobe } from '../components/background/DigitalGlobe';
 import { ZButton, ZInput } from '../components/ui';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { brand } from '../design-system/theme';
+import { BrandMark } from '../design-system/BrandMark';
 import { fadeInUp, baseTransition } from '../design-system/animations';
 import { api, ApiError } from '../api/client';
 import { v12Api } from '../api/v12';
@@ -55,7 +56,7 @@ export function LoginPage() {
       }
       const profile = await api.profile();
       setProfile(profile);
-      navigate('/', { replace: true });
+      navigate('/home', { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('auth.loginFailed'));
       setLoading(false);
@@ -73,18 +74,19 @@ export function LoginPage() {
             initial="initial"
             animate="animate"
             transition={{ ...baseTransition, delay: 0.1 }}
-            className="relative z-10 text-center"
+            className="relative z-10 flex flex-col items-center text-center"
           >
-            <h1 className="text-5xl font-bold tracking-[0.25em] text-zrh-accent lg:text-6xl">
+            <BrandMark size={192} className="h-40 w-40 rounded-[2rem] shadow-zrh-glow lg:h-48 lg:w-48" />
+            <h1 className="mt-6 text-5xl font-bold tracking-brand text-zrh-accent lg:text-6xl">
               {brand.name}
             </h1>
             <p className="mt-4 text-sm text-zrh-text-dim">{brand.groupZh}</p>
-            <p className="mt-1 text-xs tracking-[0.25em] text-zrh-text-dim/80">{brand.groupEn}</p>
+            <p className="mt-1 text-xs tracking-hud text-zrh-text-dim/80">{brand.groupEn}</p>
           </motion.div>
         </div>
 
         {/* 右侧：登录面板 */}
-        <div className="flex w-full items-center justify-center px-4 md:w-[440px] md:border-l md:border-zrh-border md:bg-zrh-surface/40 md:backdrop-blur-xl">
+        <div className="flex w-full items-center justify-center px-4 md:w-[440px] md:border-l md:border-zrh-border md:bg-zrh-surface/70 md:backdrop-blur-xl">
           <motion.div
             variants={fadeInUp}
             initial="initial"
@@ -92,12 +94,13 @@ export function LoginPage() {
             transition={baseTransition}
             className="w-full max-w-sm"
           >
-            <div className="mb-8 text-center md:hidden">
-              <h1 className="text-4xl font-bold tracking-[0.25em] text-zrh-accent">{brand.logo}</h1>
+            <div className="mb-8 flex flex-col items-center text-center md:hidden">
+              <BrandMark size={96} className="h-20 w-20 rounded-zrh-2xl shadow-zrh-glow" />
+              <h1 className="mt-3 text-4xl font-bold tracking-brand text-zrh-accent">{brand.logo}</h1>
               <p className="mt-2 text-xs text-zrh-text-dim">{brand.subtitle}</p>
             </div>
 
-            <div className="zrh-glass zrh-glow-border zrh-hud rounded-2xl p-6 sm:p-8">
+            <div className="zrh-glass zrh-glow-border rounded-zrh-2xl p-6 sm:p-8">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-zrh-text">{t('auth.loginTitle')}</h2>
                 <LanguageSwitcher />
@@ -123,9 +126,10 @@ export function LoginPage() {
                   required
                 />
 
-                <label className="flex items-center gap-2 text-xs text-zrh-text-dim">
+                <label className="flex items-center gap-2.5 text-xs text-zrh-text-dim">
                   <input
                     type="checkbox"
+                    className="zrh-checkbox"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
                   />
@@ -153,7 +157,13 @@ export function LoginPage() {
               </div>
             </div>
 
-            <p className="mt-6 text-center text-[10px] text-zrh-text-dim">{brand.copyright}</p>
+            <p className="mt-6 text-center text-[10px] text-zrh-text-dim">
+              <Link to="/release-notes" className="text-zrh-accent hover:underline">
+                {t('releaseNotes.link')}
+              </Link>
+              <span className="mx-2 text-zrh-border">·</span>
+              <span>{brand.copyright}</span>
+            </p>
           </motion.div>
         </div>
       </div>

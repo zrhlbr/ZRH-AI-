@@ -6,6 +6,7 @@ import { TechBackground } from '../components/background/TechBackground';
 import { ZButton, ZInput } from '../components/ui';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { brand } from '../design-system/theme';
+import { BrandMark } from '../design-system/BrandMark';
 import { fadeInUp, baseTransition } from '../design-system/animations';
 import { ApiError } from '../api/client';
 import { v12Api } from '../api/v12';
@@ -75,7 +76,7 @@ export function RegisterPage() {
       setTokens(tokens.accessToken, tokens.refreshToken);
       const profile = await api.profile();
       setProfile(profile);
-      navigate('/', { replace: true });
+      navigate('/home', { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('auth.registerFailed'));
       setLoading(false);
@@ -93,7 +94,8 @@ export function RegisterPage() {
           className="w-full max-w-md"
         >
           <div className="mb-6 text-center">
-            <h1 className="text-3xl font-bold tracking-[0.2em] text-zrh-accent">{brand.logo}</h1>
+            <BrandMark size={72} className="mx-auto mb-3 h-[72px] w-[72px] rounded-2xl" />
+            <h1 className="text-3xl font-bold tracking-brand text-zrh-accent">{brand.logo}</h1>
             <p className="mt-2 text-xs text-zrh-text-dim">{t('auth.registerTitle')}</p>
           </div>
 

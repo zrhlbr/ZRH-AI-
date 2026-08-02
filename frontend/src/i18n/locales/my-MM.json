@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "ZRH AI",
-    "tagline": "ZRH Technology Group · Enterprise Private AI Platform"
+    "tagline": "ZRH Technology Group ၏ လုပ်ငန်းသုံး AI"
   },
   "nav": {
     "home": "ပင်မစာမျက်နှာ",
@@ -10,15 +10,16 @@
     "chat": "AI စကားပြော",
     "models": "AI မော်ဒယ်များ",
     "knowledge": "ဗဟုသုတ ပလက်ဖောင်း",
-    "rag": "Enterprise RAG",
-    "agents": "Agent Center",
-    "tools": "Tool Center",
-    "mcp": "MCP Center",
-    "workflows": "Workflow Center",
-    "business": "Business Hub",
+    "rag": "လုပ်ငန်း RAG",
+    "agents": "Agent များ",
+    "tools": "ကိရိယာများ",
+    "mcp": "MCP",
+    "workflows": "အလုပ်စဉ်များ",
+    "business": "လုပ်ငန်းဗဟို",
     "account": "အသုံးပြုသူစင်တာ",
-    "admin": "Admin",
-    "superadmin": "Super Admin"
+    "developer": "Developer",
+    "admin": "စီမံခန့်ခွဲမှု",
+    "superadmin": "အထူးစီမံ"
   },
   "common": {
     "close": "ပိတ်ရန်",
@@ -30,7 +31,13 @@
     "noData": "ဒေတာမရှိပါ",
     "optional": "ရွေးချယ်နိုင်",
     "reserved": "ကြိုတင်ထား",
-    "actions": "လုပ်ဆောင်ချက်"
+    "actions": "လုပ်ဆောင်ချက်",
+    "on": "ဖွင့်",
+    "off": "ပိတ်",
+    "retry": "ပြန်ကြိုးစားရန်",
+    "empty": "အကြောင်းအရာ မရှိသေးပါ",
+    "error": "ဖွင့်၍မရပါ",
+    "success": "အောင်မြင်ပါသည်"
   },
   "auth": {
     "adminLogin": "အက်ဒမင် လော့ဂ်အင်",
@@ -82,7 +89,7 @@
     "history": "လော့ဂ်အင်မှတ်တမ်း",
     "apiTokens": "API Token",
     "nickname": "အမည်ပြောင်",
-    "avatar": "Avatar URL",
+    "avatar": "ပုံရိပ်",
     "country": "နိုင်ငံ",
     "language": "ဘာသာစကား",
     "bio": "မိတ်ဆက်",
@@ -97,17 +104,17 @@
     "loadFailed": "ဖွင့်မရပါ"
   },
   "admin": {
-    "title": "Admin Platform",
-    "dashboard": "Dashboard",
+    "title": "စီမံခန့်ခွဲမှု",
+    "dashboard": "ဒက်ရှ်ဘုတ်",
     "users": "အသုံးပြုသူစီမံ",
     "roles": "အခန်းကဏ္ဍ",
     "permissions": "ခွင့်ပြုချက်",
     "knowledge": "ဗဟုသုတ",
     "models": "မော်ဒယ်",
-    "agents": "Agent",
-    "workflows": "Workflow",
+    "agents": "Agent များ",
+    "workflows": "အလုပ်စဉ်များ",
     "mcp": "MCP",
-    "business": "Business",
+    "business": "လုပ်ငန်း",
     "logs": "မှတ်တမ်း",
     "monitor": "စောင့်ကြည့်",
     "settings": "ဆက်တင်",
@@ -133,23 +140,71 @@
     "publish": "ထုတ်ဝေရန်",
     "published": "ထုတ်ဝေပြီး",
     "draft": "မူကြမ်း",
-    "manageShell": "စီမံခန့်ခွဲမှု shell (P1) — V1.1 မော်ဂျူးစာမျက်နှာများကို မထိပါ။",
-    "noTouchV11": "AI Gateway / RAG / Knowledge / Workflow / Agent / MCP / Business / Chat မပြောင်းပါ။"
+    "manageShell": "လုပ်ငန်းစီမံခွင့်ကွန်ဆိုးလ်",
+    "noTouchV11": "တရားဝင်မော်ဂျူးစာမျက်နှာများမှတစ်ဆင့် စီမံပါ။",
+    "openModule": "မော်ဂျူးဖွင့်ရန်",
+    "backDashboard": "ဒက်ရှ်ဘုတ်သို့",
+    "auditTrail": "စစ်ဆေးမှတ်တမ်း",
+    "logsHint": "လော့ဂ်အင်မှတ်တမ်းကို အကောင့်စာမျက်နှာတွင် ကြည့်နိုင်သည်။ စနစ်အခြေအနေကို Status တွင် ကြည့်ပါ။",
+    "hubKnowledge": "ဗဟုသုတဘေ့စ်တွင် စာရွက်၊ ဖိုင်တွဲ၊ တဂ်နှင့် ရှာဖွေမှုကို စီမံပါ။",
+    "hubModels": "ရရှိနိုင်သော AI မော်ဒယ်များကို စီမံပါ။",
+    "hubAgents": "လုပ်ငန်း Agent များကို ပြင်ဆင်ပြီး လည်ပတ်ပါ။",
+    "hubWorkflows": "အလုပ်စဉ်များကို ဒီဇိုင်း၊ အချိန်ဇယားနှင့် အကောင်အထည်ဖော်ပါ။",
+    "hubMcp": "MCP ချိတ်ဆက်မှုများနှင့် ဆက်ရှင်များကို စီမံပါ။",
+    "hubBusiness": "လုပ်ငန်းချိတ်ဆက်မှုများကို စစ်ဆေးပါ။",
+    "hubMonitor": "စနစ်အခြေအနေစာမျက်နှာကို ဖွင့်ပါ။",
+    "hubSettings": "Super Admin တွင် လုံခြုံရေးနှင့် စနစ်သတ်မှတ်ချက်များကို စီမံပါ။",
+    "hubSeo": "အမှတ်တံဆိပ်နှင့် ဆိုက်အချက်အလက်ကို ZRH AI က စီမံသည်။",
+    "hubI18n": "UI သည် တရုတ်၊ မြန်မာ၊ အင်္ဂလိပ်ကို ထောက်ပံ့သည်။"
+  },
+  "developer": {
+    "title": "Developer Agent",
+    "newProject": "Workspace အမည်အသစ်",
+    "add": "ထည့်ရန်",
+    "files": "ဖိုင်များ",
+    "code": "ကုဒ်",
+    "selectFile": "ဖိုင်ရွေးပါ",
+    "agent": "Agent စကားပြော",
+    "chatHint": "အလုပ်ဖော်ပြပါ — ရေးရန် Plan အတည်ပြုရန်လိုသည်",
+    "ask": "မေးခွန်း သို့မဟုတ် လိုအပ်ချက်…",
+    "send": "ပို့ရန်",
+    "plan": "အစီအစဉ်",
+    "approve": "Plan အတည်ပြု",
+    "reject": "ငြင်းရန်",
+    "diff": "Diff",
+    "diffHint": "Plan အတည်ပြုပြီး Diff ထုတ်မည်",
+    "confirmDelete": "ဖျက်ရန် အတည်ပြု",
+    "approveDiff": "Diff အတည်ပြု",
+    "apply": "အသုံးပြု",
+    "terminal": "တားမီနယ်",
+    "git": "Git အခြေအနေ",
+    "search": "ကုဒ်ရှာဖွေ",
+    "history": "မှတ်တမ်း",
+    "runnerOk": "Runner အွန်လိုင်း",
+    "runnerDown": "Runner အော့ဖ်လိုင်း",
+    "index": "အညွှန်းပြန်တည်ဆောက်",
+    "indexOk": "အညွှန်းအသစ်ပြီးပါပြီ"
   },
   "superadmin": {
-    "title": "Super Admin",
+    "title": "အထူးစီမံ",
     "overview": "ခြုံငုံသုံးသပ်",
     "configs": "စနစ်ဖွဲ့စည်းမှု",
-    "ops": "Backup / Restore / Upgrade",
-    "integrations": "Cloudflare / SMTP / OAuth / License",
+    "ops": "လုပ်ငန်းဆောင်ရွက်မှု",
+    "integrations": "ပေါင်းစည်းမှုများ",
     "logs": "စနစ်မှတ်တမ်း",
     "infra": "အခြေခံအဆောက်အအုံ",
     "reserved": "ကြိုတင်ထားသော စွမ်းရည်",
-    "upsertConfig": "ဖွဲ့စည်းမှု ရေးရန်"
+    "upsertConfig": "ဖွဲ့စည်းမှု ရေးရန်",
+    "configKey": "ကီး",
+    "configGroup": "အုပ်စု",
+    "configValue": "တန်ဖိုး",
+    "secret": "လျှို့ဝှက်"
   },
   "theme": {
     "label": "အသွင်အပြင်",
-    "blackGold": "အနက်ရွှေ",
+    "blueWhite": "အပြာ-အဖြူ (ပုံမှန်)",
+    "blueWhiteDark": "အမှောင်မုဒ်",
+    "blackGold": "အနက်ရွှေ (အဟောင်း)",
     "deepSpaceBlue": "အာကာသအပြာနု",
     "midnightBlack": "သန့်ခင်းည"
   },
@@ -175,8 +230,8 @@
     "backend": "ဘက်အင်အခြေအနေ",
     "database": "ဒေတာဘေ့စ်အခြေအနေ",
     "redis": "Redis အခြေအနေ",
-    "ollama": "AI Runtime",
-    "models": "Engine List",
+    "ollama": "မော်ဒယ်အင်ဂျင်",
+    "models": "မော်ဒယ်များ",
     "memory": "မမိုရီ",
     "cores": "ကိုးး",
     "load": "ဝန်မှုံ",
@@ -189,7 +244,7 @@
     "version": "ဗားရှင်း",
     "timestamp": "အချိန်တံဆိပ်",
     "latency": "ကြာချိန်",
-    "modelName": "Engine",
+    "modelName": "မော်ဒယ်အမည်",
     "modelSize": "အရွယ်အစား",
     "modelModified": "ပြုပြင်ချိန်",
     "noData": "ဒေတာမရှိပါ"
@@ -201,11 +256,71 @@
     "en-US": "English"
   },
   "home": {
-    "stage": "ZRH AI Enterprise · Enterprise Private AI Platform",
+    "stage": "လုပ်ငန်းအဆင့်",
     "notice": "အခြေခံဘောင်အဆင့် အဆင်ပြေပါပြီ။ လုပ်ငန်းလုပ်ဆောင်ချက်များကို နောက်အဆင့်များတွင် ဖွင့်ပေးပါမည်။",
     "aiInputPlaceholder": "ZRH AI ကို မေးမြန်းပါ…",
     "aiInputStageHint": "ZRH AI နှင့် စကားပြောရန် မေးခွန်းရိုက်ထည့်ပါ။ ZRH Technology Group မှ တီထွင်ထားသည်။",
     "send": "ပို့ရန်"
+  },
+  "landing": {
+    "registerNow": "ယခုစာရင်းသွင်းရန်",
+    "login": "ဝင်ရောက်ရန်"
+  },
+  "pwa": {
+    "install": "ZRH AI ထည့်သွင်းရန်",
+    "installHint": "ဖုန်းပင်မစခရင်သို့ ထည့်ပြီး App ကဲ့သို့ ဖွင့်ပါ။",
+    "later": "နောက်မှ",
+    "iosStep1": "Safari အောက်ခြေရှိ Share ခလုတ်ကို နှိပ်ပါ",
+    "iosStep2": "ဆင်းကြည့်ပြီး Add to Home Screen ကို ရွေးပါ",
+    "iosStep3": "အတည်ပြုပြီးနောက် ပင်မစခရင်မှ ZRH AI ကို သီးခြားဖွင့်နိုင်သည်"
+  },
+  "releaseNotes": {
+    "title": "ဗားရှင်းမှတ်တမ်း",
+    "subtitle": "ZRH AI Enterprise ဗားရှင်းအသစ်များ",
+    "link": "ဗားရှင်းမှတ်တမ်း",
+    "currentVersion": "လက်ရှိဗားရှင်း v{{version}}",
+    "updates": "အသစ်များ",
+    "fixes": "ပြင်ဆင်ချက်များ",
+    "knownIssues": "သိရှိပြီးသော ပြဿနာများ",
+    "backHome": "ပင်မစာမျက်နှာသို့",
+    "v120": {
+      "summary": "အသုံးပြုသူစနစ်၊ Admin၊ Developer Agent နှင့် အပြာ-အဖြူ အပြင်အဆင်။",
+      "highlights": [
+        "အသုံးပြုသူ စာရင်းသွင်းခြင်းနှင့် အကောင့်စင်တာ",
+        "Admin / Super Admin",
+        "Developer Agent",
+        "အပြာ-အဖြူ နည်းပညာ အပြင်အဆင် (Design System V2.0) နှင့် Dark Mode",
+        "တရုတ် / မြန်မာ / အင်္ဂလိပ် ဘာသာစကား ပြည့်စုံမှု",
+        "PWA ထည့်သွင်းခြင်းနှင့် တရားဝင် အိုင်ကွန်",
+        "တည်ငြိမ်မှုနှင့် လုံခြုံရေး ပြင်ဆင်ချက်များ"
+      ],
+      "fixes": [
+        "Chat စီးဆင်းမှုနှင့် စကားပြောပြောင်းလဲမှု တည်ငြိမ်မှု",
+        "Knowledge / Enterprise RAG ACL နှင့် cache ခွဲခြားမှု",
+        "Workflow / Agent / MCP ခွင့်ပြုချက် တင်းကျပ်မှု"
+      ],
+      "known": [
+        "အချို့ splash ပုံများသည် အမှောင်အရောင် ကျန်ရှိသေးသည်။"
+      ]
+    },
+    "v110": {
+      "summary": "လုပ်ငန်းပလက်ဖောင်း တရားဝင် အွန်လိုင်းတင်ခြင်း။",
+      "highlights": [
+        "လုပ်ငန်းပလက်ဖောင်း တရားဝင် စတင်ခြင်း",
+        "Chat",
+        "Knowledge",
+        "Enterprise RAG",
+        "Agent",
+        "Workflow",
+        "MCP",
+        "Business Hub",
+        "အများပြည်သူ URL https://ai.zrhtech.com"
+      ],
+      "fixes": [
+        "ထုတ်လုပ်ရေး ကျန်းမာရေး စစ်ဆေးမှု တည်ငြိမ်မှု"
+      ],
+      "known": []
+    }
   },
   "chat": {
     "new": "စကားပြောအသစ်",
@@ -239,15 +354,15 @@
     "thinking": "ZRH AI ထုတ်နေပါသည်…",
     "stopped": "ရပ်ထားသည်",
     "error": "အမှား",
-    "tokens": "tokens",
+    "tokens": "တိုကင်",
     "sources": "ကိုးကားရင်းမြစ်များ",
     "knowledgeGrounded": "ဗဟုသုတအခြေခံဖြင့်",
     "emptyTitle": "စကားပြောအသစ် စတင်ပါ",
     "emptyHint": "Engine ရွေးပြီး မေးခွန်းမေးပါ။ စကားပြောအားလုံး သိမ်းဆည်းပါသည်။",
     "welcome": "မင်္ဂလာပါ၊ ကျွန်ုပ်သည် ZRH AI ဖြစ်ပါသည်၊\nZRH Technology Group မှ ကိုယ်တိုင်တီထွင်ထားပြီး၊\nZRH AI Enterprise ပုဂ္ဂလိက AI ပလက်ဖောင်းတွင် တပ်ဆင်ထားပါသည်။\n\nကူညီရန် အသင့်ရှိပါသည်။\nသင့်လိုအပ်ချက်ကို ပြောပြပါ။",
-    "brandGroup": "ZRH Technology Group",
-    "aiRuntime": "AI Runtime",
-    "model": "Engine",
+    "brandGroup": "ZRH နည်းပညာအုပ်စု",
+    "aiRuntime": "AI အပြေးအဆန်",
+    "model": "မော်ဒယ်",
     "modelSwitch": "Engine ပြောင်းရန်",
     "promptTemplate": "အခန်းကဏ္ဍ Prompt",
     "defaultPrompt": "မူလ Prompt",
@@ -256,12 +371,12 @@
     "chatCount": "စကားပြောအရေအတွက်",
     "messageCount": "စာချွန်",
     "params": "ပါရာမီတာများ",
-    "temperature": "Temperature",
+    "temperature": "အပူချိန်",
     "topP": "Top P",
     "topK": "Top K",
-    "repeatPenalty": "Repeat Penalty",
-    "contextLength": "Context Length",
-    "maxTokens": "Max Tokens",
+    "repeatPenalty": "ထပ်တလဲလဲ ဒဏ်",
+    "contextLength": "အကြောင်းအရာအရှည်",
+    "maxTokens": "အများဆုံးတိုကင်",
     "saveParams": "ပါရာမီတာ သိမ်းရန်",
     "paramsHint": "ပါရာမီတာများကို database တွင် သိမ်းဆည်းပြီး စာချစ်များအတွက် အကျိုးသက်ရောက်ပါသည်။",
     "systemStatus": "စနစ်အခြေအနေ",
@@ -274,6 +389,10 @@
       "running": "လည်ပတ်နေ",
       "stopped": "ရပ်ထား",
       "error": "အမှား"
+    },
+    "errors": {
+      "loadFailed": "စကားဝိုင်း ဖွင့်မရပါ။ ထပ်ကြိုးစားပါ။",
+      "streamFailed": "ထုတ်လုပ်မှု မအောင်မြင်ပါ။ ထပ်ကြိုးစားပါ သို့မဟုတ် ရပ်ပြီး ပြန်ပို့ပါ။"
     }
   },
   "knowledge": {
@@ -340,8 +459,8 @@
     "noSearchResults": "မတွေ့ပါ"
   },
   "rag": {
-    "title": "Enterprise RAG Engine",
-    "subtitle": "Query Rewrite · Retrieve · Re-rank · Cite · Memory",
+    "title": "လုပ်ငန်း RAG",
+    "subtitle": "ပြန်ရေး၊ ရှာဖွေ၊ ပြန်စီ၊ ကိုးကားဖြင့် လုပ်ငန်းအသိပညာကို မေးမြန်းပါ",
     "ask": "မေးရန်",
     "askAction": "RAG မေးရန်",
     "searchAction": "ရှာဖွေရန်သာ",
@@ -353,7 +472,7 @@
     "noCitations": "ကိုးကားချက်မရှိသေးပါ",
     "noRelated": "ဆက်စပ်စာရွက်စာတမ်းမရှိပါ",
     "latency": "ကြာချိန်",
-    "hitRate": "Hit rate",
+    "hitRate": "ထိမှန်နှုန်း",
     "pendingTasks": "Embedding အလုပ်များ",
     "modes": {
       "hybrid": "ရောစပ်",
@@ -362,9 +481,9 @@
     }
   },
   "agents": {
-    "title": "Enterprise AI Agent Center",
-    "subtitle": "Registry · Runtime · Memory · Skills · Router · Logs",
-    "registry": "Registry",
+    "title": "Agent များ",
+    "subtitle": "လုပ်ငန်း Agent မှတ်ပုံတင်ခြင်းနှင့် လမ်းကြောင်း",
+    "registry": "မှတ်ပုံတင်",
     "chat": "စကားទូទៅ",
     "memory": "မှတ်ဉာဏ်",
     "skills": "ကျွမ်းကျင်မှု",
@@ -374,7 +493,7 @@
     "enable": "ဖွင့်ရန်",
     "disable": "ပိတ်ရန်",
     "activeAgent": "လက်ရှိ Agent",
-    "router": "Router",
+    "router": "လမ်းကြောင်း",
     "chatPlaceholder": "အလုပ်ဖော်ပြပါ…",
     "send": "Agent သို့ပို့ရန်",
     "citations": "ကိုးကားချက်များ",
@@ -382,15 +501,15 @@
     "reserved": "ကြိုတင်ထား",
     "refreshLogs": "မှတ်တမ်းပြန်ဖွင့်",
     "logsAdminOnly": "မှတ်တမ်းသည် admin သာ",
-    "active": "Active",
+    "active": "အသက်ဝင်",
     "errors24h": "24h အမှား"
   },
   "tools": {
-    "title": "Enterprise Tool Calling Center",
-    "subtitle": "Registry · Runtime · Calling · Router · Permissions · Logs",
-    "registry": "Tool Registry",
+    "title": "ကိရိယာများ",
+    "subtitle": "ကိရိယာမှတ်ပုံတင်နှင့် ခေါ်ဆိုမှု",
+    "registry": "မှတ်ပုံတင်",
     "execute": "လုပ်ဆောင်ရန်",
-    "router": "Router",
+    "router": "လမ်းကြောင်း",
     "permissions": "ခွင့်ပြုချက်",
     "logs": "မှတ်တမ်း",
     "categories": "အမျိုးအစား",
@@ -400,7 +519,7 @@
     "disable": "ပိတ်ရန်",
     "activeTool": "လက်ရှိ Tool",
     "taskPlaceholder": "အလုပ်ဖော်ပြပါ…",
-    "call": "Tool Calling",
+    "call": "ခေါ်ဆိုရန်",
     "runDirect": "တိုက်ရိုက်လုပ်ဆောင်",
     "routerHint": "အလုပ်အလိုက် Tool ရွေးချယ်သည်။",
     "previewRoute": "လမ်းကြောင်းကြည့်",
@@ -410,12 +529,12 @@
     "errors24h": "24h အမှား"
   },
   "mcp": {
-    "title": "MCP Gateway Center",
-    "subtitle": "Registry · Gateway · Sessions · Health · Logs (connectors reserved)",
-    "registry": "MCP Registry",
-    "sessions": "Sessions",
+    "title": "MCP",
+    "subtitle": "MCP ဂိတ်ဝေး၊ ဆာဗာနှင့် ဆက်ရှင်များ",
+    "registry": "မှတ်ပုံတင်",
+    "sessions": "ဆက်ရှင်များ",
     "logs": "မှတ်တမ်း",
-    "servers": "Servers",
+    "servers": "ဆာဗာများ",
     "enabled": "ဖွင့်",
     "disabled": "ပိတ်",
     "enable": "ဖွင့်ရန်",
@@ -429,15 +548,15 @@
     "errors24h": "24h အမှား"
   },
   "workflows": {
-    "title": "Enterprise Workflow Engine",
-    "subtitle": "Registry · Designer · Runtime · Scheduler · History · Templates",
-    "registry": "Registry",
-    "designer": "Designer",
+    "title": "အလုပ်စဉ်များ",
+    "subtitle": "အလုပ်စဉ်ဒီဇိုင်း၊ အချိန်ဇယားနှင့် မှတ်တမ်း",
+    "registry": "မှတ်ပုံတင်",
+    "designer": "ဒီဇိုင်နာ",
     "execution": "လုပ်ဆောင်မှု",
     "history": "မှတ်တမ်း",
-    "scheduler": "Scheduler",
-    "logs": "Audit logs",
-    "templates": "Templates",
+    "scheduler": "အချိန်ဇယား",
+    "logs": "မှတ်တမ်းများ",
+    "templates": "ပုံစံများ",
     "enabled": "ဖွင့်",
     "disabled": "ပိတ်",
     "enable": "ဖွင့်ရန်",
@@ -456,19 +575,19 @@
     "errors24h": "24h အမှား"
   },
   "business": {
-    "title": "Business Integration Platform",
-    "subtitle": "Business → Workflow → Agent → Tool → MCP → Connector",
-    "overview": "Overview",
-    "invoke": "Invoke",
-    "connectors": "Connectors",
-    "workflows": "Business Workflows",
-    "audit": "Audit",
-    "systems": "Systems",
+    "title": "လုပ်ငန်းဗဟို",
+    "subtitle": "လုပ်ငန်းစနစ်ချိတ်ဆက်မှုနှင့် စစ်ဆေးမှတ်တမ်း",
+    "overview": "ခြုံငုံသုံးသပ်",
+    "invoke": "ခေါ်ဆိုရန်",
+    "connectors": "ချိတ်ဆက်ကိရိယာများ",
+    "workflows": "အလုပ်စဉ်များ",
+    "audit": "စစ်ဆေးမှု",
+    "systems": "စနစ်များ",
     "active": "လက်ရှိစနစ်",
     "runViaWorkflow": "Workflow ဖြင့်လုပ်ဆောင်",
     "archHint": "ပြင်ပကို တိုက်ရိုက်မခေါ်ပါ။ ငွေရေးရေးသားမှုသည် approval လိုအပ်သည်။",
     "refreshLogs": "Audit ပြန်ဖွင့်",
     "logsAdminOnly": "Audit သည် admin သာ",
-    "audits24h": "24h audits"
+    "audits24h": "၂၄ နာရီ စစ်ဆေးမှု"
   }
 }

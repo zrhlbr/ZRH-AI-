@@ -1,7 +1,9 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { NavLink, Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ZBadge, ZButton, ZCard, ZInput } from '../components/ui';
+import { ZBadge, ZButton, ZCard, ZEmpty, ZInput, ZSkeleton } from '../components/ui';
+import { brand } from '../design-system/theme';
+import { BrandMark } from '../design-system/BrandMark';
 import { ApiError } from '../api/client';
 import { v12Api } from '../api/v12';
 import { useAuthStore } from '../store/authStore';
@@ -18,24 +20,55 @@ function OverviewView() {
       .catch((err) => setError(err instanceof ApiError ? err.message : 'error'));
   }, []);
 
-  if (error) return <p className="text-xs text-zrh-err">{error}</p>;
-  if (!data) return <p className="text-xs text-zrh-text-dim">{t('common.loading')}</p>;
+  if (error) {
+    return <ZEmpty title={t('common.error')} description={error} />;
+  }
+  if (!data) {
+    return (
+      <div className="space-y-3">
+        <ZSkeleton className="h-7 w-48" />
+        <div className="grid gap-3 lg:grid-cols-2">
+          <ZSkeleton className="h-56 w-full" />
+          <ZSkeleton className="h-56 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  const infra = (data.infra || {}) as Record<string, unknown>;
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-semibold text-zrh-accent">{t('superadmin.overview')}</h1>
+      <div className="flex items-start gap-3">
+        <BrandMark size={48} className="mt-0.5 h-12 w-12 shrink-0 rounded-xl" />
+        <div>
+          <h1 className="font-display text-lg font-semibold tracking-wide text-zrh-accent">
+            {t('superadmin.overview')}
+          </h1>
+          <p className="mt-1 text-xs text-zrh-text-dim">
+            {brand.name} · {brand.subtitle}
+          </p>
+        </div>
+      </div>
       <div className="grid gap-3 lg:grid-cols-2">
-        <ZCard title={t('superadmin.infra')} glow>
-          <pre className="max-h-72 overflow-auto text-[10px] text-zrh-text-dim">
-            {JSON.stringify(data.infra, null, 2)}
-          </pre>
+        <ZCard title={t('superadmin.infra')} glow hud>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            {Object.entries(infra).slice(0, 12).map(([k, v]) => (
+              <div key={k} className="rounded-lg border border-zrh-border/70 bg-zrh-bg/40 px-2.5 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-zrh-text-dim">{k}</p>
+                <p className="mt-1 truncate text-zrh-text">
+                  {v == null ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v)}
+                </p>
+              </div>
+            ))}
+          </div>
         </ZCard>
-        <ZCard title={t('superadmin.reserved')} glow>
+        <ZCard title={t('superadmin.integrations')} glow>
           <ul className="space-y-1.5 text-xs">
             {Object.entries((data.reserved as Record<string, boolean>) || {}).map(([k, v]) => (
-              <li key={k} className="flex justify-between">
+              <li key={k} className="flex justify-between rounded-md px-1 py-1 hover:bg-zrh-surface-raised">
                 <span className="capitalize text-zrh-text">{k}</span>
-                <ZBadge tone="dim">{v ? t('common.reserved') : '—'}</ZBadge>
+                <ZBadge tone={v ? 'dim' : 'ok'}>{v ? t('common.reserved') : t('common.on')}</ZBadge>
               </li>
             ))}
           </ul>
@@ -73,14 +106,14 @@ function ConfigsView() {
       <h1 className="text-lg font-semibold text-zrh-accent">{t('superadmin.configs')}</h1>
       <ZCard title={t('superadmin.upsertConfig')} glow>
         <form onSubmit={(e) => void submit(e)} className="grid gap-3 sm:grid-cols-2">
-          <ZInput label="key" value={key} onChange={(e) => setKey(e.target.value)} required />
-          <ZInput label="group" value={group} onChange={(e) => setGroup(e.target.value)} />
+          <ZInput label={t('superadmin.configKey')} value={key} onChange={(e) => setKey(e.target.value)} required />
+          <ZInput label={t('superadmin.configGroup')} value={group} onChange={(e) => setGroup(e.target.value)} />
           <div className="sm:col-span-2">
-            <ZInput label="value" value={value} onChange={(e) => setValue(e.target.value)} required />
+            <ZInput label={t('superadmin.configValue')} value={value} onChange={(e) => setValue(e.target.value)} required />
           </div>
           <label className="flex items-center gap-2 text-xs text-zrh-text-dim">
             <input type="checkbox" checked={secret} onChange={(e) => setSecret(e.target.checked)} />
-            secret
+            {t('superadmin.secret')}
           </label>
           <div>
             <ZButton type="submit">{t('common.save')}</ZButton>
@@ -96,7 +129,7 @@ function ConfigsView() {
               <ZBadge tone="dim">{c.group}</ZBadge>
               {c.secret && <ZBadge tone="err">secret</ZBadge>}
             </div>
-            <p className="mt-1 text-zrh-text-dim">{c.value}</p>
+            <p className="mt-1 text-zrh-text-dim">{c.secret ? '••••••••' : c.value}</p>
           </li>
         ))}
       </ul>
@@ -133,7 +166,7 @@ export function SuperAdminPage() {
   const location = useLocation();
 
   if (profile?.role !== 'SUPER_ADMIN') {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   const path = location.pathname;

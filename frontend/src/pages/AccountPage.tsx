@@ -1,8 +1,11 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ZBadge, ZButton, ZCard, ZInput } from '../components/ui';
-import { ApiError } from '../api/client';
+import { api, ApiError } from '../api/client';
 import { UserCenterMe, v12Api } from '../api/v12';
+import { useAuthStore } from '../store/authStore';
+import { brand } from '../design-system/theme';
 
 type Tab = 'profile' | 'security' | 'devices' | 'history' | 'tokens';
 
@@ -11,6 +14,7 @@ type Tab = 'profile' | 'security' | 'devices' | 'history' | 'tokens';
  */
 export function AccountPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('profile');
   const [me, setMe] = useState<UserCenterMe | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -93,12 +97,21 @@ export function AccountPage() {
     setOk(null);
     try {
       await v12Api.changePassword(currentPassword, newPassword);
-      setOk(t('account.passwordChanged'));
       setCurrentPassword('');
       setNewPassword('');
+      // Feature Freeze: force re-login after password change
+      const { refreshToken, clear } = useAuthStore.getState();
+      if (refreshToken) {
+        try {
+          await api.logout(refreshToken);
+        } catch {
+          // ignore
+        }
+      }
+      clear();
+      navigate('/login', { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('account.passwordFailed'));
-    } finally {
       setSaving(false);
     }
   };
@@ -116,6 +129,13 @@ export function AccountPage() {
       <div className="mb-5">
         <h1 className="text-xl font-semibold text-zrh-accent">{t('account.title')}</h1>
         <p className="mt-1 text-xs text-zrh-text-dim">{t('account.subtitle')}</p>
+        <p className="mt-2 text-caption text-zrh-text-dim">
+          <Link to="/release-notes" className="text-zrh-accent hover:underline">
+            {t('releaseNotes.link')}
+          </Link>
+          <span className="mx-1.5">·</span>
+          {t('releaseNotes.currentVersion', { version: brand.appVersion })}
+        </p>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-1 border-b border-zrh-border pb-2">

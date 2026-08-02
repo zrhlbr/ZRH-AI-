@@ -17,6 +17,7 @@
     "workflows": "Workflow Center",
     "business": "Business Hub",
     "account": "用户中心",
+    "developer": "Developer",
     "admin": "Admin",
     "superadmin": "Super Admin"
   },
@@ -30,7 +31,13 @@
     "noData": "暂无数据",
     "optional": "可选",
     "reserved": "预留",
-    "actions": "操作"
+    "actions": "操作",
+    "on": "开启",
+    "off": "关闭",
+    "retry": "重试",
+    "empty": "暂无内容",
+    "error": "加载失败",
+    "success": "操作成功"
   },
   "auth": {
     "adminLogin": "管理员登录",
@@ -133,8 +140,50 @@
     "publish": "立即发布",
     "published": "已发布",
     "draft": "草稿",
-    "manageShell": "管理入口壳层（P1）。业务数据仍走既有 V1.1 模块页面。",
-    "noTouchV11": "未修改 AI Gateway / RAG / Knowledge / Workflow / Agent / MCP / Business / Chat。"
+    "manageShell": "企业管理控制台",
+    "noTouchV11": "通过正式模块入口管理企业能力。",
+    "openModule": "打开模块",
+    "backDashboard": "返回仪表盘",
+    "auditTrail": "审计与安全轨迹",
+    "logsHint": "企业操作审计可在用户中心查看登录记录；系统健康状态请进入运行状态页。",
+    "hubKnowledge": "进入知识库管理文档、文件夹、标签与检索。",
+    "hubModels": "进入模型中心查看与管理可用 AI 模型。",
+    "hubAgents": "进入智能体中心配置与运行企业 Agent。",
+    "hubWorkflows": "进入工作流引擎设计、调度与执行。",
+    "hubMcp": "进入 MCP 网关管理连接器与会话。",
+    "hubBusiness": "进入业务中枢查看企业系统连接。",
+    "hubMonitor": "进入系统状态页查看运行时与基础设施。",
+    "hubSettings": "进入超级管理配置中心管理安全与系统参数。",
+    "hubSeo": "品牌与站点元信息由 ZRH AI 统一管理。",
+    "hubI18n": "界面支持中文 / 缅文 / 英文，可在顶栏随时切换。"
+  },
+  "developer": {
+    "title": "Developer Agent",
+    "newProject": "新工作区名称",
+    "add": "添加",
+    "files": "文件树",
+    "code": "代码查看",
+    "selectFile": "选择文件以预览",
+    "agent": "Agent 对话",
+    "chatHint": "描述任务；写操作将先生成 Plan。",
+    "ask": "描述问题或需求…",
+    "send": "发送",
+    "plan": "Plan",
+    "approve": "批准计划",
+    "reject": "拒绝",
+    "diff": "Diff Review",
+    "diffHint": "批准计划后生成 Diff",
+    "confirmDelete": "确认删除",
+    "approveDiff": "批准 Diff",
+    "apply": "应用",
+    "terminal": "Terminal",
+    "git": "Git 状态",
+    "search": "代码检索",
+    "history": "操作历史",
+    "runnerOk": "Runner 在线",
+    "runnerDown": "Runner 离线",
+    "index": "重建索引",
+    "indexOk": "索引已更新"
   },
   "superadmin": {
     "title": "Super Admin",
@@ -145,11 +194,17 @@
     "logs": "系统日志",
     "infra": "基础设施",
     "reserved": "预留能力",
-    "upsertConfig": "写入配置"
+    "upsertConfig": "写入配置",
+    "configKey": "配置键",
+    "configGroup": "分组",
+    "configValue": "配置值",
+    "secret": "敏感"
   },
   "theme": {
     "label": "主题",
-    "blackGold": "黑金",
+    "blueWhite": "蓝白（默认）",
+    "blueWhiteDark": "深色模式",
+    "blackGold": "黑金（历史）",
     "deepSpaceBlue": "深空蓝",
     "midnightBlack": "暗夜黑"
   },
@@ -206,6 +261,66 @@
     "aiInputPlaceholder": "向 ZRH AI 提问…",
     "aiInputStageHint": "输入问题，立即开始与 ZRH AI 对话。由 ZRH 科技集团自主研发。",
     "send": "发送"
+  },
+  "landing": {
+    "registerNow": "立即注册",
+    "login": "登录"
+  },
+  "pwa": {
+    "install": "安装 ZRH AI",
+    "installHint": "安装到手机桌面，像 App 一样打开 ZRH AI。",
+    "later": "稍后",
+    "iosStep1": "轻点浏览器底部的「分享」按钮",
+    "iosStep2": "向下滑动并选择「添加到主屏幕」",
+    "iosStep3": "确认后即可从桌面独立启动 ZRH AI"
+  },
+  "releaseNotes": {
+    "title": "版本更新",
+    "subtitle": "ZRH AI Enterprise 版本更新记录",
+    "link": "版本更新",
+    "currentVersion": "当前版本 v{{version}}",
+    "updates": "更新内容",
+    "fixes": "修复内容",
+    "knownIssues": "已知问题",
+    "backHome": "返回首页",
+    "v120": {
+      "summary": "用户体系、管理平台、Developer Agent 与蓝白科技主题全面上线。",
+      "highlights": [
+        "用户注册与用户中心",
+        "Admin / Super Admin 企业管理",
+        "Developer Agent",
+        "蓝白科技主题（Design System V2.0）与 Dark Mode",
+        "中文 / 缅文 / 英文完善",
+        "PWA 安装与官方图标",
+        "稳定性与安全修复"
+      ],
+      "fixes": [
+        "Chat 流式竞态与会话切换稳定性",
+        "Knowledge / Enterprise RAG ACL 与缓存隔离",
+        "Workflow / Agent / MCP 权限与控制面加固"
+      ],
+      "known": [
+        "部分历史 splash 资产仍为深色底，后续可替换为纯蓝白启动图"
+      ]
+    },
+    "v110": {
+      "summary": "企业平台正式上线并完成公网部署。",
+      "highlights": [
+        "企业平台正式上线",
+        "Chat",
+        "Knowledge",
+        "Enterprise RAG",
+        "Agent",
+        "Workflow",
+        "MCP",
+        "Business Hub",
+        "公网部署 https://ai.zrhtech.com"
+      ],
+      "fixes": [
+        "生产健康检查与依赖在线状态稳定"
+      ],
+      "known": []
+    }
   },
   "chat": {
     "new": "新建对话",
@@ -274,6 +389,10 @@
       "running": "运行中",
       "stopped": "停止",
       "error": "异常"
+    },
+    "errors": {
+      "loadFailed": "加载对话失败，请重试",
+      "streamFailed": "生成失败，请重试或停止后重新发送"
     }
   },
   "knowledge": {

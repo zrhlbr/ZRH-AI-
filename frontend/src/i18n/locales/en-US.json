@@ -17,6 +17,7 @@
     "workflows": "Workflow Center",
     "business": "Business Hub",
     "account": "Account",
+    "developer": "Developer",
     "admin": "Admin",
     "superadmin": "Super Admin"
   },
@@ -30,7 +31,13 @@
     "noData": "No data",
     "optional": "optional",
     "reserved": "Reserved",
-    "actions": "Actions"
+    "actions": "Actions",
+    "on": "On",
+    "off": "Off",
+    "retry": "Retry",
+    "empty": "Nothing here yet",
+    "error": "Something went wrong",
+    "success": "Done"
   },
   "auth": {
     "adminLogin": "Administrator Login",
@@ -133,8 +140,50 @@
     "publish": "Publish now",
     "published": "Published",
     "draft": "Draft",
-    "manageShell": "Management shell (P1). Business data stays on V1.1 module pages.",
-    "noTouchV11": "AI Gateway / RAG / Knowledge / Workflow / Agent / MCP / Business / Chat unchanged."
+    "manageShell": "Enterprise admin console",
+    "noTouchV11": "Manage enterprise capabilities via official module pages.",
+    "openModule": "Open module",
+    "backDashboard": "Back to dashboard",
+    "auditTrail": "Audit & security trail",
+    "logsHint": "Review login activity in Account. System health is available on the Status page.",
+    "hubKnowledge": "Manage documents, folders, tags, and search in Knowledge.",
+    "hubModels": "Review and manage available AI models.",
+    "hubAgents": "Configure and run enterprise Agents.",
+    "hubWorkflows": "Design, schedule, and execute workflows.",
+    "hubMcp": "Manage MCP connectors and sessions.",
+    "hubBusiness": "Inspect enterprise business connectors.",
+    "hubMonitor": "Open runtime and infrastructure status.",
+    "hubSettings": "Manage security and system configuration in Super Admin.",
+    "hubSeo": "Brand and site metadata are managed by ZRH AI.",
+    "hubI18n": "The UI supports Chinese, Myanmar, and English from the top bar."
+  },
+  "developer": {
+    "title": "Developer Agent",
+    "newProject": "New workspace name",
+    "add": "Add",
+    "files": "Files",
+    "code": "Code",
+    "selectFile": "Select a file to preview",
+    "agent": "Agent chat",
+    "chatHint": "Describe a task; writes require an approved Plan.",
+    "ask": "Ask or describe a change…",
+    "send": "Send",
+    "plan": "Plan",
+    "approve": "Approve plan",
+    "reject": "Reject",
+    "diff": "Diff Review",
+    "diffHint": "Approve a plan to materialize diffs",
+    "confirmDelete": "Confirm delete",
+    "approveDiff": "Approve diff",
+    "apply": "Apply",
+    "terminal": "Terminal",
+    "git": "Git status",
+    "search": "Code search",
+    "history": "History",
+    "runnerOk": "Runner online",
+    "runnerDown": "Runner offline",
+    "index": "Rebuild index",
+    "indexOk": "Index updated"
   },
   "superadmin": {
     "title": "Super Admin",
@@ -145,11 +194,17 @@
     "logs": "System logs",
     "infra": "Infrastructure",
     "reserved": "Reserved capabilities",
-    "upsertConfig": "Upsert config"
+    "upsertConfig": "Upsert config",
+    "configKey": "Key",
+    "configGroup": "Group",
+    "configValue": "Value",
+    "secret": "Secret"
   },
   "theme": {
     "label": "Theme",
-    "blackGold": "Black Gold",
+    "blueWhite": "Blue & White (Default)",
+    "blueWhiteDark": "Dark Mode",
+    "blackGold": "Black Gold (Legacy)",
     "deepSpaceBlue": "Deep Space Blue",
     "midnightBlack": "Midnight Black"
   },
@@ -206,6 +261,66 @@
     "aiInputPlaceholder": "Ask ZRH AI…",
     "aiInputStageHint": "Ask anything to start chatting with ZRH AI. Built by ZRH Technology Group.",
     "send": "Send"
+  },
+  "landing": {
+    "registerNow": "Register now",
+    "login": "Log in"
+  },
+  "pwa": {
+    "install": "Install ZRH AI",
+    "installHint": "Add ZRH AI to your home screen and open it like an app.",
+    "later": "Not now",
+    "iosStep1": "Tap the Share button in Safari",
+    "iosStep2": "Scroll and choose Add to Home Screen",
+    "iosStep3": "Confirm to launch ZRH AI as a standalone app"
+  },
+  "releaseNotes": {
+    "title": "Release notes",
+    "subtitle": "ZRH AI Enterprise version history",
+    "link": "Release notes",
+    "currentVersion": "Current version v{{version}}",
+    "updates": "What's new",
+    "fixes": "Fixes",
+    "knownIssues": "Known issues",
+    "backHome": "Back to home",
+    "v120": {
+      "summary": "User system, admin platform, Developer Agent, and blue-white tech theme.",
+      "highlights": [
+        "User registration and user center",
+        "Admin / Super Admin",
+        "Developer Agent",
+        "Blue-white tech theme (Design System V2.0) with Dark Mode",
+        "Chinese / Myanmar / English polish",
+        "PWA install and official icons",
+        "Stability and security fixes"
+      ],
+      "fixes": [
+        "Chat streaming race and conversation switch stability",
+        "Knowledge / Enterprise RAG ACL and cache isolation",
+        "Workflow / Agent / MCP permission hardening"
+      ],
+      "known": [
+        "Some legacy splash assets remain dark-themed; blue-white splash refresh planned"
+      ]
+    },
+    "v110": {
+      "summary": "Enterprise platform go-live with public deployment.",
+      "highlights": [
+        "Enterprise platform launch",
+        "Chat",
+        "Knowledge",
+        "Enterprise RAG",
+        "Agent",
+        "Workflow",
+        "MCP",
+        "Business Hub",
+        "Public deployment at https://ai.zrhtech.com"
+      ],
+      "fixes": [
+        "Production health checks and dependency status stability"
+      ],
+      "known": []
+    }
   },
   "chat": {
     "new": "New Chat",
@@ -274,6 +389,10 @@
       "running": "Running",
       "stopped": "Stopped",
       "error": "Error"
+    },
+    "errors": {
+      "loadFailed": "Failed to load conversation. Please retry.",
+      "streamFailed": "Generation failed. Retry or stop and send again."
     }
   },
   "knowledge": {
