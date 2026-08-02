@@ -131,7 +131,8 @@
 |------|-------|
 | Branch | `test/v1.2` |
 | Tag | `v1.2.1` |
-| Git SHA | `5cad80a0d2ac23becbf5f645ad97eb4d5d7a382c` |
+| Git SHA（功能提交） | `5cad80a0d2ac23becbf5f645ad97eb4d5d7a382c` |
+| Tag `v1.2.1` tip | `0d3f96c372c812e5408d8d88d436933342b3d664` |
 
 ---
 
