@@ -89,23 +89,27 @@
 
 ## 10. Git Commit SHA
 
-（提交后回填；见 git log）
+`03763eb6d5bc32a21c36666049d525471c2e74d9`  
+`03763eb feat(pwa): deploy ZRH AI official app icon pack`
 
 ---
 
 ## 11. Docker 状态
 
-仅重建 `zrh-ai-web`（预期 `1.2.1` healthy）。未动 api / db / redis。
+| 项 | 值 |
+|----|-----|
+| 容器 | `zrh-ai-web:1.2.1` 已重建 |
+| 回滚标签 | `zrh-ai-web:1.2.1-pre-app-icon-v1` |
+| API / DB / Redis | **未动** |
+| Origin 抽查 | `app-icon-512`=348892 · `zrh-logo-512`=246817 · favicon-32=2413 |
 
 ---
 
 ## 12. 公网验证
 
-部署后检查：
-
-- `https://ai.zrhtech.com/branding/app-icon-512.png` → 200  
-- `https://ai.zrhtech.com/manifest.json` → icons 含 `app-icon`  
-- `https://ai.zrhtech.com/branding/zrh-logo-512.png` → 仍为横版 Logo（246817）  
+- Origin manifest：`id=/zrh-ai-app-icon-v1` · `theme_color=#0b1220` · icons 含 `app-icon` · **不含** `zrh-logo`  
+- 横版 Logo 路径仍独立：`/branding/zrh-logo-512.png` = 246817  
+- 建议赵总硬刷新；已装 PWA **删除后重装**；必要时 Cloudflare Purge `/branding/app-icon*` + favicon + manifest + sw.js
 
 ---
 
