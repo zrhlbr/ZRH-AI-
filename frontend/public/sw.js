@@ -1,6 +1,6 @@
 /* ZRH AI PWA service worker — installability + light shell cache. No API caching. */
-const CACHE = 'zrh-ai-shell-v1.2.1-logo-official';
-const PRECACHE = ['/', '/manifest.json', '/branding/zrh-logo.svg', '/branding/manifest-icon-192.png', '/branding/manifest-icon-512.png'];
+const CACHE = 'zrh-ai-shell-v1.2.1-app-icon-v1';
+const PRECACHE = ['/', '/manifest.json', '/branding/app-icon.svg', '/branding/app-icon-192.png', '/branding/app-icon-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -32,7 +32,7 @@ self.addEventListener('fetch', (event) => {
     caches.match(request).then((cached) => {
       const network = fetch(request)
         .then((response) => {
-          if (response.ok && (url.pathname === '/' || url.pathname.startsWith('/brand/') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css'))) {
+          if (response.ok && (url.pathname === '/' || url.pathname.startsWith('/branding/') || url.pathname.startsWith('/brand/') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css'))) {
             const copy = response.clone();
             void caches.open(CACHE).then((cache) => cache.put(request, copy));
           }

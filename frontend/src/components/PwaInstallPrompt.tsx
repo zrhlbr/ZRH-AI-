@@ -8,7 +8,7 @@ import {
   isIosDevice,
   isStandaloneDisplay,
 } from '../pwa/install';
-import { BrandMark } from '../design-system/BrandMark';
+import { brandAssets } from '../design-system/theme';
 import { ZButton } from './ui';
 
 type Props = {
@@ -129,7 +129,14 @@ export function PwaInstallPrompt({ variant = 'card', className = '' }: Props) {
         <X className="h-4 w-4" />
       </button>
       <div className="flex items-start gap-3 pr-8">
-        <BrandMark size={48} className="h-12 w-12 shrink-0 rounded-zrh-lg shadow-zrh-glow" />
+        <img
+          src={brandAssets.appIcon192}
+          width={48}
+          height={48}
+          alt="ZRH AI"
+          draggable={false}
+          className="h-12 w-12 shrink-0 select-none rounded-zrh-lg object-contain shadow-zrh-glow"
+        />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-zrh-text">{t('pwa.install')}</p>
           <p className="mt-1 text-caption text-zrh-text-dim sm:text-xs">{t('pwa.installHint')}</p>
