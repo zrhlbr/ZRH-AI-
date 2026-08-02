@@ -30,8 +30,8 @@ function nearestBucket(size: number): BrandMarkSize {
 }
 
 /**
- * ZRH AI Official Icon V1.0（蓝色科技版）— 纯品牌展示组件，不含业务逻辑。
- * 小尺寸优先 SVG，保证侧栏 / 顶栏清晰度。
+ * ZRH Technology Group 官方蓝白科技 Logo — 纯品牌展示，不含业务逻辑。
+ * 资源唯一来自 branding 母版派生；小尺寸优先 SVG。
  */
 export function BrandMark({
   size = 32,

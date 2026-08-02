@@ -1,6 +1,6 @@
 /* ZRH AI PWA service worker — installability + light shell cache. No API caching. */
-const CACHE = 'zrh-ai-shell-v1.2.1';
-const PRECACHE = ['/', '/manifest.json', '/brand/zrh-ai-icon.svg', '/brand/pwa-192.png', '/brand/pwa-512.png'];
+const CACHE = 'zrh-ai-shell-v1.2.1-logo-official';
+const PRECACHE = ['/', '/manifest.json', '/branding/zrh-logo.svg', '/branding/manifest-icon-192.png', '/branding/manifest-icon-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
