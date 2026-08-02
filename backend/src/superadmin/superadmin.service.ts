@@ -37,7 +37,7 @@ export class SuperAdminService {
         restore: true,
         upgrade: true,
         cloudflare: true,
-        smtp: true,
+        smtp: false,
         oauth: true,
         license: true,
       },
@@ -104,7 +104,7 @@ export class SuperAdminService {
   async integrationsReserved() {
     return {
       cloudflare: { reserved: true },
-      smtp: { reserved: true },
+      smtp: { reserved: false, module: 'mail-center-v1' },
       oauth: { reserved: true },
       aiProvider: { reserved: true },
       license: { reserved: true },

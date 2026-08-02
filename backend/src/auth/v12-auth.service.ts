@@ -6,8 +6,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { createHash, randomBytes, randomInt } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import * as bcrypt from 'bcryptjs';
+import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   ForgotPasswordDto,
@@ -29,6 +30,7 @@ export class V12AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly mail: MailService,
   ) {}
 
   private hash(value: string): string {
@@ -111,28 +113,58 @@ export class V12AuthService {
       };
     }
 
-    const code = String(randomInt(100000, 999999));
+    const target = dto.target.toLowerCase();
+    const policy = await this.mail.assertCodeRateLimits(target);
+    // Fail fast before persisting code if neither SMTP nor explicit dev fallback is available
+    await this.mail.ensureDeliveryMode();
+
+    const code = this.mail.generateCode(policy.length);
+    const ttlMs = policy.ttlSeconds * 1000;
+
     await this.prisma.verificationCode.create({
       data: {
-        target: dto.target.toLowerCase(),
+        target,
         channel: dto.channel,
         purpose: dto.purpose,
         codeHash: this.hash(code),
-        expiresAt: new Date(Date.now() + CODE_TTL_MS),
+        expiresAt: new Date(Date.now() + ttlMs),
       },
     });
 
-    // P1：开发/私有化环境将验证码写入日志（生产应走 SMTP）
-    this.logger.log(`[email-code] target=${dto.target} purpose=${dto.purpose} code=${code}`);
+    const delivery = await this.mail.sendTemplated({
+      to: target,
+      templateType: this.mail.purposeToTemplate(dto.purpose),
+      locale: 'zh-CN',
+      vars: {
+        code,
+        ttlMinutes: String(Math.max(1, Math.round(policy.ttlSeconds / 60))),
+        appName: 'ZRH AI',
+      },
+    });
+
+    const devEnabled = String(process.env.MAIL_DEV_CODE_ENABLED || 'false').toLowerCase() === 'true';
+
+    // Dev/Test fallback only when MAIL_DEV_CODE_ENABLED=true (must stay false in real Production)
+    if (delivery.mode === 'dev') {
+      if (devEnabled) {
+        this.logger.log(`[email-code][dev] target=${target} purpose=${dto.purpose} code=${code}`);
+      }
+      return {
+        ok: true,
+        channel: 'email',
+        reserved: false,
+        message: 'verification code issued (dev fallback; SMTP not used)',
+        expiresInSeconds: policy.ttlSeconds,
+        devCode: devEnabled ? code : undefined,
+      };
+    }
 
     return {
       ok: true,
       channel: 'email',
       reserved: false,
-      message: 'verification code issued (check server logs / SMTP in later phase)',
-      expiresInSeconds: 600,
-      // 仅非生产便于联调
-      devCode: process.env.NODE_ENV === 'production' ? undefined : code,
+      message: 'verification code sent',
+      expiresInSeconds: policy.ttlSeconds,
     };
   }
 
@@ -317,18 +349,40 @@ export class V12AuthService {
       return { ok: true, message: 'if the account exists, a reset token was issued', reserved: true };
     }
 
+    const devEnabled = String(process.env.MAIL_DEV_CODE_ENABLED || 'false').toLowerCase() === 'true';
+
+    // Email channel requires SMTP or explicit MAIL_DEV_CODE_ENABLED fallback — never fake success
+    if (channel === 'email') {
+      await this.mail.ensureDeliveryMode();
+    }
+
     const token = randomBytes(32).toString('hex');
+    const policy = await this.mail.getCodePolicy();
     await this.prisma.passwordResetToken.create({
       data: {
         userId: user.id,
         tokenHash: this.hash(token),
         channel,
-        expiresAt: new Date(Date.now() + CODE_TTL_MS),
+        expiresAt: new Date(Date.now() + policy.ttlSeconds * 1000),
       },
     });
 
-    if (channel === 'email') {
-      this.logger.log(`[reset-token] user=${user.username} token=${token}`);
+    if (channel === 'email' && user.email) {
+      const delivery = await this.mail.sendTemplated({
+        to: user.email,
+        templateType: 'forgot_password',
+        locale: 'zh-CN',
+        vars: {
+          code: token,
+          ttlMinutes: String(Math.max(1, Math.round(policy.ttlSeconds / 60))),
+          appName: 'ZRH AI',
+          username: user.username,
+        },
+        userId: user.id,
+      });
+      if (delivery.mode === 'dev' && devEnabled) {
+        this.logger.log(`[reset-token][dev] user=${user.username}`);
+      }
     }
 
     return {
@@ -336,7 +390,8 @@ export class V12AuthService {
       channel,
       reserved: channel === 'phone',
       message: 'if the account exists, a reset token was issued',
-      devToken: process.env.NODE_ENV === 'production' ? undefined : token,
+      // Only when MAIL_DEV_CODE_ENABLED=true (must stay false in real Production)
+      devToken: devEnabled && channel === 'email' ? token : undefined,
     };
   }
 

@@ -1082,6 +1082,56 @@ model VerificationCode {
   @@map("verification_codes")
 }
 
+/// Mail Center V1.0 — email templates (zh / en / my)
+model MailTemplate {
+  id          Int      @id @default(autoincrement())
+  /// register_code | login_code | forgot_password | change_email | invite_user | invite_employee | org_invite | system_notice | welcome
+  type        String
+  /// zh-CN | en-US | my-MM
+  locale      String
+  subject     String
+  htmlBody    String
+  textBody    String
+  /// JSON array of placeholder names, e.g. ["code","ttlMinutes","appName"]
+  variables   String   @default("[]")
+  enabled     Boolean  @default(true)
+  version     Int      @default(1)
+  updatedBy   Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([type, locale])
+  @@index([type, enabled])
+  @@map("mail_templates")
+}
+
+/// Mail Center V1.0 — send audit log (no secrets / no raw codes)
+model MailSendLog {
+  id              Int       @id @default(autoincrement())
+  /// Masked recipient, e.g. a***@example.com
+  toMasked        String
+  templateType    String
+  /// queued | sending | sent | failed
+  status          String
+  provider        String    @default("smtp")
+  messageId       String?
+  attempts        Int       @default(1)
+  errorCode       String?
+  /// Sanitized error message (no secrets)
+  errorMessage    String?
+  userId          Int?
+  requestIp       String?
+  createdAt       DateTime  @default(now())
+  completedAt     DateTime?
+
+  @@index([createdAt])
+  @@index([templateType, status])
+  @@index([userId])
+  @@map("mail_send_logs")
+}
+
+
+
 model InviteCode {
   id        Int       @id @default(autoincrement())
   code      String    @unique

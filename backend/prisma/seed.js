@@ -1078,7 +1078,108 @@ async function main() {
   }
   console.log(`[seed] business systems: ${BIZ_SYSTEMS.length}`);
 
-  // 4. 超级管理员
+  // 4. Mail Center V1.0 — default SMTP/code policy keys + multilingual templates
+  const MAIL_DEFAULTS = [
+    { key: 'mail.smtp.host', value: '', group: 'smtp', secret: false },
+    { key: 'mail.smtp.port', value: '587', group: 'smtp', secret: false },
+    { key: 'mail.smtp.username', value: '', group: 'smtp', secret: false },
+    { key: 'mail.smtp.password', value: '', group: 'smtp', secret: true },
+    { key: 'mail.smtp.encryption', value: 'starttls', group: 'smtp', secret: false },
+    { key: 'mail.smtp.fromEmail', value: '', group: 'smtp', secret: false },
+    { key: 'mail.smtp.fromName', value: 'ZRH AI', group: 'smtp', secret: false },
+    { key: 'mail.smtp.replyTo', value: '', group: 'smtp', secret: false },
+    { key: 'mail.smtp.connectionTimeoutMs', value: '15000', group: 'smtp', secret: false },
+    { key: 'mail.code.length', value: '6', group: 'mail', secret: false },
+    { key: 'mail.code.ttlSeconds', value: '600', group: 'mail', secret: false },
+    { key: 'mail.code.intervalSeconds', value: '60', group: 'mail', secret: false },
+    { key: 'mail.code.dailyLimit', value: '20', group: 'mail', secret: false },
+    { key: 'mail.code.maxRetries', value: '3', group: 'mail', secret: false },
+  ];
+  for (const c of MAIL_DEFAULTS) {
+    await prisma.systemConfig.upsert({
+      where: { key: c.key },
+      update: {},
+      create: c,
+    });
+  }
+
+  const tplVars = JSON.stringify(['code', 'ttlMinutes', 'appName', 'username', 'message']);
+  const mailTemplates = [
+    ['register_code', {
+      'zh-CN': ['{{appName}} 注册验证码', '<p>您的注册验证码是 <strong>{{code}}</strong>，{{ttlMinutes}} 分钟内有效。</p>', '您的注册验证码是 {{code}}，{{ttlMinutes}} 分钟内有效。'],
+      'en-US': ['{{appName}} registration code', '<p>Your registration code is <strong>{{code}}</strong>. Valid for {{ttlMinutes}} minutes.</p>', 'Your registration code is {{code}}. Valid for {{ttlMinutes}} minutes.'],
+      'my-MM': ['{{appName}} registration code (my)', '<p>Code <strong>{{code}}</strong> ({{ttlMinutes}} min).</p>', 'Code {{code}} ({{ttlMinutes}} min).'],
+    }],
+    ['login_code', {
+      'zh-CN': ['{{appName}} 登录验证码', '<p>您的登录验证码是 <strong>{{code}}</strong>，{{ttlMinutes}} 分钟内有效。</p>', '您的登录验证码是 {{code}}，{{ttlMinutes}} 分钟内有效。'],
+      'en-US': ['{{appName}} login code', '<p>Your login code is <strong>{{code}}</strong>. Valid for {{ttlMinutes}} minutes.</p>', 'Your login code is {{code}}. Valid for {{ttlMinutes}} minutes.'],
+      'my-MM': ['{{appName}} login code (my)', '<p>Code <strong>{{code}}</strong> ({{ttlMinutes}} min).</p>', 'Code {{code}} ({{ttlMinutes}} min).'],
+    }],
+    ['forgot_password', {
+      'zh-CN': ['{{appName}} 密码重置', '<p>您好 {{username}}，重置令牌：<strong>{{code}}</strong>，{{ttlMinutes}} 分钟内有效。</p>', '您好 {{username}}，重置令牌：{{code}}，{{ttlMinutes}} 分钟内有效。'],
+      'en-US': ['{{appName}} password reset', '<p>Hi {{username}}, reset token: <strong>{{code}}</strong>. Valid for {{ttlMinutes}} minutes.</p>', 'Hi {{username}}, reset token: {{code}}. Valid for {{ttlMinutes}} minutes.'],
+      'my-MM': ['{{appName}} password reset (my)', '<p>{{username}}: <strong>{{code}}</strong> ({{ttlMinutes}} min).</p>', '{{username}}: {{code}} ({{ttlMinutes}} min).'],
+    }],
+    ['change_email', {
+      'zh-CN': ['{{appName}} 邮箱变更验证', '<p>验证码 <strong>{{code}}</strong>，{{ttlMinutes}} 分钟内有效。</p>', '验证码 {{code}}，{{ttlMinutes}} 分钟内有效。'],
+      'en-US': ['{{appName}} email change verification', '<p>Code <strong>{{code}}</strong>, valid {{ttlMinutes}} minutes.</p>', 'Code {{code}}, valid {{ttlMinutes}} minutes.'],
+      'my-MM': ['{{appName}} email change (my)', '<p>Code <strong>{{code}}</strong> ({{ttlMinutes}} min).</p>', 'Code {{code}} ({{ttlMinutes}} min).'],
+    }],
+    ['system_notice', {
+      'zh-CN': ['{{appName}} 系统通知', '<p>{{message}}</p>', '{{message}}'],
+      'en-US': ['{{appName}} system notice', '<p>{{message}}</p>', '{{message}}'],
+      'my-MM': ['{{appName}} system notice (my)', '<p>{{message}}</p>', '{{message}}'],
+    }],
+    ['welcome', {
+      'zh-CN': ['欢迎使用 {{appName}}', '<p>欢迎 {{username}} 加入 {{appName}}。</p>', '欢迎 {{username}} 加入 {{appName}}。'],
+      'en-US': ['Welcome to {{appName}}', '<p>Welcome {{username}} to {{appName}}.</p>', 'Welcome {{username}} to {{appName}}.'],
+      'my-MM': ['Welcome to {{appName}} (my)', '<p>Welcome {{username}}.</p>', 'Welcome {{username}}.'],
+    }],
+    ['invite_user', {
+      'zh-CN': ['{{appName}} 用户邀请', '<p>您被邀请加入 {{appName}}。邀请码：{{code}}</p>', '您被邀请加入 {{appName}}。邀请码：{{code}}'],
+      'en-US': ['{{appName}} invitation', '<p>You are invited to {{appName}}. Code: {{code}}</p>', 'You are invited to {{appName}}. Code: {{code}}'],
+      'my-MM': ['{{appName}} invitation (my)', '<p>Code: {{code}}</p>', 'Code: {{code}}'],
+    }],
+    ['invite_employee', {
+      'zh-CN': ['{{appName}} 员工邀请', '<p>员工邀请码：{{code}}</p>', '员工邀请码：{{code}}'],
+      'en-US': ['{{appName}} employee invite', '<p>Employee invite code: {{code}}</p>', 'Employee invite code: {{code}}'],
+      'my-MM': ['{{appName}} employee invite (my)', '<p>Code: {{code}}</p>', 'Code: {{code}}'],
+    }],
+    ['org_invite', {
+      'zh-CN': ['{{appName}} 组织邀请', '<p>组织邀请码：{{code}}</p>', '组织邀请码：{{code}}'],
+      'en-US': ['{{appName}} organization invite', '<p>Organization invite code: {{code}}</p>', 'Organization invite code: {{code}}'],
+      'my-MM': ['{{appName}} org invite (my)', '<p>Code: {{code}}</p>', 'Code: {{code}}'],
+    }],
+  ];
+  let tplCount = 0;
+  for (const [type, locales] of mailTemplates) {
+    for (const [locale, parts] of Object.entries(locales)) {
+      await prisma.mailTemplate.upsert({
+        where: { type_locale: { type, locale } },
+        update: {
+          subject: parts[0],
+          htmlBody: parts[1],
+          textBody: parts[2],
+          variables: tplVars,
+          enabled: true,
+        },
+        create: {
+          type,
+          locale,
+          subject: parts[0],
+          htmlBody: parts[1],
+          textBody: parts[2],
+          variables: tplVars,
+          enabled: true,
+          version: 1,
+        },
+      });
+      tplCount += 1;
+    }
+  }
+  console.log('[seed] mail configs: ' + MAIL_DEFAULTS.length + ', templates: ' + tplCount);
+
+  // 5. 超级管理员
   const username = process.env.ADMIN_USERNAME || 'admin';
   const password = process.env.ADMIN_INITIAL_PASSWORD;
   if (!password) {

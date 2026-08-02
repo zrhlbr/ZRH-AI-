@@ -7,6 +7,7 @@ import { BrandMark } from '../design-system/BrandMark';
 import { ApiError } from '../api/client';
 import { v12Api } from '../api/v12';
 import { useAuthStore } from '../store/authStore';
+import { MailCenterView } from './MailCenterView';
 
 function OverviewView() {
   const { t } = useTranslation();
@@ -173,6 +174,7 @@ export function SuperAdminPage() {
   const items = [
     { to: '/superadmin', end: true, label: t('superadmin.overview'), match: /^\/superadmin\/?$/ },
     { to: '/superadmin/configs', label: t('superadmin.configs'), match: /^\/superadmin\/configs/ },
+    { to: '/superadmin/mail', label: t('mailCenter.nav'), match: /^\/superadmin\/mail/ },
     { to: '/superadmin/ops', label: t('superadmin.ops'), match: /^\/superadmin\/ops/ },
     {
       to: '/superadmin/integrations',
@@ -184,6 +186,7 @@ export function SuperAdminPage() {
 
   let body = <OverviewView />;
   if (path.startsWith('/superadmin/configs')) body = <ConfigsView />;
+  else if (path.startsWith('/superadmin/mail')) body = <MailCenterView />;
   else if (path.startsWith('/superadmin/ops'))
     body = <JsonView title={t('superadmin.ops')} kind="ops" />;
   else if (path.startsWith('/superadmin/integrations'))

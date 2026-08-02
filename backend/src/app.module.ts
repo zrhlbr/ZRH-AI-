@@ -18,6 +18,7 @@ import { BusinessModule } from './business/business.module';
 import { UserCenterModule } from './user-center/user-center.module';
 import { AdminModule } from './admin/admin.module';
 import { SuperAdminModule } from './superadmin/superadmin.module';
+import { MailModule } from './mail/mail.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { RateLimitGuard } from './common/guards/rate-limit.guard';
@@ -45,6 +46,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
     UserCenterModule,
     AdminModule,
     SuperAdminModule,
+    MailModule,
   ],
   providers: [
     // 全局鉴权：JWT → 权限码（@Public() 除外）→ 限流

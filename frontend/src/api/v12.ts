@@ -207,4 +207,108 @@ export const v12Api = {
   superLogs: () => request<Record<string, unknown>>('/superadmin/logs'),
   superOps: () => request<Record<string, unknown>>('/superadmin/ops'),
   superIntegrations: () => request<Record<string, unknown>>('/superadmin/integrations'),
+
+  // Mail Center V1.0 (SUPER_ADMIN)
+  mailStatus: () =>
+    request<{
+      smtp: {
+        host: string;
+        port: number;
+        username: string;
+        password: string;
+        passwordConfigured: boolean;
+        encryption: string;
+        fromEmail: string;
+        fromName: string;
+        replyTo: string;
+        connectionTimeoutMs: number;
+        configured: boolean;
+      };
+      codePolicy: {
+        length: number;
+        ttlSeconds: number;
+        intervalSeconds: number;
+        dailyLimit: number;
+        maxRetries: number;
+      };
+      runtime: Record<string, unknown>;
+    }>('/superadmin/mail/status'),
+  mailSaveSmtp: (data: {
+    host: string;
+    port: number;
+    username?: string;
+    password?: string;
+    encryption: string;
+    fromEmail: string;
+    fromName?: string;
+    replyTo?: string;
+    connectionTimeoutMs?: number;
+  }) =>
+    request<{
+      host: string;
+      port: number;
+      username: string;
+      password: string;
+      passwordConfigured: boolean;
+      encryption: string;
+      fromEmail: string;
+      fromName: string;
+      replyTo: string;
+      connectionTimeoutMs: number;
+      configured: boolean;
+    }>('/superadmin/mail/smtp', { method: 'POST', body: JSON.stringify(data) }),
+  mailSaveCodePolicy: (data: {
+    length: number;
+    ttlSeconds: number;
+    intervalSeconds: number;
+    dailyLimit: number;
+    maxRetries: number;
+  }) =>
+    request('/superadmin/mail/code-policy', { method: 'POST', body: JSON.stringify(data) }),
+  mailTemplates: () =>
+    request<{
+      items: Array<{
+        id: number;
+        type: string;
+        locale: string;
+        subject: string;
+        htmlBody: string;
+        textBody: string;
+        variables: string;
+        enabled: boolean;
+        version: number;
+        updatedAt: string;
+      }>;
+    }>('/superadmin/mail/templates'),
+  mailLogs: (q?: { take?: number; skip?: number; status?: string; templateType?: string }) => {
+    const params = new URLSearchParams();
+    if (q?.take != null) params.set('take', String(q.take));
+    if (q?.skip != null) params.set('skip', String(q.skip));
+    if (q?.status) params.set('status', q.status);
+    if (q?.templateType) params.set('templateType', q.templateType);
+    const qs = params.toString();
+    return request<{
+      items: Array<{
+        id: number;
+        toMasked: string;
+        templateType: string;
+        status: string;
+        provider: string;
+        messageId: string | null;
+        attempts: number;
+        errorCode: string | null;
+        errorMessage: string | null;
+        createdAt: string;
+        completedAt: string | null;
+      }>;
+      total: number;
+    }>(`/superadmin/mail/logs${qs ? `?${qs}` : ''}`);
+  },
+  mailTestConnection: () =>
+    request<{ ok: boolean; message: string }>('/superadmin/mail/test-connection', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  mailTestSend: (data: { to: string; templateType?: string; locale?: string }) =>
+    request('/superadmin/mail/test-send', { method: 'POST', body: JSON.stringify(data) }),
 };

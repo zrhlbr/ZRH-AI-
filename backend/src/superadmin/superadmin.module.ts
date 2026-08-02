@@ -7,5 +7,6 @@ import { SuperAdminService } from './superadmin.service';
   imports: [SystemModule],
   controllers: [SuperAdminController],
   providers: [SuperAdminService],
+  exports: [SuperAdminService],
 })
 export class SuperAdminModule {}
