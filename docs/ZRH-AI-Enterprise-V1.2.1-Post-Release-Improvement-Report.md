@@ -130,8 +130,8 @@
 | Item | Value |
 |------|-------|
 | Branch | `test/v1.2` |
-| Tag（建议） | `v1.2.1` |
-| Git SHA | 见提交后 `git rev-parse HEAD`（写入本报告定稿栏） |
+| Tag | `v1.2.1` |
+| Git SHA | `5cad80a0d2ac23becbf5f645ad97eb4d5d7a382c` |
 
 ---
 
