@@ -125,9 +125,59 @@
 | `zrh-ai-test-dev-runner` | Healthy |
 | Production `zrh-ai-*` | **未改动** |
 
-## 15–17. Commit（提交完成后回填）
+## 15. Commit SHA
 
-见本报告文末 **Commit Evidence**（提交后由执行脚本回填 SHA / 文件清单 / 隔离证明）。
+- **Full:** `18af384c3edf8bcc38226dff1ca81a4b44153425`
+- **Short:** `18af384`
+- **Message:** `feat(mail): add enterprise mail center and verification delivery`
+- **Parent (pre-mail):** `214a12a`
+
+## 16. 提交文件清单（33）
+
+仅白名单 Mail Center 文件（`git show --name-only 18af384`）：
+
+```
+.env.example
+.env.production.example
+.env.test.example
+backend/package-lock.json
+backend/package.json
+backend/prisma/migrations/20260802170000_mail_center_v1/migration.sql
+backend/prisma/schema.prisma
+backend/prisma/seed.js
+backend/scripts/mail-center-integration.mjs
+backend/scripts/mail-center-smoke.mjs
+backend/scripts/mail-center-smtp-mock.cjs
+backend/src/app.module.ts
+backend/src/auth/auth.module.ts
+backend/src/auth/v12-auth.service.ts
+backend/src/mail/dto/mail.dto.ts
+backend/src/mail/mail-crypto.util.ts
+backend/src/mail/mail.constants.ts
+backend/src/mail/mail.controller.ts
+backend/src/mail/mail.module.ts
+backend/src/mail/mail.service.ts
+backend/src/superadmin/superadmin.module.ts
+backend/src/superadmin/superadmin.service.ts
+docs/ZRH-AI-Mail-Center-V1.0-Change-Plan.md
+docs/ZRH-AI-Mail-Center-V1.0-Impact-Analysis.md
+docs/ZRH-AI-Mail-Center-V1.0-Implementation-Report.md
+docs/ZRH-AI-Mail-Center-V1.0-Rollback-Plan.md
+docs/ZRH-AI-Mail-Center-V1.0-Test-Integration-Report.md
+frontend/src/api/v12.ts
+frontend/src/i18n/locales/en-US.json
+frontend/src/i18n/locales/my-MM.json
+frontend/src/i18n/locales/zh-CN.json
+frontend/src/pages/MailCenterView.tsx
+frontend/src/pages/SuperAdminPage.tsx
+```
+
+隔离保证：提交用的 `schema.prisma` / `seed.js` / `app.module.ts` **不含** Developer Agent 模型/权限/`DeveloperModule`。
+
+## 17. 其它未提交变更隔离证明
+
+提交后工作区仍保留大量未提交变更（Chat/Knowledge/RAG/Developer/Workflow 等），**未进入 `18af384`**。  
+`git status --short` 在提交后仍显示这些 `M`/`??` 文件保持原状（未 stash / 未 reset / 未 clean）。
 
 ## 18. Production 影响
 
@@ -150,4 +200,9 @@
 
 ## Commit Evidence
 
-_（提交完成后填充）_
+| 项 | 值 |
+|----|-----|
+| SHA | `18af384c3edf8bcc38226dff1ca81a4b44153425` |
+| Files | 33（见 §16） |
+| Stat | +2765 / −22 |
+| Isolation | schema/seed/app.module 已剥离 Dev；无关文件仍 dirty 未提交 |
