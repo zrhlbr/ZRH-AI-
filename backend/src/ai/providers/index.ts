@@ -7,3 +7,4 @@ export { KimiProvider } from './kimi.provider';
 export { VLLMProvider } from './vllm.provider';
 export { SGLangProvider } from './sglang.provider';
 export { MockProvider } from './mock.provider';
+export { CursorCloudProvider } from './cursor-cloud.provider';

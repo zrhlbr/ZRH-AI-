@@ -1,0 +1,151 @@
+# ZRH AI — Independent test stack for V1.2 (does NOT replace production defaults)
+# Usage:
+#   docker compose -p zrh-ai-test -f docker-compose.test.yml --env-file .env.test up -d --build
+#
+# Production compose remains 1.1.0. This file adds zrh-ai-dev-runner and pins 1.2.0-test images.
+
+name: zrh-ai-test
+
+services:
+  zrh-ai-postgres:
+    image: postgres:16-alpine
+    container_name: zrh-ai-test-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-zrh_ai_test}
+      POSTGRES_USER: ${POSTGRES_USER:-zrh_ai}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      TZ: Asia/Shanghai
+    expose:
+      - "5432"
+    volumes:
+      - zrh-ai-test-postgres-data:/var/lib/postgresql/data
+    networks:
+      - zrh-ai-test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  zrh-ai-redis:
+    image: redis:7-alpine
+    container_name: zrh-ai-test-redis
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD is required}", "--appendonly", "yes"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    expose:
+      - "6379"
+    volumes:
+      - zrh-ai-test-redis-data:/data
+    networks:
+      - zrh-ai-test-network
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" --no-auth-warning ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  zrh-ai-dev-runner:
+    build:
+      context: ./dev-runner
+      dockerfile: Dockerfile
+    image: zrh-ai-dev-runner:${ZRH_AI_IMAGE_TAG:-1.2.0-test}
+    container_name: zrh-ai-test-dev-runner
+    environment:
+      RUNNER_PORT: 5055
+      # Inter-container reachability; host default remains 127.0.0.1
+      RUNNER_BIND: 0.0.0.0
+      WORKSPACES_ROOT: /zrh-workspaces
+      DEV_RUNNER_TOKEN: ${DEV_RUNNER_TOKEN:?Set DEV_RUNNER_TOKEN in .env.test}
+    volumes:
+      - zrh-ai-test-workspaces:/zrh-workspaces
+    # No docker.sock
+    expose:
+      - "5055"
+    networks:
+      - zrh-ai-test-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5055/health | grep -q zrh-ai-dev-runner || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+  zrh-ai-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: zrh-ai-api:${ZRH_AI_IMAGE_TAG:-1.2.0-test}
+    container_name: zrh-ai-test-api
+    environment:
+      NODE_ENV: production
+      BACKEND_PORT: 4010
+      POSTGRES_HOST: zrh-ai-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-zrh_ai_test}
+      POSTGRES_USER: ${POSTGRES_USER:-zrh_ai}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_HOST: zrh-ai-redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://127.0.0.1:3011}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-}
+      DEV_RUNNER_URL: http://zrh-ai-dev-runner:5055
+      DEV_RUNNER_TOKEN: ${DEV_RUNNER_TOKEN:?Set DEV_RUNNER_TOKEN in .env.test}
+      DEV_WORKSPACES_ROOT: /zrh-workspaces
+      CURSOR_CLOUD_ENABLED: ${CURSOR_CLOUD_ENABLED:-false}
+      MAIL_CONFIG_CRYPTO_KEY: ${MAIL_CONFIG_CRYPTO_KEY:-zrh-ai-test-mail-crypto-key-change-me}
+      MAIL_DEV_CODE_ENABLED: ${MAIL_DEV_CODE_ENABLED:-false}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - zrh-ai-test-workspaces:/zrh-workspaces
+      - zrh-ai-test-storage:/app/storage
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-4011}:4010"
+    networks:
+      - zrh-ai-test-network
+    depends_on:
+      zrh-ai-postgres:
+        condition: service_healthy
+      zrh-ai-redis:
+        condition: service_healthy
+      zrh-ai-dev-runner:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4010/api/v1/health | grep -q zrh-ai-api || exit 1"]
+      interval: 30s
+      timeout: 25s
+      retries: 6
+      start_period: 60s
+    restart: unless-stopped
+
+  zrh-ai-web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: zrh-ai-web:${ZRH_AI_IMAGE_TAG:-1.2.0-test}
+    container_name: zrh-ai-test-web
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3011}:80"
+    networks:
+      - zrh-ai-test-network
+    depends_on:
+      zrh-ai-api:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  zrh-ai-test-network:
+    driver: bridge
+
+volumes:
+  zrh-ai-test-postgres-data:
+  zrh-ai-test-redis-data:
+  zrh-ai-test-workspaces:
+  zrh-ai-test-storage:

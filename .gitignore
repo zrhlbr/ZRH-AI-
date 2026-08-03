@@ -12,6 +12,8 @@ build/
 .env
 .env.local
 .env.*.local
+.env.test
+.env.production
 
 # Logs
 logs/*.log
@@ -35,3 +37,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Local Mail Center SMTP readiness artifacts (do not commit)
+_mail_isolation/
+

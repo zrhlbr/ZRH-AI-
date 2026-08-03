@@ -399,6 +399,8 @@ model KnowledgeDocumentVersion {
 
   @@unique([documentId, versionNumber])
   @@index([documentId])
+  @@index([storagePath])
+  @@index([hash])
   @@map("knowledge_document_versions")
 }
 
@@ -420,6 +422,7 @@ model KnowledgeChunk {
 
   @@unique([versionId, chunkIndex])
   @@index([documentId])
+  @@index([documentId, language])
   @@index([versionId])
   @@index([hash])
   @@map("knowledge_chunks")
@@ -483,6 +486,7 @@ model DocumentPermission {
 
   @@unique([documentId, targetType, targetId])
   @@index([documentId])
+  @@index([targetType, targetId])
   @@map("document_permissions")
 }
 
@@ -1130,8 +1134,6 @@ model MailSendLog {
   @@map("mail_send_logs")
 }
 
-
-
 model InviteCode {
   id        Int       @id @default(autoincrement())
   code      String    @unique
@@ -1143,4 +1145,286 @@ model InviteCode {
   createdAt DateTime  @default(now())
 
   @@map("invite_codes")
+}
+
+// ============ V1.2 P2：Developer Agent ============
+
+model DevWorkspace {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  kind        String   @default("bind") // bind | git
+  rootPath    String   // relative to whitelist root
+  description String?
+  ownerUserId Int
+  status      String   @default("active") // active | disabled | indexing
+  defaultBranch String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  members     DevWorkspaceMember[]
+  repo        DevWorkspaceRepo?
+  sessions    DevSession[]
+  plans       DevPlan[]
+  diffs       DevDiff[]
+  terminalRuns DevTerminalRun[]
+  gitOps      DevGitOp[]
+  codeFiles   DevCodeFile[]
+  codeSymbols DevCodeSymbol[]
+  codeVectors DevCodeVector[]
+  auditLogs   DevAuditLog[]
+
+  @@index([ownerUserId])
+  @@index([status])
+  @@map("dev_workspaces")
+}
+
+model DevWorkspaceMember {
+  id          Int      @id @default(autoincrement())
+  workspaceId Int
+  workspace   DevWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      Int
+  role        String   @default("viewer") // owner | editor | viewer
+  createdAt   DateTime @default(now())
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@map("dev_workspace_members")
+}
+
+model DevWorkspaceRepo {
+  id           Int      @id @default(autoincrement())
+  workspaceId  Int      @unique
+  workspace    DevWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  remoteUrl    String?
+  currentBranch String?
+  lastFetchAt  DateTime?
+  headSha      String?
+  dirty        Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+
+  @@map("dev_workspace_repos")
+}
+
+model DevSession {
+  id          Int      @id @default(autoincrement())
+  workspaceId Int
+  workspace   DevWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      Int
+  title       String?
+  skillCode   String   @default("feature")
+  modelAlias  String?  // engine alias only in UI
+  modelRef    String?  // internal gateway ref
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  messages    DevSessionMessage[]
+  plans       DevPlan[]
+
+  @@index([workspaceId, userId])
+  @@map("dev_sessions")
+}
+
+model DevSessionMessage {
+  id        Int      @id @default(autoincrement())
+  sessionId Int
+  session   DevSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String   // user | assistant | system | tool
+  content   String
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([sessionId, createdAt])
+  @@map("dev_session_messages")
+}
+
+model DevPlan {
+  id          Int      @id @default(autoincrement())
+  workspaceId Int
+  workspace   DevWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  sessionId   Int?
+  session     DevSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  userId      Int
+  title       String
+  summary     String
+  status      String   @default("pending") // draft|pending|approved|rejected|executed|cancelled
+  riskLevel   String   @default("medium")
+  approvedAt  DateTime?
+  rejectedAt  DateTime?
+  executedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  steps       DevPlanStep[]
+  diffs       DevDiff[]
+
+  @@index([workspaceId, status])
+  @@map("dev_plans")
+}
+
+model DevPlanStep {
+  id          Int      @id @default(autoincrement())
+  planId      Int
+  plan        DevPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  ord         Int
+  action      String
+  path        String?
+  detail      String?
+  riskLevel   String   @default("low")
+  approvalState String @default("pending")
+  createdAt   DateTime @default(now())
+
+  @@index([planId, ord])
+  @@map("dev_plan_steps")
+}
+
+model DevDiff {
+  id          Int      @id @default(autoincrement())
+  workspaceId Int
+  workspace   DevWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  planId      Int?
+  plan        DevPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  userId      Int
+  title       String
+  status      String   @default("pending") // pending|approved|applied|rejected
+  unifiedSummary String?
+  approvedAt  DateTime?
+  appliedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  files       DevDiffFile[]
+
+  @@index([workspaceId, status])
+  @@map("dev_diffs")
+}
+
+model DevDiffFile {
+  id          Int      @id @default(autoincrement())
+  diffId      Int
+  diff        DevDiff  @relation(fields: [diffId], references: [id], onDelete: Cascade)
+  path        String
+  changeType  String   // create|modify|delete
+  patch       String
+  deleteConfirmed Boolean @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([diffId])
+  @@map("dev_diff_files")
+}
+
+model DevTerminalRun {
+  id          Int      @id @default(autoincrement())
+  workspaceId Int
+  workspace   DevWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      Int
+  command     String
+  cwd         String?
+  exitCode    Int?
+  timedOut    Boolean  @default(false)
+  stdoutSummary String?
+  stderrSummary String?
+  status      String   @default("ok") // ok|denied|error|timeout
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@map("dev_terminal_runs")
+}
+
+model DevGitOp {
+  id          Int      @id @default(autoincrement())
+  workspaceId Int
+  workspace   DevWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      Int
+  op          String
+  args        String?
+  status      String   // ok|denied|error
+  detail      String?
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@map("dev_git_ops")
+}
+
+model DevCodeFile {
+  id          Int      @id @default(autoincrement())
+  workspaceId Int
+  workspace   DevWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  path        String
+  hash        String
+  language    String?
+  sizeBytes   Int      @default(0)
+  mtimeMs     BigInt   @default(0)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([workspaceId, path])
+  @@index([workspaceId])
+  @@map("dev_code_files")
+}
+
+model DevCodeSymbol {
+  id          Int      @id @default(autoincrement())
+  workspaceId Int
+  workspace   DevWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  kind        String
+  path        String
+  lineStart   Int      @default(1)
+  lineEnd     Int      @default(1)
+  updatedAt   DateTime @updatedAt
+
+  @@index([workspaceId, name])
+  @@index([workspaceId, path])
+  @@map("dev_code_symbols")
+}
+
+model DevCodeVector {
+  id          Int      @id @default(autoincrement())
+  workspaceId Int
+  workspace   DevWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  path        String
+  chunkIndex  Int      @default(0)
+  content     String
+  embedding   Json?
+  updatedAt   DateTime @updatedAt
+
+  @@index([workspaceId, path])
+  @@map("dev_code_vectors")
+}
+
+model DevAuditLog {
+  id          Int      @id @default(autoincrement())
+  workspaceId Int?
+  workspace   DevWorkspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  userId      Int
+  action      String
+  resource    String?
+  result      String
+  detail      String?
+  ip          String?
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId, createdAt])
+  @@index([userId, createdAt])
+  @@map("dev_audit_logs")
+}
+
+model DevSkill {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique
+  name        String
+  description String?
+  promptHint  String?
+  enabled     Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@map("dev_skills")
+}
+
+model DevProviderSetting {
+  id          Int      @id @default(autoincrement())
+  providerCode String  @unique
+  enabled     Boolean  @default(false)
+  configJson  Json?
+  updatedAt   DateTime @updatedAt
+
+  @@map("dev_provider_settings")
 }

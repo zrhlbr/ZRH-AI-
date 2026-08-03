@@ -86,6 +86,13 @@ const PERMISSIONS = [
   { code: 'api:admin:write', type: 'API', name: 'Admin 写入' },
   { code: 'api:superadmin:read', type: 'API', name: 'Super Admin 读取' },
   { code: 'api:superadmin:write', type: 'API', name: 'Super Admin 写入' },
+  // V1.2 P2：Developer Agent
+  { code: 'menu:developer', type: 'MENU', name: 'Developer Agent 菜单' },
+  { code: 'api:developer:read', type: 'API', name: 'Developer 读取' },
+  { code: 'api:developer:chat', type: 'API', name: 'Developer 对话' },
+  { code: 'api:developer:write', type: 'API', name: 'Developer 写入/审批' },
+  { code: 'api:developer:terminal', type: 'API', name: 'Developer 终端' },
+  { code: 'api:developer:admin', type: 'API', name: 'Developer 管理' },
 ];
 
 const USER_BASE_PERMISSIONS = [
@@ -130,6 +137,14 @@ const USER_BASE_PERMISSIONS = [
   'menu:business',
   'api:business:read',
   'api:business:execute',
+  'menu:developer',
+  'api:developer:read',
+  'api:developer:chat',
+];
+
+const ENTERPRISE_PERMISSIONS = [
+  ...USER_BASE_PERMISSIONS,
+  'api:developer:write',
 ];
 
 const ROLE_PERMISSIONS = {
@@ -142,7 +157,7 @@ const ROLE_PERMISSIONS = {
   ).map((p) => p.code),
   USER: USER_BASE_PERMISSIONS,
   VIP: USER_BASE_PERMISSIONS,
-  ENTERPRISE: USER_BASE_PERMISSIONS,
+  ENTERPRISE: ENTERPRISE_PERMISSIONS,
 };
 
 // 阶段 3：默认模型配置（与 Ollama 实时清单合并）
@@ -538,28 +553,74 @@ async function main() {
   }
   console.log(`[seed] builtin tools: ${BUILTIN_TOOLS.length}`);
 
+  // P2 Developer Agent: filesystem/git via Dev Runner; docker/postgres/github mediated by Gateway
   const MCP_SERVERS = [
-    { code: 'github', name: 'GitHub', description: 'GitHub MCP Connector（预留）' },
+    {
+      code: 'filesystem',
+      name: 'Filesystem',
+      description: 'Workspace filesystem via ZRH Dev Runner',
+      transport: 'runner',
+      enabled: true,
+      status: 'online',
+      reserved: false,
+    },
+    {
+      code: 'git',
+      name: 'Git',
+      description: 'Workspace git via ZRH Dev Runner (dangerous ops blocked)',
+      transport: 'runner',
+      enabled: true,
+      status: 'online',
+      reserved: false,
+    },
+    {
+      code: 'docker',
+      name: 'Docker',
+      description: 'Docker status via System module (no docker.sock on runner)',
+      transport: 'gateway',
+      enabled: true,
+      status: 'online',
+      reserved: false,
+    },
+    {
+      code: 'postgresql',
+      name: 'PostgreSQL',
+      description: 'Read-only PostgreSQL metadata via Gateway',
+      transport: 'gateway',
+      enabled: true,
+      status: 'online',
+      reserved: false,
+    },
+    {
+      code: 'github',
+      name: 'GitHub',
+      description: 'GitHub REST via Gateway (requires GITHUB_TOKEN)',
+      transport: 'gateway',
+      enabled: true,
+      status: 'online',
+      reserved: false,
+    },
     { code: 'gitlab', name: 'GitLab', description: 'GitLab MCP Connector（预留）' },
-    { code: 'postgresql', name: 'PostgreSQL', description: 'PostgreSQL MCP Connector（预留）' },
     { code: 'mysql', name: 'MySQL', description: 'MySQL MCP Connector（预留）' },
     { code: 'redis', name: 'Redis', description: 'Redis MCP Connector（预留）' },
-    { code: 'docker', name: 'Docker', description: 'Docker MCP Connector（预留）' },
     { code: 'ollama', name: 'Ollama', description: 'Ollama MCP Connector（预留）' },
-    { code: 'filesystem', name: 'Filesystem', description: '文件系统 MCP Connector（预留）' },
     { code: 'web_search', name: 'Web Search', description: 'Web Search MCP（预留）' },
     { code: 'browser', name: 'Browser', description: 'Browser MCP（预留）' },
   ];
   for (const s of MCP_SERVERS) {
+    const transport = s.transport || 'stub';
+    const enabled = s.enabled === true;
+    const reserved = s.reserved !== false && !enabled;
+    const status = s.status || (enabled ? 'online' : 'reserved');
     await prisma.mcpServer.upsert({
       where: { code: s.code },
       update: {
         name: s.name,
         description: s.description,
-        transport: 'stub',
-        enabled: false,
-        status: 'reserved',
-        reserved: true,
+        transport,
+        enabled,
+        status,
+        reserved,
         builtin: true,
         version: '0.1.0',
       },
@@ -567,10 +628,10 @@ async function main() {
         code: s.code,
         name: s.name,
         description: s.description,
-        transport: 'stub',
-        enabled: false,
-        status: 'reserved',
-        reserved: true,
+        transport,
+        enabled,
+        status,
+        reserved,
         builtin: true,
         version: '0.1.0',
       },

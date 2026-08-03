@@ -60,14 +60,14 @@ export class McpController {
 
   @Get('servers')
   @RequirePermissions('api:mcp:read')
-  listServers(@Query() q: ListMcpQueryDto) {
-    return this.registry.list({ enabled: q.enabled, status: q.status });
+  listServers(@Query() q: ListMcpQueryDto, @CurrentUser() user: AuthUser) {
+    return this.registry.list({ enabled: q.enabled, status: q.status, roleCode: user.role });
   }
 
   @Get('servers/:code')
   @RequirePermissions('api:mcp:read')
-  getServer(@Param('code') code: string) {
-    return this.registry.getByCode(code);
+  getServer(@Param('code') code: string, @CurrentUser() user: AuthUser) {
+    return this.registry.getByCode(code, user.role);
   }
 
   @Patch('servers/:code')
@@ -119,8 +119,17 @@ export class McpController {
   @Post('invoke')
   @RequirePermissions('api:mcp:write')
   invoke(
+    @CurrentUser() user: AuthUser,
     @Body() body: { serverCode: string; action: string; payload?: Record<string, unknown> },
   ) {
-    return this.gateway.invokeStub(body.serverCode, body.action, body.payload);
+    return this.gateway.invoke(
+      body.serverCode,
+      body.action,
+      {
+        ...(body.payload ?? {}),
+        userId: user.id,
+      },
+      user.role,
+    );
   }
 }

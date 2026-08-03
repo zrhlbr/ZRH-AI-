@@ -1,12 +1,13 @@
-# ZRH AI Enterprise — Production Compose (Ubuntu origin)
+# ZRH AI Enterprise — Production Compose (Blue-Green capable)
 # Usage on server:
-#   cd /home/zrh-admin/zrh-ai   # or /opt/zrh/ai after chown
+#   cd /home/zrh-admin/zrh-ai
 #   docker compose -f docker-compose.production.yml --env-file .env up -d --build
 #
-# Does not modify business logic. Postgres/Redis stay internal.
-# Host nginx should reverse-proxy:
-#   /    -> 127.0.0.1:3010
-#   /api -> 127.0.0.1:4010
+# Blue-Green notes:
+#   - Keep prior image tags (e.g. zrh-ai-api:1.1.0 / zrh-ai-web:1.1.0) for rollback
+#   - Set ZRH_AI_IMAGE_TAG=1.2.0 for green; rollback by restoring tag + prior tree backup
+#   - Host nginx unchanged: / -> :3010, /api -> :4010
+#   - Do NOT delete V1.1 rollback images/backups without 赵总确认
 
 name: zrh-ai
 
@@ -19,7 +20,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-zrh_ai}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       TZ: Asia/Shanghai
-    # Internal only — never publish to public interface
     expose:
       - "5432"
     volumes:
@@ -64,11 +64,41 @@ services:
         max-size: "10m"
         max-file: "5"
 
+  zrh-ai-dev-runner:
+    build:
+      context: ./dev-runner
+      dockerfile: Dockerfile
+    image: zrh-ai-dev-runner:${ZRH_AI_IMAGE_TAG:-1.2.0}
+    container_name: zrh-ai-dev-runner
+    environment:
+      RUNNER_PORT: 5055
+      RUNNER_BIND: 0.0.0.0
+      WORKSPACES_ROOT: /zrh-workspaces
+      DEV_RUNNER_TOKEN: ${DEV_RUNNER_TOKEN:?DEV_RUNNER_TOKEN is required}
+    volumes:
+      - zrh-ai-workspaces:/zrh-workspaces
+    expose:
+      - "5055"
+    networks:
+      - zrh-ai-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:5055/health | grep -q zrh-ai-dev-runner || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
   zrh-ai-api:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    image: zrh-ai-api:${ZRH_AI_IMAGE_TAG:-1.1.0}
+    image: zrh-ai-api:${ZRH_AI_IMAGE_TAG:-1.2.0}
     container_name: zrh-ai-api
     environment:
       NODE_ENV: production
@@ -89,11 +119,16 @@ services:
       CHAT_RAG_ENABLED: ${CHAT_RAG_ENABLED:-true}
       CHAT_RAG_MIN_SCORE: ${CHAT_RAG_MIN_SCORE:-0.28}
       KNOWLEDGE_STORAGE_PATH: /app/storage/documents
+      DEV_RUNNER_URL: http://zrh-ai-dev-runner:5055
+      DEV_RUNNER_TOKEN: ${DEV_RUNNER_TOKEN:?DEV_RUNNER_TOKEN is required}
+      DEV_WORKSPACES_ROOT: /zrh-workspaces
+      CURSOR_CLOUD_ENABLED: ${CURSOR_CLOUD_ENABLED:-false}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - zrh-ai-storage:/app/storage
+      - zrh-ai-workspaces:/zrh-workspaces
     ports:
       - "127.0.0.1:${BACKEND_PORT:-4010}:4010"
     networks:
@@ -103,13 +138,14 @@ services:
         condition: service_healthy
       zrh-ai-redis:
         condition: service_healthy
+      zrh-ai-dev-runner:
+        condition: service_healthy
     healthcheck:
-      # /api/v1/health probes Ollama; when runtime is offline the check can take ~10s.
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4010/api/v1/health | grep -q zrh-ai-api || exit 1"]
       interval: 30s
       timeout: 25s
       retries: 6
-      start_period: 60s
+      start_period: 90s
     restart: always
     logging:
       driver: json-file
@@ -121,7 +157,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    image: zrh-ai-web:${ZRH_AI_IMAGE_TAG:-1.1.0}
+    image: zrh-ai-web:${ZRH_AI_IMAGE_TAG:-1.2.0}
     container_name: zrh-ai-web
     ports:
       - "127.0.0.1:${FRONTEND_PORT:-3010}:80"
@@ -155,3 +191,5 @@ volumes:
     name: zrh-ai-redis-data
   zrh-ai-storage:
     name: zrh-ai-storage
+  zrh-ai-workspaces:
+    name: zrh-ai-workspaces

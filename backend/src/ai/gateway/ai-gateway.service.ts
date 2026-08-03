@@ -31,6 +31,7 @@ import {
   VLLMProvider,
   SGLangProvider,
   MockProvider,
+  CursorCloudProvider,
 } from '../providers';
 
 interface ActiveStream {
@@ -65,6 +66,8 @@ export class AIGatewayService {
     this.register(new VLLMProvider());
     this.register(new SGLangProvider());
     this.register(new MockProvider());
+    // Optional official Cursor Cloud API adapter (disabled unless CURSOR_CLOUD_ENABLED=true)
+    this.register(new CursorCloudProvider());
   }
 
   private register(provider: IAIProvider): void {

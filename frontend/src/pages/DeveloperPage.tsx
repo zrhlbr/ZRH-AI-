@@ -37,7 +37,9 @@ export function DeveloperPage() {
   const [searchOut, setSearchOut] = useState('');
   const [runnerOk, setRunnerOk] = useState<boolean | null>(null);
   const [newName, setNewName] = useState('');
+  const [remoteUrl, setRemoteUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [dangerOp, setDangerOp] = useState<'reset-hard' | 'clean' | 'push-force' | ''>('');
 
   const selected = useMemo(
     () => workspaces.find((w) => Number(w.id) === wsId) || null,
@@ -130,8 +132,14 @@ export function DeveloperPage() {
   const createWs = async (e: FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) return;
-    await developerApi.createWorkspace({ name: newName.trim(), kind: 'bind' });
+    const kind = remoteUrl.trim() ? 'git' : 'bind';
+    await developerApi.createWorkspace({
+      name: newName.trim(),
+      kind,
+      ...(remoteUrl.trim() ? { remoteUrl: remoteUrl.trim() } : {}),
+    });
     setNewName('');
+    setRemoteUrl('');
     await refresh();
   };
 
@@ -172,6 +180,11 @@ export function DeveloperPage() {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder={t('developer.newProject')}
+            />
+            <ZInput
+              value={remoteUrl}
+              onChange={(e) => setRemoteUrl(e.target.value)}
+              placeholder={t('developer.gitRemoteOptional')}
             />
             <ZButton type="submit" size="sm" className="w-full">
               {t('developer.add')}
@@ -334,7 +347,7 @@ export function DeveloperPage() {
                     </li>
                   ))}
                 </ul>
-                <div className="flex gap-1">
+                <div className="flex flex-wrap gap-1">
                   <ZButton
                     size="sm"
                     onClick={() =>
@@ -344,6 +357,15 @@ export function DeveloperPage() {
                     }
                   >
                     {t('developer.approveDiff')}
+                  </ZButton>
+                  <ZButton
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      void developerApi.rejectDiff(Number(diff.id)).then(() => setDiff(null))
+                    }
+                  >
+                    {t('developer.rejectDiff')}
                   </ZButton>
                   <ZButton
                     size="sm"
@@ -373,7 +395,7 @@ export function DeveloperPage() {
             >
               <ZInput value={termCmd} onChange={(e) => setTermCmd(e.target.value)} />
               <ZButton type="submit" disabled={!hasPermission('api:developer:terminal')}>
-                Run
+                {t('developer.run')}
               </ZButton>
             </form>
             <pre className="max-h-32 overflow-auto text-[11px] text-zrh-text-dim">{termOut}</pre>
@@ -384,16 +406,47 @@ export function DeveloperPage() {
               {gitStatus || '—'}
             </pre>
             {wsId && hasPermission('api:developer:write') && (
-              <ZButton
-                size="sm"
-                onClick={() =>
-                  void developerApi.commit(wsId, 'chore: zrh developer agent update').then(() =>
-                    developerApi.git(wsId, 'status').then((g) => setGitStatus(g.stdout || '')),
-                  )
-                }
-              >
-                Commit
-              </ZButton>
+              <div className="flex flex-wrap gap-1">
+                <ZButton
+                  size="sm"
+                  onClick={() =>
+                    void developerApi.commit(wsId, 'chore: zrh developer agent update').then(() =>
+                      developerApi.git(wsId, 'status').then((g) => setGitStatus(g.stdout || '')),
+                    )
+                  }
+                >
+                  {t('developer.commit')}
+                </ZButton>
+                <select
+                  className="rounded border border-zrh-border bg-zrh-surface px-2 py-1 text-xs"
+                  value={dangerOp}
+                  onChange={(e) =>
+                    setDangerOp(e.target.value as 'reset-hard' | 'clean' | 'push-force' | '')
+                  }
+                >
+                  <option value="">{t('developer.dangerousOp')}</option>
+                  <option value="reset-hard">reset --hard</option>
+                  <option value="clean">git clean</option>
+                  <option value="push-force">push --force</option>
+                </select>
+                <ZButton
+                  size="sm"
+                  variant="ghost"
+                  disabled={!dangerOp}
+                  onClick={() => {
+                    if (!wsId || !dangerOp) return;
+                    const ok = window.confirm(t('developer.dangerousConfirm'));
+                    void developerApi
+                      .dangerousGit(wsId, dangerOp, ok)
+                      .then((r) => setTermOut(JSON.stringify(r)))
+                      .catch((e) =>
+                        setError(e instanceof ApiError ? e.message : t('developer.dangerousDenied')),
+                      );
+                  }}
+                >
+                  {t('developer.confirmDangerous')}
+                </ZButton>
+              </div>
             )}
           </ZCard>
 

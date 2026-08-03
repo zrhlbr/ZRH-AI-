@@ -1,0 +1,14 @@
+{
+  "name": "zrh-ai-dev-runner",
+  "version": "1.2.0-test",
+  "private": true,
+  "description": "ZRH AI Developer Agent sandboxed execution plane",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

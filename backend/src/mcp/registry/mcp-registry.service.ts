@@ -59,7 +59,11 @@ export class McpRegistryService {
     }
   }
 
-  async list(opts: { enabled?: boolean; status?: string } = {}): Promise<McpServerView[]> {
+  async list(opts: {
+    enabled?: boolean;
+    status?: string;
+    roleCode?: string;
+  } = {}): Promise<McpServerView[]> {
     const rows = await this.prisma.mcpServer.findMany({
       where: {
         ...(opts.enabled !== undefined ? { enabled: opts.enabled } : {}),
@@ -67,13 +71,19 @@ export class McpRegistryService {
       },
       orderBy: [{ name: 'asc' }],
     });
-    return rows.map((r) => this.toView(r));
+    const views = rows.map((r) => this.toView(r));
+    if (!opts.roleCode || opts.roleCode === 'SUPER_ADMIN') return views;
+    return views.filter((s) => this.canAccess(s, opts.roleCode!));
   }
 
-  async getByCode(code: string): Promise<McpServerView> {
+  async getByCode(code: string, roleCode?: string): Promise<McpServerView> {
     const row = await this.prisma.mcpServer.findUnique({ where: { code } });
     if (!row) throw new NotFoundException(`mcp server not found: ${code}`);
-    return this.toView(row);
+    const view = this.toView(row);
+    if (roleCode && roleCode !== 'SUPER_ADMIN' && !this.canAccess(view, roleCode)) {
+      throw new NotFoundException(`mcp server not found: ${code}`);
+    }
+    return view;
   }
 
   async getRawByCode(code: string) {

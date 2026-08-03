@@ -73,14 +73,36 @@ export class ModelRouterService {
     return null;
   }
 
+  private static readonly KNOWN_PROVIDERS = new Set([
+    'ollama',
+    'openai',
+    'claude',
+    'gemini',
+    'kimi',
+    'vllm',
+    'sglang',
+    'mock',
+    'cursor-cloud',
+  ]);
+
+  /**
+   * Parse `provider:model` refs.
+   * Stabilization: Ollama tags like `qwen3:8b` / `deepseek-coder:latest` must NOT be
+   * misread as provider=qwen3,name=8b.
+   */
   private parseModelRef(ref: string): { providerCode: string; name: string } {
-    const parts = ref.split(':');
-    if (parts.length >= 3) {
-      return { providerCode: parts[0], name: parts.slice(1).join(':') };
+    const trimmed = (ref || '').trim();
+    if (!trimmed) return { providerCode: 'ollama', name: 'qwen3:8b' };
+    const colon = trimmed.indexOf(':');
+    if (colon <= 0) {
+      return { providerCode: 'ollama', name: trimmed };
     }
-    if (parts.length === 2) {
-      return { providerCode: parts[0], name: parts[1] };
+    const head = trimmed.slice(0, colon);
+    const rest = trimmed.slice(colon + 1);
+    if (ModelRouterService.KNOWN_PROVIDERS.has(head) && rest) {
+      return { providerCode: head, name: rest };
     }
-    return { providerCode: 'ollama', name: ref };
+    // Unknown first segment → treat entire string as Ollama model name
+    return { providerCode: 'ollama', name: trimmed };
   }
 }
