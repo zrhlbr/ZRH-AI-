@@ -96,7 +96,9 @@
 
 ## 10. Git Commit SHA
 
-见本任务单独提交（message：`feat(ui): simplify user experience and separate enterprise features`）。
+- **SHA：** `96e0b43`  
+- **Message：** `feat(ui): simplify user experience and separate enterprise features`  
+- **未 push / 未部署 Production**（等待赵总批准）
 
 ---
 
