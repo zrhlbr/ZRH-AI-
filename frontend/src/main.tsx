@@ -13,6 +13,8 @@ import { ReleaseNotesPage } from './pages/ReleaseNotesPage';
 import { StatusPage } from './pages/StatusPage';
 import { ModelsPage } from './pages/ModelsPage';
 import { AccountPage } from './pages/AccountPage';
+import { MePage } from './pages/MePage';
+import { SettingsPage } from './pages/SettingsPage';
 import { useAuthStore } from './store/authStore';
 import { ensureSession } from './api/client';
 import { ZSkeletonLines } from './components/ui';
@@ -134,6 +136,8 @@ const router = createBrowserRouter([
           { path: '/mcp/*', element: <Suspense fallback={<PageFallback />}><McpPage /></Suspense> },
           { path: '/workflows/*', element: <Suspense fallback={<PageFallback />}><WorkflowsPage /></Suspense> },
           { path: '/business/*', element: <Suspense fallback={<PageFallback />}><BusinessPage /></Suspense> },
+          { path: '/me', element: <MePage /> },
+          { path: '/settings', element: <SettingsPage /> },
           { path: '/account', element: <AccountPage /> },
           { path: '/admin/*', element: <Suspense fallback={<PageFallback />}><AdminPage /></Suspense> },
           { path: '/superadmin/*', element: <Suspense fallback={<PageFallback />}><SuperAdminPage /></Suspense> },

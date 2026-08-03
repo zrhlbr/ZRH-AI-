@@ -272,7 +272,28 @@
     "welcomeGreeting": "Hi, I am ZRH AI. How can I help you today?",
     "aiInputPlaceholder": "Ask ZRH AI…",
     "aiInputStageHint": "Type a question to start chatting.",
-    "send": "Send"
+    "send": "Send",
+    "recentChats": "Recent chats"
+  },
+  "me": {
+    "profile": "Profile",
+    "profileHint": "View and edit your profile",
+    "myChats": "My chats",
+    "myChatsHint": "Open conversation list",
+    "favorites": "Favorites",
+    "security": "Security",
+    "securityHint": "Password and security",
+    "language": "Language",
+    "theme": "Theme"
+  },
+  "settings": {
+    "language": "Language",
+    "languageHint": "Change interface language",
+    "theme": "Theme",
+    "themeHint": "Choose appearance",
+    "notifications": "Notifications",
+    "mail": "Mail",
+    "about": "About ZRH AI"
   },
   "landing": {
     "registerNow": "Register now",
@@ -341,6 +362,7 @@
     "pinned": "Pinned",
     "favorites": "Favorites",
     "recent": "Recent",
+    "untitled": "Untitled chat",
     "noConversations": "No conversations yet. Start a new chat.",
     "loadMore": "Load more",
     "loadOlder": "Load earlier messages",

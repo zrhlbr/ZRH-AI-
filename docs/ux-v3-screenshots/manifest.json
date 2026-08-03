@@ -1,0 +1,18 @@
+{
+  "at": "2026-08-03T10:33:53.385Z",
+  "base": "http://127.0.0.1:5173",
+  "auth": false,
+  "shots": [
+    "docs\\ux-v3-screenshots\\landing-pc.png",
+    "docs\\ux-v3-screenshots\\login-pc.png",
+    "docs\\ux-v3-screenshots\\landing-pad.png",
+    "docs\\ux-v3-screenshots\\login-pad.png",
+    "docs\\ux-v3-screenshots\\landing-android.png",
+    "docs\\ux-v3-screenshots\\login-android.png",
+    "docs\\ux-v3-screenshots\\landing-iphone.png",
+    "docs\\ux-v3-screenshots\\login-iphone.png",
+    "docs\\ux-v3-screenshots\\i18n-login-zh-CN.png",
+    "docs\\ux-v3-screenshots\\i18n-login-en-US.png",
+    "docs\\ux-v3-screenshots\\i18n-login-my-MM.png"
+  ]
+}

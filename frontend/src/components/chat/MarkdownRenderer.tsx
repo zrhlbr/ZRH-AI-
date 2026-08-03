@@ -33,7 +33,7 @@ function MermaidBlock({ code }: { code: string }) {
 
   if (failed) {
     return (
-      <pre className="overflow-x-auto rounded-lg bg-black/40 p-3 text-xs text-zrh-text-dim">
+      <pre className="zrh-code-block overflow-x-auto rounded-zrh-md p-3 text-xs text-zrh-text-dim">
         <code>{code}</code>
       </pre>
     );
@@ -57,19 +57,21 @@ function CodeBlock({ language, code, children }: { language: string; code: strin
   };
 
   return (
-    <div className="group/code relative my-2 overflow-hidden rounded-lg border border-zrh-border/60 bg-black/50">
-      <div className="flex items-center justify-between border-b border-zrh-border/40 px-3 py-1.5">
-        <span className="text-[10px] uppercase tracking-wider text-zrh-text-dim">{language || 'text'}</span>
+    <div className="zrh-code-block group/code relative my-3 max-w-full overflow-hidden rounded-xl border border-zrh-border/50 bg-zrh-bg-subtle/80">
+      <div className="flex items-center justify-between gap-2 border-b border-zrh-border/40 bg-zrh-surface/60 px-3 py-1.5">
+        <span className="truncate text-[10px] font-medium uppercase tracking-wider text-zrh-text-dim">
+          {language || 'text'}
+        </span>
         <button
           type="button"
           onClick={() => void copy()}
-          className="flex items-center gap-1 text-[10px] text-zrh-text-dim transition-colors hover:text-zrh-accent"
+          className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium text-zrh-text-dim transition-colors hover:bg-zrh-accent/10 hover:text-zrh-accent"
         >
-          {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+          {copied ? <Check className="h-3.5 w-3.5 text-zrh-accent" /> : <Copy className="h-3.5 w-3.5" />}
           {copied ? t('chat.copied') : t('chat.copy')}
         </button>
       </div>
-      <pre className="overflow-x-auto p-3 text-xs leading-relaxed">{children ?? <code>{code}</code>}</pre>
+      <pre className="max-w-full overflow-x-auto p-3.5 text-[13px] leading-relaxed">{children ?? <code>{code}</code>}</pre>
     </div>
   );
 }
@@ -103,7 +105,7 @@ function PreRenderer({ children }: PreProps) {
     // 保留原始 code 节点（含 highlight.js 高亮 spans），raw 文本仅用于复制
     return <CodeBlock language={language} code={code}>{child as ReactNode}</CodeBlock>;
   }
-  return <pre className="overflow-x-auto rounded-lg bg-black/40 p-3 text-xs">{children}</pre>;
+  return <pre className="zrh-code-block overflow-x-auto rounded-zrh-md p-3 text-xs">{children}</pre>;
 }
 
 export interface MarkdownRendererProps {

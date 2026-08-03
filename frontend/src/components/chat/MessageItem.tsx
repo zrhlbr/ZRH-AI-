@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Check, Copy, Link2, RefreshCw, ThumbsDown, ThumbsUp, Trash2 } from 'lucide-react';
 import type { ChatCitation, ChatMessage } from '../../api/chat';
+import { brand } from '../../design-system/theme';
 import { useChatStore } from '../../store/chatStore';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
@@ -43,10 +44,10 @@ export const MessageItem = memo(function MessageItem({ message, isLast, streamin
 
   if (message.role === 'user') {
     return (
-      <div className="flex justify-end">
-        <div className="max-w-[85%] rounded-2xl rounded-br-sm border border-zrh-accent/30 bg-zrh-accent/10 px-4 py-2.5">
-          <p className="whitespace-pre-wrap text-sm text-zrh-text">{message.content}</p>
-          <p className="mt-1 text-right text-[10px] text-zrh-text-dim">{formatTime(message.createdAt)}</p>
+      <div className="zrh-msg-enter flex justify-end">
+        <div className="max-w-[min(85%,36rem)] rounded-2xl rounded-br-md bg-zrh-accent/12 px-4 py-2.5 sm:px-5">
+          <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-zrh-text">{message.content}</p>
+          <p className="mt-1 text-right text-caption text-zrh-text-dim">{formatTime(message.createdAt)}</p>
         </div>
       </div>
     );
@@ -59,24 +60,24 @@ export const MessageItem = memo(function MessageItem({ message, isLast, streamin
       : null;
 
   return (
-    <div className="flex justify-start" data-role="assistant">
-      <div className="zrh-glass zrh-glow-border max-w-[92%] rounded-2xl rounded-bl-sm px-4 py-3 sm:max-w-[85%]">
+    <div className="zrh-msg-enter flex justify-start" data-role="assistant">
+      <div className="max-w-[min(100%,42rem)] rounded-2xl px-1 py-1 sm:px-2">
         <div className="mb-1.5 flex flex-col gap-0.5">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-semibold tracking-widest text-zrh-accent">ZRH AI</span>
+            <span className="text-caption font-semibold tracking-brand text-zrh-accent">{brand.name}</span>
             {message.status === 'stopped' && (
-              <span className="rounded-full border border-amber-500/40 px-2 py-0.5 text-[9px] text-amber-400">
+              <span className="rounded-full border border-zrh-warn/40 px-2 py-0.5 text-[9px] text-zrh-warn">
                 {t('chat.stopped')}
               </span>
             )}
             {message.status === 'error' && (
-              <span className="rounded-full border border-red-500/40 px-2 py-0.5 text-[9px] text-red-400">
+              <span className="rounded-full border border-zrh-err/40 px-2 py-0.5 text-[9px] text-zrh-err">
                 {t('chat.error')}
               </span>
             )}
           </div>
           <span className="text-[9px] tracking-wide text-zrh-text-dim/80">
-            {i18n.language.startsWith('zh') ? 'ZRH 科技集团' : 'ZRH Technology Group'}
+            {i18n.language.startsWith('zh') ? brand.groupZh : brand.subtitle}
           </span>
         </div>
 

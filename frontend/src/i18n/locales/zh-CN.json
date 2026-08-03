@@ -272,7 +272,28 @@
     "welcomeGreeting": "你好，我是 ZRH AI。今天想聊些什么？",
     "aiInputPlaceholder": "向 ZRH AI 提问…",
     "aiInputStageHint": "输入问题，立即开始对话。",
-    "send": "发送"
+    "send": "发送",
+    "recentChats": "最近聊天"
+  },
+  "me": {
+    "profile": "个人资料",
+    "profileHint": "查看并编辑资料",
+    "myChats": "我的聊天",
+    "myChatsHint": "进入对话列表",
+    "favorites": "我的收藏",
+    "security": "安全",
+    "securityHint": "密码与安全设置",
+    "language": "语言",
+    "theme": "主题"
+  },
+  "settings": {
+    "language": "语言",
+    "languageHint": "切换界面语言",
+    "theme": "主题",
+    "themeHint": "选择外观主题",
+    "notifications": "通知",
+    "mail": "邮件",
+    "about": "关于 ZRH AI"
   },
   "landing": {
     "registerNow": "立即注册",
@@ -341,6 +362,7 @@
     "pinned": "已固定",
     "favorites": "已收藏",
     "recent": "最近聊天",
+    "untitled": "未命名对话",
     "noConversations": "暂无对话，开始新的聊天吧",
     "loadMore": "加载更多",
     "loadOlder": "加载更早的消息",

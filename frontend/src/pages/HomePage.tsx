@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -9,19 +9,33 @@ import { brand } from '../design-system/theme';
 import { BrandMark } from '../design-system/BrandMark';
 import { fadeInUp, baseTransition } from '../design-system/animations';
 import { useChatStore } from '../store/chatStore';
-import { useAuthStore } from '../store/authStore';
+import { chatApi, type ConversationItem } from '../api/chat';
 
 /**
- * 用户首页 — ChatGPT 式简洁欢迎页
- * Logo / 欢迎语 / 输入框；无服务器监控、无 CPU/GPU/Docker 等企业状态。
+ * 用户首页 V3 — Logo / 欢迎语 / 输入框 / 快捷入口 / 最近聊天
+ * 无任何服务器监控与企业仪表盘。
  */
 export function HomePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const hasPermission = useAuthStore((s) => s.hasPermission);
   const setPendingHomeMessage = useChatStore((s) => s.setPendingHomeMessage);
   const [input, setInput] = useState('');
-  const canKnowledge = hasPermission('menu:knowledge');
+  const [recent, setRecent] = useState<ConversationItem[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    void chatApi
+      .listConversations({ page: 1, pageSize: 5 })
+      .then((res) => {
+        if (alive) setRecent(res.items?.slice(0, 5) ?? []);
+      })
+      .catch(() => {
+        if (alive) setRecent([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -35,7 +49,7 @@ export function HomePage() {
 
   return (
     <TechBackground variant="home" globe={false}>
-      <div className="mx-auto flex min-h-[calc(100dvh-3.25rem)] w-full max-w-3xl flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-16">
+      <div className="mx-auto flex min-h-[calc(100dvh-3.25rem)] w-full max-w-2xl flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-14">
         <motion.section
           variants={fadeInUp}
           initial="initial"
@@ -79,7 +93,7 @@ export function HomePage() {
             {t('home.aiInputStageHint')}
           </p>
 
-          <div className="relative z-10 mt-8 flex flex-wrap items-center justify-center gap-2">
+          <div className="relative z-10 mt-7 flex flex-wrap items-center justify-center gap-2">
             <button
               type="button"
               onClick={() => navigate('/chat')}
@@ -87,16 +101,35 @@ export function HomePage() {
             >
               {t('nav.chat')}
             </button>
-            {canKnowledge && (
-              <button
-                type="button"
-                onClick={() => navigate('/knowledge')}
-                className="rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs text-zrh-text backdrop-blur transition hover:bg-white/16"
-              >
-                {t('nav.knowledge')}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => navigate('/knowledge')}
+              className="rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs text-zrh-text backdrop-blur transition hover:bg-white/16"
+            >
+              {t('nav.knowledge')}
+            </button>
           </div>
+
+          {recent.length > 0 && (
+            <div className="relative z-10 mt-10 w-full max-w-xl">
+              <p className="mb-2 text-center text-[11px] font-medium uppercase tracking-widest text-zrh-text-dim/80">
+                {t('home.recentChats')}
+              </p>
+              <ul className="flex flex-col gap-1.5">
+                {recent.map((c) => (
+                  <li key={c.id}>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/chat/${c.id}`)}
+                      className="w-full truncate rounded-xl border border-white/15 bg-white/8 px-4 py-2.5 text-left text-sm text-zrh-text backdrop-blur transition hover:bg-white/14"
+                    >
+                      {c.title || t('chat.untitled')}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </motion.section>
       </div>
     </TechBackground>
