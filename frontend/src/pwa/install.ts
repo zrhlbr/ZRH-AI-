@@ -50,7 +50,7 @@ export function dismissInstallPrompt(days = 7): void {
 export function registerServiceWorker(): void {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
   window.addEventListener('load', () => {
-    void navigator.serviceWorker.register('/sw.js?v=1.2.2-ux-v4').catch(() => {
+    void navigator.serviceWorker.register('/sw.js?v=1.2.2-ux-v4.1').catch(() => {
       // installability soft-fail
     });
   });

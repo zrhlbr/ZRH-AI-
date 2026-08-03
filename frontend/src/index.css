@@ -85,12 +85,18 @@ h3 {
 }
 
 /* V1.2.2 Mobile — 禁止横向拖动；壳层内仅 Content 滚动 */
+/* 注意：.zrh-shell-aside 不得列入 width:100% —— 桌面侧栏依赖 w-56、移动抽屉依赖 w-[80%]，
+   非 layered 的作者样式会覆盖 Tailwind utilities，强制 width:100% 会把主内容挤出视口 */
 .zrh-app-shell,
 .zrh-chat-shell,
-.zrh-shell-aside,
 .zrh-page-enter,
 .zrh-shell-content {
   width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.zrh-shell-aside {
   max-width: 100%;
   overflow-x: hidden;
 }
