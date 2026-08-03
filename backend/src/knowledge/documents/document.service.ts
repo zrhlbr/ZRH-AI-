@@ -56,7 +56,7 @@ export class DocumentService {
     },
   ) {
     if (data.parentId) {
-      const can = await this.permissions.canAccessFolder(data.parentId, { userId });
+      const can = await this.permissions.canAccessFolder(data.parentId, { userId }, 'write');
       if (!can) throw new ForbiddenException('no permission to create folder here');
     }
     return this.prisma.knowledgeFolder.create({
@@ -73,19 +73,27 @@ export class DocumentService {
 
   async listFolders(userId: number, parentId?: number) {
     const folders = await this.prisma.knowledgeFolder.findMany({
-      where: {
-        parentId: parentId ?? null,
-        OR: [{ ownerId: userId }, { permission: { in: ['public', 'company'] } }],
-      },
+      where: { parentId: parentId ?? null },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
-    return folders;
+    // Feature Freeze: filter folder tree by ACL (not owner/public-only)
+    const allowed: typeof folders = [];
+    for (const f of folders) {
+      if (await this.permissions.canAccessFolder(f.id, { userId })) {
+        allowed.push(f);
+      }
+    }
+    return allowed;
   }
 
   async updateFolder(userId: number, id: number, data: Partial<{ name: string; parentId: number | null; permission: PermissionScope }>) {
     const folder = await this.prisma.knowledgeFolder.findUnique({ where: { id } });
     if (!folder) throw new NotFoundException('folder not found');
     if (folder.ownerId !== userId) throw new ForbiddenException('no permission');
+    if (data.parentId != null) {
+      const can = await this.permissions.canAccessFolder(data.parentId, { userId }, 'write');
+      if (!can) throw new ForbiddenException('no permission to move folder here');
+    }
     return this.prisma.knowledgeFolder.update({
       where: { id },
       data: {
@@ -114,7 +122,7 @@ export class DocumentService {
     opts: { folderId?: number; title?: string; author?: string; source?: string; tags?: number[]; permission?: PermissionScope } = {},
   ): Promise<UploadResult> {
     if (opts.folderId) {
-      const can = await this.permissions.canAccessFolder(opts.folderId, { userId });
+      const can = await this.permissions.canAccessFolder(opts.folderId, { userId }, 'write');
       if (!can) throw new ForbiddenException('no permission to upload here');
     }
 
@@ -230,7 +238,11 @@ export class DocumentService {
   async processEmbeddingTask(taskId: number): Promise<{ taskId: number; status: string }> {
     const task = await this.prisma.embeddingTask.findUnique({ where: { id: taskId } });
     if (!task) throw new NotFoundException('embedding task not found');
-    if (task.status === 'running' || task.status === 'completed') {
+    // Stabilization R2: claimPending may already set status=running
+    if (task.status === 'completed' || task.status === 'failed') {
+      return { taskId, status: task.status };
+    }
+    if (task.status !== 'pending' && task.status !== 'running') {
       return { taskId, status: task.status };
     }
 
@@ -248,13 +260,18 @@ export class DocumentService {
       return { taskId, status: 'failed' };
     }
 
-    await this.runEmbedding(taskId, doc.id, version.id);
+    await this.runEmbedding(taskId, doc.id, version.id, task.status === 'running');
     const updated = await this.prisma.embeddingTask.findUnique({ where: { id: taskId } });
     return { taskId, status: updated?.status ?? 'failed' };
   }
 
-  private async runEmbedding(taskId: number, documentId: number, versionId: number) {
-    await this.tasks.start(taskId);
+  private async runEmbedding(
+    taskId: number,
+    documentId: number,
+    versionId: number,
+    alreadyClaimed = false,
+  ) {
+    if (!alreadyClaimed) await this.tasks.start(taskId);
     try {
       await this.prisma.knowledgeDocument.update({ where: { id: documentId }, data: { status: 'embedding' } });
       await this.vector.initialize(this.embedding.dimension);
@@ -302,11 +319,16 @@ export class DocumentService {
       ...(opts.folderId !== undefined ? { folderId: opts.folderId } : {}),
       ...(opts.status ? { status: opts.status } : {}),
       ...(opts.favorite ? { isFavorite: true } : {}),
+      // Stabilization R2: nest search OR under AND so ACL OR from baseFilter is preserved
       ...(opts.search
         ? {
-            OR: [
-              { title: { contains: opts.search, mode: 'insensitive' } },
-              { filename: { contains: opts.search, mode: 'insensitive' } },
+            AND: [
+              {
+                OR: [
+                  { title: { contains: opts.search, mode: 'insensitive' } },
+                  { filename: { contains: opts.search, mode: 'insensitive' } },
+                ],
+              },
             ],
           }
         : {}),
@@ -363,6 +385,10 @@ export class DocumentService {
     const update: Prisma.KnowledgeDocumentUpdateInput = {};
     if (data.title !== undefined) update.title = data.title;
     if (data.folderId !== undefined) {
+      if (data.folderId !== null) {
+        const can = await this.permissions.canAccessFolder(data.folderId, { userId }, 'write');
+        if (!can) throw new ForbiddenException('no permission to move document here');
+      }
       update.folder = data.folderId === null ? { disconnect: true } : { connect: { id: data.folderId } };
     }
     if (data.isFavorite !== undefined) update.isFavorite = data.isFavorite;
@@ -380,6 +406,10 @@ export class DocumentService {
           skipDuplicates: true,
         });
       }
+    }
+
+    if (data.permission !== undefined && data.permission !== doc.permission) {
+      await this.permissions.bumpRagAclEpoch();
     }
 
     return { ...updated, sizeBytes: Number(updated.sizeBytes) };
@@ -418,15 +448,26 @@ export class DocumentService {
     if (permanent) {
       for (const version of doc.versions) {
         await this.clearVersionChunks(version.id);
-        await this.storage.delete(version.storagePath);
+        // Stabilization R2: content-addressed blobs may be shared — only unlink when unreferenced
+        const refs = await this.prisma.knowledgeDocumentVersion.count({
+          where: {
+            OR: [{ storagePath: version.storagePath }, { hash: version.hash }],
+            NOT: { id: version.id },
+          },
+        });
+        if (refs === 0) {
+          await this.storage.delete(version.storagePath);
+        }
       }
       await this.prisma.knowledgeDocument.delete({ where: { id } });
+      await this.permissions.bumpRagAclEpoch();
       return { deleted: true, permanent: true };
     }
     await this.prisma.knowledgeDocument.update({
       where: { id },
       data: { isDeleted: true, deletedAt: new Date() },
     });
+    await this.permissions.bumpRagAclEpoch();
     return { deleted: true, permanent: false };
   }
 
@@ -434,10 +475,12 @@ export class DocumentService {
     const doc = await this.prisma.knowledgeDocument.findUnique({ where: { id } });
     if (!doc) throw new NotFoundException('document not found');
     if (doc.ownerId !== userId) throw new ForbiddenException('no permission');
-    return this.prisma.knowledgeDocument.update({
+    const restored = await this.prisma.knowledgeDocument.update({
       where: { id },
       data: { isDeleted: false, deletedAt: null },
     });
+    await this.permissions.bumpRagAclEpoch();
+    return restored;
   }
 
   // ---------- Tags ----------
@@ -461,7 +504,17 @@ export class DocumentService {
     if (!version) throw new NotFoundException('version not found');
     const buffer = await this.storage.read(version.storagePath);
     await this.runParseAndChunk(doc.id, version.id, buffer, doc.mimeType, doc.filename);
-    return { documentId: doc.id, status: 'chunked' };
+    const chunkCount = await this.prisma.knowledgeChunk.count({ where: { versionId: version.id } });
+    if (chunkCount === 0) {
+      await this.prisma.knowledgeDocument.update({
+        where: { id: doc.id },
+        data: { status: 'error' },
+      });
+      return { documentId: doc.id, status: 'error', taskId: null };
+    }
+    // Stabilization R2: chain embed after manual parse (mirrors upload)
+    const task = await this.tasks.create(doc.id, this.embedding.code);
+    return { documentId: doc.id, taskId: task.id, status: 'chunked' };
   }
 
   async reindexDocument(userId: number, id: number) {
@@ -476,6 +529,10 @@ export class DocumentService {
       throw new BadRequestException('no chunks to reindex; parse document first');
     }
     await this.vector.delete(chunks.map((c) => c.id));
+    await this.prisma.knowledgeDocument.update({
+      where: { id: doc.id },
+      data: { status: 'chunked' },
+    });
 
     const task = await this.tasks.create(doc.id, this.embedding.code);
     return { documentId: doc.id, taskId: task.id, status: 'pending' };

@@ -10,12 +10,18 @@ export class WorkflowHistoryService {
     pageSize?: number;
     workflowCode?: string;
     status?: string;
+    /** When set, scope runs to this user (non-admin). */
+    userId?: number;
+    roleCode?: string;
   } = {}) {
     const page = Math.max(1, opts.page ?? 1);
     const pageSize = Math.min(100, Math.max(1, opts.pageSize ?? 20));
+    const isAdmin =
+      opts.roleCode === 'ADMIN' || opts.roleCode === 'SUPER_ADMIN';
     const where = {
       ...(opts.workflowCode ? { workflow: { code: opts.workflowCode } } : {}),
       ...(opts.status ? { status: opts.status } : {}),
+      ...(!isAdmin && opts.userId ? { userId: opts.userId } : {}),
     };
     const [total, items] = await Promise.all([
       this.prisma.workflowRun.count({ where }),
@@ -33,7 +39,7 @@ export class WorkflowHistoryService {
     return { page, pageSize, total, items };
   }
 
-  async get(runId: number) {
+  async get(runId: number, opts?: { userId?: number; roleCode?: string }) {
     const row = await this.prisma.workflowRun.findUnique({
       where: { id: runId },
       include: {
@@ -43,6 +49,10 @@ export class WorkflowHistoryService {
       },
     });
     if (!row) throw new NotFoundException('run not found');
+    const isAdmin = opts?.roleCode === 'ADMIN' || opts?.roleCode === 'SUPER_ADMIN';
+    if (!isAdmin && opts?.userId && row.userId !== opts.userId) {
+      throw new NotFoundException('run not found');
+    }
     return row;
   }
 

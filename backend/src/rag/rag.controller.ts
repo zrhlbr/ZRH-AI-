@@ -55,6 +55,7 @@ export class RagController {
       mode: dto.mode,
       modelRef: dto.modelRef,
       topK: dto.topK,
+      minScore: dto.minScore,
     });
   }
 }

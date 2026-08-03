@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from '../../redis/redis.service';
 import { PermissionAction, PermissionScope, PermissionTargetType } from '../types/knowledge.types';
 
 export interface PermissionCheck {
@@ -11,80 +12,193 @@ export interface PermissionCheck {
 
 /**
  * Knowledge Permission Service：统一处理文档/文件夹权限。
- * 支持 public / company / department / private / role 五级作用域。
+ * Stabilization: align with RAG ACL (department/role require ACL rows).
  */
 @Injectable()
 export class KnowledgePermissionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+  ) {}
 
-  private async getUserRole(userId: number): Promise<{ roleCode: string; departmentId?: number }> {
+  /** Feature Freeze: invalidate RAG allow-list cache after ACL mutations */
+  async bumpRagAclEpoch() {
+    await this.redis.increment('rag:acl:epoch');
+  }
+
+  private async getUserRole(userId: number): Promise<{
+    roleCode: string;
+    roleId: number;
+    departmentId?: number;
+  }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { role: true },
     });
-    return { roleCode: user?.role?.code ?? 'USER', departmentId: undefined };
+    return {
+      roleCode: user?.role?.code ?? 'USER',
+      roleId: user?.roleId ?? 0,
+      departmentId: user?.departmentId ?? undefined,
+    };
   }
 
-  async canAccessDocument(documentId: number, check: PermissionCheck, action: PermissionAction = 'read'): Promise<boolean> {
+  async canAccessDocument(
+    documentId: number,
+    check: PermissionCheck,
+    action: PermissionAction = 'read',
+  ): Promise<boolean> {
     const doc = await this.prisma.knowledgeDocument.findUnique({
       where: { id: documentId },
       include: { permissions: true },
     });
-    if (!doc) return false;
-    if (doc.isDeleted) return false;
+    if (!doc || doc.isDeleted) return false;
     if (doc.ownerId === check.userId) return true;
-    if (doc.permission === 'public') return true;
-    if (doc.permission === 'company') return true;
-    if (doc.permission === 'private') return false;
 
-    const { roleCode } = await this.getUserRole(check.userId);
+    const { roleCode, roleId, departmentId } = await this.getUserRole(check.userId);
     if (roleCode === 'SUPER_ADMIN') return true;
 
-    const permissions = doc.permissions;
-    const has = (targetType: PermissionTargetType, targetId: number) =>
-      permissions.some(
-        (p) =>
-          p.targetType === targetType &&
-          p.targetId === targetId &&
-          (p.permission === action || p.permission === 'admin' || (action === 'read' && p.permission === 'write')),
-      );
+    // Stabilization R2: public/company are read-scoped for non-owners
+    if (doc.permission === 'public' || doc.permission === 'company') {
+      return action === 'read';
+    }
 
-    if (has('user', check.userId)) return true;
-    if (doc.permission === 'role' && roleCode && has('role', 0)) {
-      // 简化：role 权限目前通过 permission 字段判断，后续可绑定 roleId
+    const deptId = check.departmentId ?? departmentId;
+    const permissions = doc.permissions;
+    const allows = (p: { permission: string }) =>
+      p.permission === action ||
+      p.permission === 'admin' ||
+      (action === 'read' && p.permission === 'write');
+
+    // Feature Freeze: private docs may still grant via explicit ACL rows (align list/search/RAG)
+    if (permissions.some((p) => p.targetType === 'user' && p.targetId === check.userId && allows(p))) {
       return true;
     }
-    if (check.departmentId && doc.permission === 'department' && has('department', check.departmentId)) return true;
-
+    if (
+      roleId > 0 &&
+      permissions.some((p) => p.targetType === 'role' && p.targetId === roleId && allows(p))
+    ) {
+      return true;
+    }
+    if (
+      deptId &&
+      permissions.some((p) => p.targetType === 'department' && p.targetId === deptId && allows(p))
+    ) {
+      return true;
+    }
     return false;
   }
 
-  async canAccessFolder(folderId: number, check: PermissionCheck): Promise<boolean> {
+  async canAccessFolder(
+    folderId: number,
+    check: PermissionCheck,
+    action: 'read' | 'write' = 'read',
+  ): Promise<boolean> {
     const folder = await this.prisma.knowledgeFolder.findUnique({ where: { id: folderId } });
     if (!folder) return false;
     if (folder.ownerId === check.userId) return true;
-    if (folder.permission === 'public' || folder.permission === 'company') return true;
+    const { roleCode, roleId, departmentId } = await this.getUserRole(check.userId);
+    if (roleCode === 'SUPER_ADMIN' || roleCode === 'ADMIN') return true;
+    // Feature Freeze: company/public folders are read-open; write owner/admin only
+    if (folder.permission === 'public' || folder.permission === 'company') {
+      return action === 'read';
+    }
     if (folder.permission === 'private') return false;
-    const { roleCode } = await this.getUserRole(check.userId);
-    if (roleCode === 'SUPER_ADMIN') return true;
+    // department/role folders inherit owner principal (no folder ACL table)
+    if (folder.permission === 'department') {
+      const owner = await this.prisma.user.findUnique({
+        where: { id: folder.ownerId },
+        select: { departmentId: true },
+      });
+      const deptId = check.departmentId ?? departmentId;
+      const ok = !!deptId && !!owner?.departmentId && deptId === owner.departmentId;
+      return ok && action === 'read';
+    }
+    if (folder.permission === 'role') {
+      const owner = await this.prisma.user.findUnique({
+        where: { id: folder.ownerId },
+        select: { roleId: true },
+      });
+      const ok = roleId > 0 && !!owner?.roleId && roleId === owner.roleId;
+      return ok && action === 'read';
+    }
     return false;
   }
 
   /** 构造文档列表过滤条件（用于 Prisma where） */
   async buildDocumentFilter(userId: number): Promise<Prisma.KnowledgeDocumentWhereInput> {
-    const { roleCode, departmentId } = await this.getUserRole(userId);
+    const { roleCode, roleId, departmentId } = await this.getUserRole(userId);
     if (roleCode === 'SUPER_ADMIN') {
       return { isDeleted: false };
     }
-    return {
-      isDeleted: false,
-      OR: [
-        { ownerId: userId },
-        { permission: { in: ['public', 'company'] } },
-        { permission: 'private', ownerId: userId },
-        ...(departmentId ? [{ permission: 'department' as const }] : []),
-      ],
-    };
+
+    const or: Prisma.KnowledgeDocumentWhereInput[] = [
+      { ownerId: userId },
+      { permission: { in: ['public', 'company'] } },
+      {
+        permissions: {
+          some: {
+            targetType: 'user',
+            targetId: userId,
+            permission: { in: ['read', 'write', 'admin'] },
+          },
+        },
+      },
+    ];
+
+    if (roleId > 0) {
+      or.push({
+        permissions: {
+          some: {
+            targetType: 'role',
+            targetId: roleId,
+            permission: { in: ['read', 'write', 'admin'] },
+          },
+        },
+      });
+      or.push({
+        AND: [
+          { permission: 'role' },
+          {
+            permissions: {
+              some: {
+                targetType: 'role',
+                targetId: roleId,
+                permission: { in: ['read', 'write', 'admin'] },
+              },
+            },
+          },
+        ],
+      });
+    }
+
+    if (departmentId) {
+      or.push({
+        AND: [
+          { permission: 'department' },
+          {
+            permissions: {
+              some: {
+                targetType: 'department',
+                targetId: departmentId,
+                permission: { in: ['read', 'write', 'admin'] },
+              },
+            },
+          },
+        ],
+      });
+      // Align with RAG: bare department ACL rows also grant list visibility
+      or.push({
+        permissions: {
+          some: {
+            targetType: 'department',
+            targetId: departmentId,
+            permission: { in: ['read', 'write', 'admin'] },
+          },
+        },
+      });
+    }
+
+    return { isDeleted: false, OR: or };
   }
 
   async grantPermission(
@@ -92,17 +206,41 @@ export class KnowledgePermissionService {
     targetType: PermissionTargetType,
     targetId: number,
     action: PermissionAction,
+    actorUserId?: number,
   ) {
-    return this.prisma.documentPermission.upsert({
+    if (actorUserId !== undefined) {
+      const { roleCode } = await this.getUserRole(actorUserId);
+      const platformAdmin = roleCode === 'ADMIN' || roleCode === 'SUPER_ADMIN';
+      const ok =
+        platformAdmin || (await this.canAccessDocument(documentId, { userId: actorUserId }, 'admin'));
+      if (!ok) throw new ForbiddenException('no permission to grant');
+    }
+    const row = await this.prisma.documentPermission.upsert({
       where: { documentId_targetType_targetId: { documentId, targetType, targetId } },
       update: { permission: action },
       create: { documentId, targetType, targetId, permission: action },
     });
+    await this.bumpRagAclEpoch();
+    return row;
   }
 
-  async revokePermission(documentId: number, targetType: PermissionTargetType, targetId: number) {
-    return this.prisma.documentPermission.deleteMany({
+  async revokePermission(
+    documentId: number,
+    targetType: PermissionTargetType,
+    targetId: number,
+    actorUserId?: number,
+  ) {
+    if (actorUserId !== undefined) {
+      const { roleCode } = await this.getUserRole(actorUserId);
+      const platformAdmin = roleCode === 'ADMIN' || roleCode === 'SUPER_ADMIN';
+      const ok =
+        platformAdmin || (await this.canAccessDocument(documentId, { userId: actorUserId }, 'admin'));
+      if (!ok) throw new ForbiddenException('no permission to revoke');
+    }
+    const result = await this.prisma.documentPermission.deleteMany({
       where: { documentId, targetType, targetId },
     });
+    await this.bumpRagAclEpoch();
+    return result;
   }
 }

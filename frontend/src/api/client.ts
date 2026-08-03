@@ -73,6 +73,17 @@ async function tryRefresh(): Promise<boolean> {
   }
 }
 
+/** Feature Freeze: restore access token from persisted refresh on cold start */
+export async function ensureSession(): Promise<boolean> {
+  const { accessToken, refreshToken } = useAuthStore.getState();
+  if (accessToken) return true;
+  if (!refreshToken) return false;
+  refreshing ??= tryRefresh().finally(() => {
+    refreshing = null;
+  });
+  return refreshing;
+}
+
 export async function request<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
   try {
     return await rawRequest<T>(path, init);

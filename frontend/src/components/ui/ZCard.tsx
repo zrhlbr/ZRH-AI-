@@ -28,7 +28,7 @@ export function ZCard({
       initial="initial"
       animate="animate"
       transition={baseTransition}
-      className={`rounded-xl border border-zrh-border bg-zrh-surface shadow-[0_4px_24px_rgba(0,0,0,0.45)] ${
+      className={`zrh-hover-lift rounded-xl border border-zrh-border bg-zrh-surface shadow-zrh-card ${
         glow ? 'zrh-glow-border' : ''
       } ${hud ? 'zrh-hud' : ''} ${padded ? 'p-4 sm:p-5' : ''} ${className}`}
       {...rest}

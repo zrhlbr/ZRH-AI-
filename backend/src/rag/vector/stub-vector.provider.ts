@@ -29,7 +29,11 @@ export abstract class StubVectorProvider implements IVectorProvider {
     throw new Error(`${this.label} vector provider not enabled in Stage 6`);
   }
 
-  async search(_embedding: number[], _topK: number): Promise<VectorSearchResult[]> {
+  async search(
+    _embedding: number[],
+    _topK: number,
+    _options?: { chunkIds?: number[] },
+  ): Promise<VectorSearchResult[]> {
     throw new Error(`${this.label} vector provider not enabled in Stage 6`);
   }
 

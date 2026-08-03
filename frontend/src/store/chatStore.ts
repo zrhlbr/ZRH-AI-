@@ -79,6 +79,8 @@ interface ChatState {
 }
 
 let abortController: AbortController | null = null;
+/** Bumped on conversation switch / new chat so in-flight streams cannot rebind UI */
+let streamEpoch = 0;
 
 export const useChatStore = create<ChatState>()((set, get) => ({
   conversations: [],
@@ -138,9 +140,28 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   },
 
   openConversation: async (id) => {
-    set({ loadingMessages: true, messages: [], activeId: id, error: null });
+    // Stabilization: abort in-flight stream so deltas cannot paint the wrong thread
+    streamEpoch += 1;
+    abortController?.abort();
+    abortController = null;
+    set({
+      loadingMessages: true,
+      messages: [],
+      activeId: id,
+      error: null,
+      streaming: {
+        active: false,
+        conversationId: null,
+        content: '',
+        appendToMessageId: null,
+        baseContent: '',
+        ragHit: null,
+        citations: [],
+      },
+    });
     try {
       const data = await chatApi.getConversation(id, { limit: 30 });
+      if (get().activeId !== id) return;
       set({
         messages: data.messages,
         hasMore: data.hasMore,
@@ -150,7 +171,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         loadingMessages: false,
       });
     } catch {
-      set({ loadingMessages: false, error: 'load_failed' });
+      if (get().activeId === id) set({ loadingMessages: false, error: 'load_failed' });
     }
   },
 
@@ -167,6 +188,9 @@ export const useChatStore = create<ChatState>()((set, get) => ({
   },
 
   newChat: () => {
+    streamEpoch += 1;
+    abortController?.abort();
+    abortController = null;
     const defaultModel = get().models.find((m) => m.isDefault)?.name ?? get().models[0]?.name ?? '';
     set({
       activeId: null,
@@ -175,6 +199,15 @@ export const useChatStore = create<ChatState>()((set, get) => ({
       hasMore: false,
       error: null,
       activeModel: get().activeModel || defaultModel,
+      streaming: {
+        active: false,
+        conversationId: null,
+        content: '',
+        appendToMessageId: null,
+        baseContent: '',
+        ragHit: null,
+        citations: [],
+      },
     });
   },
 
@@ -186,7 +219,10 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
   stop: async () => {
     const { streaming } = get();
+    streamEpoch += 1;
+    const ac = abortController;
     abortController?.abort();
+    abortController = null;
     if (streaming.conversationId) {
       try {
         await chatApi.stop(streaming.conversationId);
@@ -194,6 +230,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
         // 客户端已中断，服务端停止失败可忽略
       }
     }
+    void ac;
   },
 
   regenerate: async () => {
@@ -201,8 +238,7 @@ export const useChatStore = create<ChatState>()((set, get) => ({
     if (!activeId || streaming.active) return;
     const last = messages[messages.length - 1];
     if (!last || last.role !== 'assistant') return;
-    // 移除本地最后一条 assistant，等待流式重建
-    set({ messages: messages.slice(0, -1) });
+    // Stabilization: keep prior assistant visible until stream completes
     await runStream(get, set, { regenerate: true });
   },
 
@@ -353,11 +389,14 @@ async function runStream(
 
   let streamedContent = '';
   let baseContent = '';
-  let finalMessageId: number | null = null;
   let finalConversationId: number | null = activeId;
   let userMessage: ChatMessage | null = null;
   let ragHit: boolean | null = null;
   let citations: ChatCitation[] = [];
+  let replacedMessageId: number | null = null;
+  const boundConversationId = activeId;
+  const epoch = streamEpoch;
+  const ac = abortController;
 
   try {
     await streamChat({
@@ -367,18 +406,36 @@ async function runStream(
       promptCode: activeId ? undefined : (selectedPromptCode ?? undefined),
       continue: mode.continue,
       regenerate: mode.regenerate,
-      signal: abortController.signal,
+      signal: ac!.signal,
       onEvent: (event) => {
+        // Ignore UI updates if user switched conversations / new chat mid-stream
+        const stillOnThread = () => {
+          if (epoch !== streamEpoch) return false;
+          const cur = get().activeId;
+          const streamConv = get().streaming.conversationId ?? boundConversationId ?? finalConversationId;
+          // New chat abandoned an in-flight thread
+          if (cur == null && boundConversationId != null) return false;
+          if (cur == null && streamConv != null && boundConversationId == null) {
+            // First message of a brand-new chat — allow until epoch bumps
+            return true;
+          }
+          if (streamConv == null) return true;
+          return cur === streamConv;
+        };
+
         if (event.type === 'meta') {
           finalConversationId = event.conversationId;
+          if (event.replacedMessageId) replacedMessageId = event.replacedMessageId;
           if (event.appendToMessageId) {
             const existing = get().messages.find((m) => m.id === event.appendToMessageId);
             baseContent = existing?.content ?? '';
-            set((s) => ({
-              streaming: { ...s.streaming, appendToMessageId: event.appendToMessageId!, baseContent },
-            }));
+            if (stillOnThread()) {
+              set((s) => ({
+                streaming: { ...s.streaming, appendToMessageId: event.appendToMessageId!, baseContent },
+              }));
+            }
           }
-          if (event.userMessageId && mode.message) {
+          if (event.userMessageId && mode.message && stillOnThread()) {
             userMessage = {
               id: event.userMessageId,
               conversationId: event.conversationId,
@@ -394,26 +451,34 @@ async function runStream(
             };
             set((s) => ({ messages: [...s.messages, userMessage!] }));
           }
-          set((s) => ({
-            streaming: { ...s.streaming, conversationId: event.conversationId },
-            activeId: s.activeId ?? event.conversationId,
-            activeModel: event.model,
-          }));
+          if (stillOnThread()) {
+            set((s) => ({
+              streaming: { ...s.streaming, conversationId: event.conversationId },
+              activeId:
+                s.activeId == null || s.activeId === event.conversationId
+                  ? event.conversationId
+                  : s.activeId,
+              activeModel: event.model,
+            }));
+          }
         } else if (event.type === 'rag') {
           ragHit = event.hit;
           citations = event.hit && event.citations ? event.citations : [];
-          set((s) => ({
-            streaming: { ...s.streaming, ragHit: event.hit, citations },
-          }));
+          if (stillOnThread()) {
+            set((s) => ({
+              streaming: { ...s.streaming, ragHit: event.hit, citations },
+            }));
+          }
         } else if (event.type === 'delta') {
           streamedContent += event.content;
-          set((s) => ({ streaming: { ...s.streaming, content: streamedContent } }));
+          if (stillOnThread()) {
+            set((s) => ({ streaming: { ...s.streaming, content: streamedContent } }));
+          }
         } else if (event.type === 'done') {
-          finalMessageId = event.messageId;
           finalConversationId = event.conversationId;
           if (event.ragHit != null) ragHit = event.ragHit;
           if (event.citations?.length) citations = event.citations;
-          if (event.messageId) {
+          if (event.messageId && stillOnThread()) {
             const assistantMessage: ChatMessage = {
               id: event.messageId,
               conversationId: event.conversationId,
@@ -429,47 +494,52 @@ async function runStream(
               ragHit,
               citations: ragHit ? citations : null,
             };
-            set((s) => ({
-              messages: event.messageId && s.streaming.appendToMessageId
-                ? s.messages.map((m) => (m.id === event.messageId ? assistantMessage : m))
-                : [...s.messages, assistantMessage],
-            }));
+            set((s) => {
+              let msgs = s.messages;
+              if (replacedMessageId) {
+                msgs = msgs.filter((m) => m.id !== replacedMessageId);
+              }
+              const appendId = s.streaming.appendToMessageId;
+              if (appendId) {
+                msgs = msgs.map((m) => (m.id === appendId || m.id === event.messageId ? assistantMessage : m));
+              } else {
+                msgs = [...msgs, assistantMessage];
+              }
+              return { messages: msgs };
+            });
           }
         } else if (event.type === 'error') {
-          set({ error: event.message });
+          if (stillOnThread()) set({ error: event.message || 'stream_failed' });
         }
       },
     });
   } catch (error) {
-    if (!(error instanceof DOMException && error.name === 'AbortError')) {
+    if (epoch === streamEpoch && !(error instanceof DOMException && error.name === 'AbortError')) {
       set({ error: error instanceof Error ? error.message : 'stream_failed' });
     }
   } finally {
-    abortController = null;
-    set((s) => ({
-      streaming: {
-        active: false,
-        conversationId: null,
-        content: '',
-        appendToMessageId: null,
-        baseContent: '',
-        ragHit: null,
-        citations: [],
-      },
-      messages: finalMessageId
-        ? s.messages
-        : s.streaming.content
-          ? s.messages
-          : s.messages,
-    }));
-    // 刷新列表与统计（新对话出现在列表顶部）
-    void get().loadConversations(true);
-    void get().loadStats();
-    void get().loadModels();
-    if (finalConversationId && !get().activeTitle) {
-      void chatApi.getConversation(finalConversationId, { limit: 1 }).then((d) => {
-        set({ activeTitle: d.conversation.title });
-      }).catch(() => undefined);
+    // Feature Freeze: do not clobber a newer stream started after abort/newChat
+    if (epoch === streamEpoch && abortController === ac) {
+      abortController = null;
+      set({
+        streaming: {
+          active: false,
+          conversationId: null,
+          content: '',
+          appendToMessageId: null,
+          baseContent: '',
+          ragHit: null,
+          citations: [],
+        },
+      });
+      void get().loadConversations(true);
+      void get().loadStats();
+      void get().loadModels();
+      if (finalConversationId && get().activeId === finalConversationId && !get().activeTitle) {
+        void chatApi.getConversation(finalConversationId, { limit: 1 }).then((d) => {
+          if (streamEpoch === epoch) set({ activeTitle: d.conversation.title });
+        }).catch(() => undefined);
+      }
     }
   }
 }

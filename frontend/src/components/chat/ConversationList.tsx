@@ -29,7 +29,7 @@ function groupByTime(items: ConversationItem[], t: (k: string) => string) {
 /**
  * 左侧栏：新建对话 / 搜索历史 / 分组（固定·收藏·最近）/ 重命名 / 删除 / 导出 / 分页加载。
  */
-export function ConversationList() {
+export function ConversationList({ onNewChat }: { onNewChat?: () => void } = {}) {
   const { t } = useTranslation();
   const {
     conversations,
@@ -72,7 +72,7 @@ export function ConversationList() {
         <button
           type="button"
           data-testid="new-chat"
-          onClick={newChat}
+          onClick={() => (onNewChat ? onNewChat() : newChat())}
           className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-zrh-accent/40 bg-zrh-accent/10 px-3 py-2.5 text-xs font-semibold text-zrh-accent transition-colors hover:bg-zrh-accent/20"
         >
           <MessageSquarePlus className="h-4 w-4" aria-hidden />
@@ -81,7 +81,7 @@ export function ConversationList() {
       </div>
 
       <div className="px-3 pb-2">
-        <div className="flex items-center gap-2 rounded-lg border border-zrh-border/60 bg-black/20 px-2.5">
+        <div className="zrh-inset flex items-center gap-2 rounded-zrh-md border border-zrh-border/60 px-2.5">
           <Search className="h-3.5 w-3.5 shrink-0 text-zrh-text-dim" aria-hidden />
           <input
             data-testid="chat-search"
@@ -109,7 +109,10 @@ export function ConversationList() {
                   key={conv.id}
                   conv={conv}
                   active={conv.id === activeId}
-                  onOpen={() => void openConversation(conv.id)}
+                  onOpen={() => {
+                    void openConversation(conv.id);
+                    // deep-link sync handled by ChatPage when activeId updates
+                  }}
                   onRename={() => setRenaming({ id: conv.id, title: conv.title })}
                   onTogglePin={() => void togglePin(conv.id)}
                   onToggleFavorite={() => void toggleFavorite(conv.id)}
@@ -144,13 +147,13 @@ export function ConversationList() {
             if (e.key === 'Enter') void confirmRename();
           }}
           placeholder={t('chat.renamePlaceholder')}
-          className="w-full rounded-lg border border-zrh-border bg-black/20 px-3 py-2 text-sm text-zrh-text outline-none focus:border-zrh-accent/60"
+          className="zrh-inset w-full rounded-zrh-md border border-zrh-border px-3 py-2 text-sm text-zrh-text outline-none focus:border-zrh-accent/60"
         />
         <div className="mt-4 flex justify-end gap-2">
           <button
             type="button"
             onClick={() => setRenaming(null)}
-            className="rounded-lg px-3 py-1.5 text-xs text-zrh-text-dim hover:text-zrh-text"
+            className="rounded-zrh-md px-3 py-1.5 text-xs text-zrh-text-dim hover:text-zrh-text"
           >
             {t('common.cancel')}
           </button>
@@ -158,7 +161,7 @@ export function ConversationList() {
             type="button"
             data-testid="confirm-rename"
             onClick={() => void confirmRename()}
-            className="rounded-lg bg-zrh-accent px-4 py-1.5 text-xs font-semibold text-zrh-bg hover:bg-zrh-accent-soft"
+            className="rounded-zrh-md bg-zrh-accent px-4 py-1.5 text-xs font-semibold text-zrh-on-accent hover:bg-zrh-accent-soft"
           >
             {t('common.confirm')}
           </button>
@@ -237,7 +240,7 @@ function ConversationRow({
       >
         <div className="flex items-center gap-1.5">
           {conv.pinned && <Pin className="h-3 w-3 shrink-0 text-zrh-accent" aria-hidden />}
-          {conv.favorite && !conv.pinned && <Star className="h-3 w-3 shrink-0 text-amber-400" aria-hidden />}
+          {conv.favorite && !conv.pinned && <Star className="h-3 w-3 shrink-0 text-zrh-accent" aria-hidden />}
           <p className="min-w-0 flex-1 truncate text-xs text-zrh-text">{conv.title}</p>
         </div>
         <div className="mt-0.5 flex items-center justify-between gap-2">
@@ -258,7 +261,7 @@ function ConversationRow({
             {conv.pinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
           </RowAction>
           <RowAction title={conv.favorite ? t('chat.unfavorite') : t('chat.favorite')} data-testid="favorite-chat" onClick={onToggleFavorite}>
-            <Star className={`h-3 w-3 ${conv.favorite ? 'fill-amber-400 text-amber-400' : ''}`} />
+            <Star className={`h-3 w-3 ${conv.favorite ? 'fill-zrh-accent text-zrh-accent' : ''}`} />
           </RowAction>
           <RowAction title={t('chat.export')} data-testid="export-chat" onClick={onExport}>
             <Download className="h-3 w-3" />
@@ -296,7 +299,7 @@ function RowAction({
         onClick();
       }}
       className={`rounded p-1 transition-colors ${
-        danger ? 'text-zrh-text-dim hover:text-red-400' : 'text-zrh-text-dim hover:text-zrh-accent'
+        danger ? 'text-zrh-text-dim hover:text-zrh-err' : 'text-zrh-text-dim hover:text-zrh-accent'
       }`}
     >
       {children}

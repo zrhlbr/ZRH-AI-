@@ -55,7 +55,28 @@ export class AgentRegistryService {
     return { skills: { include: { skill: true } } } as const;
   }
 
-  async list(opts: { enabled?: boolean; status?: string } = {}): Promise<AgentProfileView[]> {
+  private parseRoleAccess(roleAccess: string | null): string[] | null {
+    if (!roleAccess) return null;
+    try {
+      const parsed = JSON.parse(roleAccess) as string[];
+      if (Array.isArray(parsed)) return parsed.map((s) => String(s).trim()).filter(Boolean);
+    } catch {
+      // comma-separated fallback
+    }
+    return roleAccess.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+
+  /** null roleAccess = open to all roles; empty allow-list also treated as open */
+  roleAllows(roleAccess: string | null, roleCode: string): boolean {
+    if (roleCode === 'SUPER_ADMIN') return true;
+    const allowed = this.parseRoleAccess(roleAccess);
+    if (!allowed || allowed.length === 0) return true;
+    return allowed.includes(roleCode);
+  }
+
+  async list(
+    opts: { enabled?: boolean; status?: string; roleCode?: string } = {},
+  ): Promise<AgentProfileView[]> {
     const rows = await this.prisma.agent.findMany({
       where: {
         ...(opts.enabled !== undefined ? { enabled: opts.enabled } : {}),
@@ -64,7 +85,10 @@ export class AgentRegistryService {
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: this.includeSkills(),
     });
-    return rows.map((r) => this.toView(r));
+    const views = rows.map((r) => this.toView(r));
+    // Feature Freeze: hide agents the caller's role cannot use
+    if (!opts.roleCode) return views;
+    return views.filter((a) => this.roleAllows(a.roleAccess, opts.roleCode!));
   }
 
   async getByCode(code: string): Promise<AgentProfileView> {

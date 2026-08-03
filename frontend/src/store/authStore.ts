@@ -31,6 +31,13 @@ export const useAuthStore = create<AuthState>()(
       clear: () => set({ accessToken: null, refreshToken: null, profile: null }),
       hasPermission: (code) => get().profile?.permissions.includes(code) ?? false,
     }),
-    { name: 'zrh-ai-auth' },
+    {
+      name: 'zrh-ai-auth',
+      // Feature Freeze: persist refresh + profile only; access token stays in memory
+      partialize: (s) => ({
+        refreshToken: s.refreshToken,
+        profile: s.profile,
+      }),
+    },
   ),
 );

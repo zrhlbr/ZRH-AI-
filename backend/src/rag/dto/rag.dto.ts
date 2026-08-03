@@ -25,6 +25,10 @@ export class RagAskDto {
   @IsInt()
   @Min(1)
   topK?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  minScore?: number;
 }
 
 export class RagSearchDto {

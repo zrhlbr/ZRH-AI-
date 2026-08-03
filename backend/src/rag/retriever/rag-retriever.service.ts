@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OllamaEmbeddingProvider } from '../../knowledge/embedding/ollama-embedding.provider';
+import { keywordOverlapScore } from '../../knowledge/utils/text-tokenize';
 import { RagPermissionService } from '../permission/rag-permission.service';
 import { VectorRegistryService } from '../vector/vector-registry.service';
 import { RagRetrieveHit, RagSearchMode } from '../types/rag.types';
@@ -30,18 +32,6 @@ export class RagRetrieverService {
     private readonly vectors: VectorRegistryService,
     private readonly permissions: RagPermissionService,
   ) {}
-
-  private normalize(text: string): string {
-    return text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ' ').replace(/\s+/g, ' ').trim();
-  }
-
-  private keywordScore(query: string, content: string): number {
-    const qTerms = this.normalize(query).split(' ').filter(Boolean);
-    const cTerms = this.normalize(content).split(' ').filter(Boolean);
-    if (!qTerms.length || !cTerms.length) return 0;
-    const set = new Set(cTerms);
-    return qTerms.filter((t) => set.has(t)).length / qTerms.length;
-  }
 
   private async resolveDocumentIds(userId: number, filters?: RagRetrieveOptions['filters']): Promise<number[]> {
     const allowed = await this.permissions.listAccessibleDocumentIds(userId);
@@ -95,16 +85,31 @@ export class RagRetrieverService {
 
   private async keyword(query: string, documentIds: number[], topK: number, language?: string): Promise<RagRetrieveHit[]> {
     if (documentIds.length === 0) return [];
-    const chunks = await this.prisma.knowledgeChunk.findMany({
-      where: {
-        documentId: { in: documentIds },
-        ...(language ? { language } : {}),
-      },
+    const q = query.trim().slice(0, 100);
+    const where: Prisma.KnowledgeChunkWhereInput = {
+      documentId: { in: documentIds },
+      ...(language ? { language } : {}),
+      ...(q.length >= 2 ? { content: { contains: q, mode: 'insensitive' } } : {}),
+    };
+    let chunks = await this.prisma.knowledgeChunk.findMany({
+      where,
       select: { id: true, content: true },
-      take: 800,
+      take: 300,
+      orderBy: { id: 'desc' },
     });
+    if (chunks.length === 0) {
+      chunks = await this.prisma.knowledgeChunk.findMany({
+        where: {
+          documentId: { in: documentIds },
+          ...(language ? { language } : {}),
+        },
+        select: { id: true, content: true },
+        take: 300,
+        orderBy: { id: 'desc' },
+      });
+    }
     const scored = chunks
-      .map((c) => ({ id: c.id, score: this.keywordScore(query, c.content) }))
+      .map((c) => ({ id: c.id, score: keywordOverlapScore(query, c.content) }))
       .filter((c) => c.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, topK);
@@ -118,19 +123,21 @@ export class RagRetrieverService {
   private async semantic(query: string, documentIds: number[], topK: number, language?: string): Promise<RagRetrieveHit[]> {
     if (documentIds.length === 0) return [];
     const embedding = await this.embedding.embed(query);
-    const vectorHits = await this.vectors.getActive().search(embedding, Math.max(topK * 4, 20));
-    if (!vectorHits.length) return [];
-    const allowed = new Set(documentIds);
-    const chunks = await this.prisma.knowledgeChunk.findMany({
+    const candidateChunks = await this.prisma.knowledgeChunk.findMany({
       where: {
-        id: { in: vectorHits.map((h) => h.chunkId) },
-        documentId: { in: [...allowed] },
+        documentId: { in: documentIds },
         ...(language ? { language } : {}),
       },
       select: { id: true },
+      take: 8000,
     });
-    const ok = new Set(chunks.map((c) => c.id));
-    const filtered = vectorHits.filter((h) => ok.has(h.chunkId)).slice(0, topK);
+    const chunkIds = candidateChunks.map((c) => c.id);
+    if (!chunkIds.length) return [];
+    const vectorHits = await this.vectors
+      .getActive()
+      .search(embedding, Math.max(topK * 4, 20), { chunkIds });
+    if (!vectorHits.length) return [];
+    const filtered = vectorHits.slice(0, topK);
     return this.hydrate(
       filtered.map((h) => h.chunkId),
       new Map(filtered.map((h) => [h.chunkId, h.score])),

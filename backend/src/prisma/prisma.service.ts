@@ -6,13 +6,23 @@ import { PrismaClient } from '@prisma/client';
  * 容器内使用服务名 + 内部端口；本地开发使用 localhost + 映射端口。
  */
 export function buildDatabaseUrl(): string {
-  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+  if (process.env.DATABASE_URL) {
+    // Stabilization R2: ensure pool knobs when caller omitted them
+    const raw = process.env.DATABASE_URL;
+    if (raw.includes('connection_limit=') || raw.includes('pool_timeout=')) return raw;
+    const sep = raw.includes('?') ? '&' : '?';
+    const limit = process.env.PRISMA_CONNECTION_LIMIT ?? '10';
+    const pool = process.env.PRISMA_POOL_TIMEOUT ?? '10';
+    return `${raw}${sep}connection_limit=${limit}&pool_timeout=${pool}`;
+  }
   const host = process.env.POSTGRES_HOST ?? 'localhost';
   const port = process.env.POSTGRES_PORT ?? '5432';
   const db = process.env.POSTGRES_DB ?? 'zrh_ai';
   const user = process.env.POSTGRES_USER ?? 'zrh_ai';
   const password = encodeURIComponent(process.env.POSTGRES_PASSWORD ?? '');
-  return `postgresql://${user}:${password}@${host}:${port}/${db}?schema=public`;
+  const limit = process.env.PRISMA_CONNECTION_LIMIT ?? '10';
+  const pool = process.env.PRISMA_POOL_TIMEOUT ?? '10';
+  return `postgresql://${user}:${password}@${host}:${port}/${db}?schema=public&connection_limit=${limit}&pool_timeout=${pool}`;
 }
 
 @Injectable()

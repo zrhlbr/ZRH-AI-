@@ -39,14 +39,22 @@ export class AdminController {
 
   @Patch('users/:id/status')
   @RequirePermissions('api:users:admin')
-  setStatus(@Param('id', ParseIntPipe) id: number, @Body() dto: StatusDto) {
-    return this.admin.setUserStatus(id, dto.status);
+  setStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: StatusDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.admin.setUserStatus(id, dto.status, { id: user.id, role: user.role });
   }
 
   @Patch('users/:id/role')
   @RequirePermissions('api:users:admin')
-  setRole(@Param('id', ParseIntPipe) id: number, @Body() dto: RoleDto) {
-    return this.admin.setUserRole(id, dto.roleCode);
+  setRole(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: RoleDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.admin.setUserRole(id, dto.roleCode, { id: user.id, role: user.role });
   }
 
   @Get('roles')

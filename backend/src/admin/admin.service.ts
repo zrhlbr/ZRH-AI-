@@ -1,9 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SystemService } from '../system/system.service';
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly system: SystemService,
@@ -143,21 +145,57 @@ export class AdminService {
     });
   }
 
-  async setUserStatus(userId: number, status: 'active' | 'disabled') {
-    return this.prisma.user.update({
+  async setUserStatus(
+    userId: number,
+    status: 'active' | 'disabled',
+    actor?: { id: number; role: string },
+  ) {
+    const target = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { role: true },
+    });
+    if (!target) throw new BadRequestException('user not found');
+    if (actor && target.role.code === 'SUPER_ADMIN' && actor.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('cannot change SUPER_ADMIN status');
+    }
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { status },
       select: { id: true, username: true, status: true },
     });
+    this.logger.warn(
+      `admin.audit setUserStatus actor=${actor?.id ?? '?'} target=${userId} ${target.status}->${status}`,
+    );
+    return updated;
   }
 
-  async setUserRole(userId: number, roleCode: string) {
+  async setUserRole(
+    userId: number,
+    roleCode: string,
+    actor?: { id: number; role: string },
+  ) {
     const role = await this.prisma.role.findUnique({ where: { code: roleCode } });
     if (!role) throw new BadRequestException(`role ${roleCode} not found`);
-    return this.prisma.user.update({
+    const target = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { role: true },
+    });
+    if (!target) throw new BadRequestException('user not found');
+    // Feature Freeze P0: only SUPER_ADMIN may grant/modify SUPER_ADMIN
+    if (roleCode === 'SUPER_ADMIN' && actor?.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('only SUPER_ADMIN can assign SUPER_ADMIN');
+    }
+    if (target.role.code === 'SUPER_ADMIN' && actor?.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('cannot modify SUPER_ADMIN role');
+    }
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { roleId: role.id },
       include: { role: true },
     });
+    this.logger.warn(
+      `admin.audit setUserRole actor=${actor?.id ?? '?'} target=${userId} ${target.role.code}->${roleCode}`,
+    );
+    return updated;
   }
 }

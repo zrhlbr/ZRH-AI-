@@ -50,4 +50,33 @@ export class EmbeddingTaskService {
       take: limit,
     });
   }
+
+  /**
+   * Stabilization R2: reclaim stuck running tasks, then atomically claim pending rows.
+   */
+  async claimPending(limit = 10): Promise<Array<{ id: number; documentId: number; providerCode: string }>> {
+    const staleMs = Number(process.env.EMBEDDING_TASK_STALE_MS ?? String(15 * 60 * 1000));
+    const cutoff = new Date(Date.now() - (Number.isFinite(staleMs) ? staleMs : 15 * 60 * 1000));
+    await this.prisma.embeddingTask.updateMany({
+      where: { status: 'running', startedAt: { lt: cutoff } },
+      data: { status: 'pending', startedAt: null, error: 'stale running reset' },
+    });
+
+    const pending = await this.prisma.embeddingTask.findMany({
+      where: { status: 'pending' },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+      select: { id: true, documentId: true, providerCode: true },
+    });
+
+    const claimed: Array<{ id: number; documentId: number; providerCode: string }> = [];
+    for (const row of pending) {
+      const result = await this.prisma.embeddingTask.updateMany({
+        where: { id: row.id, status: 'pending' },
+        data: { status: 'running', startedAt: new Date() },
+      });
+      if (result.count === 1) claimed.push(row);
+    }
+    return claimed;
+  }
 }

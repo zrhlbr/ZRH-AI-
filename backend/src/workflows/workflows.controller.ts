@@ -63,19 +63,21 @@ export class WorkflowsController {
 
   @Get('history')
   @RequirePermissions('api:workflows:read')
-  listHistory(@Query() q: ListHistoryQueryDto) {
+  listHistory(@Query() q: ListHistoryQueryDto, @CurrentUser() user: AuthUser) {
     return this.history.list({
       page: q.page,
       pageSize: q.pageSize,
       workflowCode: q.workflowCode,
       status: q.status,
+      userId: user.id,
+      roleCode: user.role,
     });
   }
 
   @Get('history/:id')
   @RequirePermissions('api:workflows:read')
-  getHistory(@Param('id') id: string) {
-    return this.history.get(Number(id));
+  getHistory(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.history.get(Number(id), { userId: user.id, roleCode: user.role });
   }
 
   @Get('logs')
@@ -120,26 +122,26 @@ export class WorkflowsController {
 
   @Get('runs/:id')
   @RequirePermissions('api:workflows:read')
-  getRun(@Param('id') id: string) {
-    return this.runtime.getRun(Number(id));
+  getRun(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.runtime.getRun(Number(id), { userId: user.id, roleCode: user.role });
   }
 
   @Post('runs/:id/pause')
   @RequirePermissions('api:workflows:execute')
   pause(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.runtime.pause(Number(id), user.id);
+    return this.runtime.pause(Number(id), user.id, user.role);
   }
 
   @Post('runs/:id/resume')
   @RequirePermissions('api:workflows:execute')
   resume(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.runtime.resume(Number(id), user.id);
+    return this.runtime.resume(Number(id), user.id, user.role);
   }
 
   @Post('runs/:id/cancel')
   @RequirePermissions('api:workflows:execute')
   cancel(@Param('id') id: string, @CurrentUser() user: AuthUser) {
-    return this.runtime.cancel(Number(id), user.id);
+    return this.runtime.cancel(Number(id), user.id, user.role);
   }
 
   @Post('runs/:id/approve')
@@ -149,7 +151,7 @@ export class WorkflowsController {
     @Body() dto: ApprovalDto,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.runtime.approve(Number(id), user.id, dto.approved, dto.comment);
+    return this.runtime.approve(Number(id), user.id, dto.approved, dto.comment, user.role);
   }
 
   @Post('execute')

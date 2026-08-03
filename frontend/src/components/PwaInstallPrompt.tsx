@@ -116,7 +116,7 @@ export function PwaInstallPrompt({ variant = 'card', className = '' }: Props) {
 
   return (
     <div
-      className={`zrh-glass zrh-glow-border relative w-full max-w-xl rounded-zrh-2xl p-4 sm:p-5 ${className}`}
+      className={`zrh-glass-card relative w-full max-w-xl rounded-zrh-2xl p-4 sm:p-5 ${className}`}
       role="region"
       aria-label={t('pwa.install')}
     >

@@ -55,4 +55,35 @@ export class RedisService implements OnModuleDestroy {
       // ignore
     }
   }
+
+  /** Fail-open get for cache; returns null on any Redis error. */
+  async get(key: string): Promise<string | null> {
+    try {
+      if (this.client.status === 'wait') await this.client.connect();
+      return await this.client.get(key);
+    } catch {
+      return null;
+    }
+  }
+
+  /** Fail-open setex for cache. */
+  async setex(key: string, ttlSec: number, value: string): Promise<boolean> {
+    try {
+      if (this.client.status === 'wait') await this.client.connect();
+      await this.client.setex(key, Math.max(1, ttlSec), value);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async del(key: string): Promise<boolean> {
+    try {
+      if (this.client.status === 'wait') await this.client.connect();
+      await this.client.del(key);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }

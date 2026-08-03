@@ -5,6 +5,7 @@ import {
   THEME_STORAGE_KEY,
   ZrhThemeId,
   applyThemeToDom,
+  isZrhThemeId,
 } from '../design-system/theme';
 
 interface ThemeState {
@@ -21,17 +22,21 @@ export const useThemeStore = create<ThemeState>()(
       themeId: DEFAULT_THEME,
       animationsEnabled: true,
       setTheme: (id) => {
-        applyThemeToDom(id);
-        set({ themeId: id });
+        const next = isZrhThemeId(id) ? id : DEFAULT_THEME;
+        applyThemeToDom(next);
+        set({ themeId: next });
       },
       setAnimationsEnabled: (animationsEnabled) => set({ animationsEnabled }),
     }),
     {
       name: THEME_STORAGE_KEY,
       onRehydrateStorage: () => (state) => {
-        applyThemeToDom(state?.themeId ?? DEFAULT_THEME);
+        const id = isZrhThemeId(state?.themeId) ? state!.themeId : DEFAULT_THEME;
+        applyThemeToDom(id);
+        if (state && state.themeId !== id) {
+          state.themeId = id;
+        }
       },
     },
   ),
 );
-

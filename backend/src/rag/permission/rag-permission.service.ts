@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from '../../redis/redis.service';
 
 export interface RagPrincipal {
   userId: number;
@@ -15,7 +16,10 @@ export interface RagPrincipal {
  */
 @Injectable()
 export class RagPermissionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+  ) {}
 
   async resolvePrincipal(userId: number): Promise<RagPrincipal> {
     const user = await this.prisma.user.findUnique({
@@ -111,14 +115,39 @@ export class RagPermissionService {
     };
   }
 
+  /** Feature Freeze: bump when document ACL changes so stale allow-lists cannot linger */
+  async bumpAclEpoch(): Promise<void> {
+    await this.redis.increment('rag:acl:epoch');
+  }
+
+  private async aclEpoch(): Promise<number> {
+    const v = await this.redis.get('rag:acl:epoch');
+    const n = Number(v ?? '0');
+    return Number.isFinite(n) ? n : 0;
+  }
+
   async listAccessibleDocumentIds(userId: number, limit = 5000): Promise<number[]> {
+    const epoch = await this.aclEpoch();
+    const cacheKey = `rag:acl:v2:${epoch}:${userId}:${limit}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) {
+      try {
+        const ids = JSON.parse(cached) as number[];
+        if (Array.isArray(ids)) return ids;
+      } catch {
+        // ignore
+      }
+    }
     const principal = await this.resolvePrincipal(userId);
     const docs = await this.prisma.knowledgeDocument.findMany({
       where: this.buildAccessibleDocumentWhere(principal),
       select: { id: true },
+      orderBy: { id: 'asc' },
       take: limit,
     });
-    return docs.map((d) => d.id);
+    const ids = docs.map((d) => d.id);
+    await this.redis.setex(cacheKey, Number(process.env.RAG_ACL_CACHE_TTL_SEC ?? '45'), JSON.stringify(ids));
+    return ids;
   }
 
   async assertCanReadDocument(userId: number, documentId: number): Promise<boolean> {

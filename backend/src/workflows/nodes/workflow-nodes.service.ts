@@ -131,6 +131,12 @@ export class WorkflowNodesService {
     }
     const action = String(cfg.action ?? 'invoke');
     const payload = (this.vars.resolveValue(cfg.payload ?? {}, ctx) as Record<string, unknown>) ?? {};
+    // UAT fix: never trust payload.userId — bind to workflow executor
+    const safePayload: Record<string, unknown> = {
+      ...payload,
+      userId,
+      roleCode,
+    };
 
     // 统一经 MCP Gateway：先 connect stub，再 invoke stub
     const session = await this.mcpGateway.connect({
@@ -139,7 +145,7 @@ export class WorkflowNodesService {
       roleCode,
       metadata: { from: 'workflow', action },
     });
-    const invoked = await this.mcpGateway.invokeStub(serverCode, action, payload);
+    const invoked = await this.mcpGateway.invokeStub(serverCode, action, safePayload);
     try {
       await this.mcpGateway.disconnect({ userId, sessionId: session.id });
     } catch (err) {

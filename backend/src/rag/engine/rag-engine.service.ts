@@ -1,5 +1,7 @@
+import { createHash } from 'crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from '../../redis/redis.service';
 import { AIGatewayService } from '../../ai/gateway/ai-gateway.service';
 import { QueryRewriteService } from '../rewrite/query-rewrite.service';
 import { RagRetrieverService } from '../retriever/rag-retriever.service';
@@ -8,6 +10,7 @@ import { ContextBuilderService } from '../context/context-builder.service';
 import { PromptBuilderService } from '../prompt/prompt-builder.service';
 import { CitationService } from '../citation/citation.service';
 import { ConversationMemoryService } from '../memory/conversation-memory.service';
+import { RagPermissionService } from '../permission/rag-permission.service';
 import { RagAskResult, RagPrepareResult, RagSearchMode } from '../types/rag.types';
 
 /**
@@ -21,6 +24,7 @@ export class RagEngineService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
     private readonly gateway: AIGatewayService,
     private readonly rewrite: QueryRewriteService,
     private readonly retriever: RagRetrieverService,
@@ -29,12 +33,45 @@ export class RagEngineService {
     private readonly prompts: PromptBuilderService,
     private readonly citations: CitationService,
     private readonly memory: ConversationMemoryService,
+    private readonly permissions: RagPermissionService,
   ) {}
 
-  /** 默认命中阈值（Chat 可用 CHAT_RAG_MIN_SCORE 覆盖） */
+  /** Chat / ask 统一默认命中阈值（CHAT_RAG_MIN_SCORE / ASK_RAG_MIN_SCORE / RAG_MIN_SCORE） */
   defaultMinScore(): number {
-    const n = Number(process.env.CHAT_RAG_MIN_SCORE ?? '0.28');
+    const n = Number(process.env.RAG_MIN_SCORE ?? process.env.CHAT_RAG_MIN_SCORE ?? '0.28');
     return Number.isFinite(n) ? n : 0.28;
+  }
+
+  askMinScore(): number {
+    const n = Number(process.env.ASK_RAG_MIN_SCORE ?? process.env.CHAT_RAG_MIN_SCORE ?? process.env.RAG_MIN_SCORE ?? '0.28');
+    return Number.isFinite(n) ? n : 0.28;
+  }
+
+  /** Retrieve floor — keep candidates for rerank; hit threshold applied post-rerank */
+  private retrieveFloor(minScore: number): number {
+    return Math.min(0.05, minScore);
+  }
+
+  private cacheTtlSec(): number {
+    const n = Number(process.env.RAG_CACHE_TTL_SEC ?? '60');
+    return Number.isFinite(n) && n > 0 ? Math.min(n, 600) : 60;
+  }
+
+  private async cacheKey(
+    userId: number,
+    query: string,
+    mode: string,
+    topK: number,
+    minScore: number,
+  ): Promise<string> {
+    const epochRaw = await this.redis.get('rag:acl:epoch');
+    const epoch = Number(epochRaw ?? '0') || 0;
+    const h = createHash('sha256')
+      .update(`${mode}|${topK}|${minScore}|${query.trim().toLowerCase()}`)
+      .digest('hex')
+      .slice(0, 32);
+    // Feature Freeze: bind prepare cache to ACL epoch so revoke cannot serve stale chunks
+    return `rag:prep:v2:${epoch}:${userId}:${h}`;
   }
 
   /**
@@ -52,6 +89,46 @@ export class RagEngineService {
     const retrieveTopK = Math.max(5, Math.min(input.topK ?? 20, 50));
     const rerankTopN = 5;
     const minScore = input.minScore ?? this.defaultMinScore();
+    const key = await this.cacheKey(input.userId, input.query, mode, retrieveTopK, minScore);
+
+    const cached = await this.redis.get(key);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached) as RagPrepareResult;
+        // Defense in depth: drop hits that are no longer readable even within same epoch
+        const ranked = await this.permissions.filterHitsByPermission(input.userId, parsed.ranked ?? []);
+        if (ranked.length !== (parsed.ranked?.length ?? 0)) {
+          if (ranked.length === 0) {
+            this.logger.log(`rag prepare cache-stale-empty user=${input.userId}`);
+          } else {
+            const composed = this.context.compose(ranked);
+            const citationList = this.citations.build(composed.includedHits);
+            const topScore = ranked[0]?.score ?? 0;
+            const hit = composed.includedHits.length > 0 && topScore >= minScore;
+            return {
+              ...parsed,
+              hit,
+              ranked,
+              citations: hit ? citationList : [],
+              relatedDocuments: hit ? this.citations.relatedDocuments(composed.includedHits) : [],
+              knowledgeContext: hit ? composed.text : '',
+              topScore,
+              metrics: {
+                ...parsed.metrics,
+                rerankCount: ranked.length,
+                citationCount: hit ? citationList.length : 0,
+                hitRate: hit ? 1 : 0,
+              },
+            };
+          }
+        } else {
+          this.logger.log(`rag prepare cache-hit user=${input.userId}`);
+          return parsed;
+        }
+      } catch {
+        // ignore bad cache
+      }
+    }
 
     const t0 = Date.now();
     const rewritten = await this.rewrite.rewrite(input.query);
@@ -63,6 +140,7 @@ export class RagEngineService {
       query: rewritten.rewritten || rewritten.original,
       mode,
       topK: retrieveTopK,
+      minScore: this.retrieveFloor(minScore),
     });
     const retrieveMs = Date.now() - t1;
 
@@ -71,17 +149,18 @@ export class RagEngineService {
     const rerankMs = Date.now() - t2;
 
     const composed = this.context.compose(ranked);
-    const citationList = this.citations.build(ranked);
-    const relatedDocuments = this.citations.relatedDocuments(ranked);
+    // Stabilization R2: citations ⊆ injected context only
+    const citationList = this.citations.build(composed.includedHits);
+    const relatedDocuments = this.citations.relatedDocuments(composed.includedHits);
     const topScore = ranked[0]?.score ?? 0;
-    const hit = ranked.length > 0 && topScore >= minScore;
-    const hitRate = retrieveTopK > 0 ? ranked.length / retrieveTopK : 0;
+    const hit = composed.includedHits.length > 0 && topScore >= minScore;
+    const hitRate = hit ? 1 : 0;
 
     this.logger.log(
-      `rag prepare user=${input.userId} hit=${hit} topScore=${topScore.toFixed(3)} retrieve=${retrieved.length} rerank=${ranked.length}`,
+      `rag prepare user=${input.userId} hit=${hit} topScore=${topScore.toFixed(3)} retrieve=${retrieved.length} rerank=${ranked.length} cited=${citationList.length}`,
     );
 
-    return {
+    const result: RagPrepareResult = {
       hit,
       rewrittenQuery: rewritten.rewritten,
       ranked,
@@ -99,6 +178,9 @@ export class RagEngineService {
         hitRate,
       },
     };
+
+    await this.redis.setex(key, this.cacheTtlSec(), JSON.stringify(result));
+    return result;
   }
 
   async ask(input: {
@@ -108,19 +190,20 @@ export class RagEngineService {
     mode?: RagSearchMode;
     modelRef?: string;
     topK?: number;
+    minScore?: number;
   }): Promise<RagAskResult> {
     const started = Date.now();
-    // /rag/ask 与 Agent：有检索结果即注入上下文（低阈值），保持原页面行为
     const prepared = await this.prepare({
       userId: input.userId,
       query: input.query,
       mode: input.mode,
       topK: input.topK,
-      minScore: 0.05,
+      minScore: input.minScore ?? this.askMinScore(),
     });
 
-    const knowledgeContext =
-      prepared.ranked.length > 0 ? this.context.compose(prepared.ranked).text : '';
+    const knowledgeContext = prepared.hit ? prepared.knowledgeContext : '';
+    const citationList = prepared.citations;
+    const relatedDocuments = prepared.relatedDocuments;
 
     const t3 = Date.now();
     const memoryMessages = await this.memory.loadRecent(input.userId, input.conversationId);
@@ -134,9 +217,6 @@ export class RagEngineService {
     const t4 = Date.now();
     const answer = await this.gateway.generate(askMessages, input.modelRef);
     const generateMs = Date.now() - t4;
-
-    const citationList = this.citations.build(prepared.ranked);
-    const relatedDocuments = this.citations.relatedDocuments(prepared.ranked);
 
     const modelName = input.modelRef?.includes(':')
       ? input.modelRef.split(':').slice(1).join(':')
@@ -198,25 +278,21 @@ export class RagEngineService {
     topK?: number;
     minScore?: number;
   }) {
-    const started = Date.now();
-    const rewritten = await this.rewrite.rewrite(input.query);
-    const retrieveTopK = Math.max(5, Math.min(input.topK ?? 20, 50));
-    const retrieved = await this.retriever.retrieve({
+    const prepared = await this.prepare({
       userId: input.userId,
-      query: rewritten.rewritten || rewritten.original,
-      mode: input.mode ?? 'hybrid',
-      topK: retrieveTopK,
+      query: input.query,
+      mode: input.mode,
+      topK: input.topK,
       minScore: input.minScore,
     });
-    const ranked = this.rerank.rerank(rewritten.original, retrieved, 5);
     return {
-      rewrittenQuery: rewritten.rewritten,
-      retrieveCount: retrieved.length,
-      results: ranked,
-      citations: this.citations.build(ranked),
-      relatedDocuments: this.citations.relatedDocuments(ranked),
-      latencyMs: Date.now() - started,
-      hitRate: retrieveTopK > 0 ? ranked.length / retrieveTopK : 0,
+      rewrittenQuery: prepared.rewrittenQuery,
+      retrieveCount: prepared.metrics.retrieveCount,
+      results: prepared.ranked,
+      citations: prepared.citations,
+      relatedDocuments: prepared.relatedDocuments,
+      latencyMs: prepared.metrics.rewriteMs + prepared.metrics.retrieveMs + prepared.metrics.rerankMs,
+      hitRate: prepared.metrics.hitRate,
     };
   }
 }

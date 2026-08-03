@@ -33,7 +33,7 @@ export function ZModal({ open, onClose, title, children, footer, widthClass = 'm
             animate="animate"
             exit="exit"
             transition={baseTransition}
-            className={`zrh-glass w-full ${widthClass} rounded-2xl border border-zrh-border p-5 shadow-[0_16px_64px_rgba(0,0,0,0.65)] sm:p-6`}
+            className={`zrh-glass w-full ${widthClass} rounded-2xl border border-zrh-border bg-zrh-surface p-5 shadow-[var(--zrh-shadow-modal)] sm:p-6`}
             onClick={(e) => e.stopPropagation()}
           >
             {title && (

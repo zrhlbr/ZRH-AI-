@@ -27,6 +27,8 @@ interface ActiveGeneration {
   conversationId: number;
   model: string;
   stoppedByUser: boolean;
+  /** regenerate: id of prior assistant message to delete after successful persist */
+  replacedMessageId?: number;
 }
 
 const HISTORY_LIMIT = 30;
@@ -409,7 +411,8 @@ export class ChatService {
         if (!last || last.role !== 'assistant') {
           throw new BadRequestException('nothing to regenerate');
         }
-        await this.prisma.message.delete({ where: { id: last.id } });
+        // Stabilization: do not delete until new assistant message is persisted
+        gen.replacedMessageId = last.id;
         recent.pop();
         sse({ type: 'meta', conversationId: conversation.id, replacedMessageId: last.id, model });
       }
@@ -588,6 +591,10 @@ export class ChatService {
           },
         });
         assistantMessageId = assistantMessage.id;
+        if (gen.replacedMessageId) {
+          await this.prisma.message.delete({ where: { id: gen.replacedMessageId } }).catch(() => undefined);
+          gen.replacedMessageId = undefined;
+        }
       }
       await this.prisma.conversation.update({
         where: { id: conversation.id },

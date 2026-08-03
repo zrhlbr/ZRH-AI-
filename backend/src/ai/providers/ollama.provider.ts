@@ -38,10 +38,13 @@ export class OllamaProvider extends BaseProvider {
   private readonly timeoutMs: number;
   private readonly active = new Map<number, AbortController>();
 
+  private readonly streamTimeoutMs: number;
+
   constructor() {
     super(OllamaProvider.name);
     this.baseUrl = (process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434').replace(/\/$/, '');
     this.timeoutMs = Number(process.env.OLLAMA_TIMEOUT_MS ?? '60000');
+    this.streamTimeoutMs = Number(process.env.OLLAMA_STREAM_TIMEOUT_MS ?? '300000');
   }
 
   isEnabled(): boolean {
@@ -116,6 +119,12 @@ export class OllamaProvider extends BaseProvider {
       };
 
       const run = async () => {
+        // Stabilization R2: hard timeout for streaming generations
+        let timedOut = false;
+        const streamTimer = setTimeout(() => {
+          timedOut = true;
+          controller.abort();
+        }, Math.max(10000, this.streamTimeoutMs || 300000));
         try {
           const response = await fetch(`${this.baseUrl}/api/chat`, {
             method: 'POST',
@@ -165,7 +174,11 @@ export class OllamaProvider extends BaseProvider {
           subscriber.complete();
         } catch (error) {
           if (controller.signal.aborted) {
-            subscriber.next({ type: 'done' });
+            if (timedOut) {
+              subscriber.next({ type: 'error', message: 'stream timeout' });
+            } else {
+              subscriber.next({ type: 'done' });
+            }
             subscriber.complete();
           } else {
             const message = error instanceof Error ? error.message : String(error);
@@ -173,6 +186,7 @@ export class OllamaProvider extends BaseProvider {
             subscriber.complete();
           }
         } finally {
+          clearTimeout(streamTimer);
           cleanup();
         }
       };

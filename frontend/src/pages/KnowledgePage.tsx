@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import {
-  BookOpen,
   Folder,
   FolderOpen,
   Search,
@@ -21,6 +20,7 @@ import {
 import { ZButton, ZCard, ZInput, ZBadge, ZTable, ZTabs } from '../components/ui';
 import { TechBackground } from '../components/background/TechBackground';
 import { fadeInUp, baseTransition } from '../design-system/animations';
+import { BrandMark } from '../design-system/BrandMark';
 import {
   knowledgeApi,
   KnowledgeDocumentItem,
@@ -586,7 +586,7 @@ export function KnowledgePage() {
       <div className="mx-auto flex h-full max-w-7xl flex-col gap-4 px-3 py-5 sm:px-5">
         <motion.div variants={fadeInUp} initial="initial" animate="animate" transition={baseTransition}>
           <div className="flex items-center gap-3">
-            <BookOpen className="h-6 w-6 text-zrh-accent" />
+            <BrandMark size={32} className="h-8 w-8 rounded-lg" />
             <h1 className="text-lg font-bold tracking-wider text-zrh-accent">{t('knowledge.title')}</h1>
           </div>
           <p className="mt-1 text-xs text-zrh-text-dim sm:text-sm">{t('knowledge.subtitle')}</p>

@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -57,8 +58,12 @@ export class AgentsController {
 
   @Get()
   @RequirePermissions('api:agents:read')
-  list(@Query() q: ListAgentsQueryDto) {
-    return this.registry.list({ enabled: q.enabled, status: q.status });
+  list(@Query() q: ListAgentsQueryDto, @CurrentUser() user: AuthUser) {
+    return this.registry.list({
+      enabled: q.enabled,
+      status: q.status,
+      roleCode: user.role,
+    });
   }
 
   @Get('logs')
@@ -73,8 +78,8 @@ export class AgentsController {
 
   @Get('route')
   @RequirePermissions('api:agents:read')
-  async route(@Query('q') q: string) {
-    const result = await this.router.route(q ?? '');
+  async route(@Query('q') q: string, @CurrentUser() user: AuthUser) {
+    const result = await this.router.route(q ?? '', undefined, user.role);
     return {
       agentCode: result.agent.code,
       agentName: result.agent.name,
@@ -84,8 +89,12 @@ export class AgentsController {
 
   @Get(':code')
   @RequirePermissions('api:agents:read')
-  get(@Param('code') code: string) {
-    return this.registry.getByCode(code);
+  async get(@Param('code') code: string, @CurrentUser() user: AuthUser) {
+    const agent = await this.registry.getByCode(code);
+    if (!this.registry.roleAllows(agent.roleAccess, user.role)) {
+      throw new ForbiddenException('role cannot view this agent');
+    }
+    return agent;
   }
 
   @Post()

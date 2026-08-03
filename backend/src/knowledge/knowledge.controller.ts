@@ -222,8 +222,9 @@ export class KnowledgeController {
   grantPermission(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: GrantPermissionDto,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.permissions.grantPermission(id, dto.targetType, dto.targetId, dto.permission);
+    return this.permissions.grantPermission(id, dto.targetType, dto.targetId, dto.permission, user.id);
   }
 
   @Delete('documents/:id/permissions')
@@ -232,8 +233,9 @@ export class KnowledgeController {
     @Param('id', ParseIntPipe) id: number,
     @Query('targetType') targetType: 'role' | 'user' | 'department',
     @Query('targetId') targetId: string,
+    @CurrentUser() user: AuthUser,
   ) {
-    return this.permissions.revokePermission(id, targetType, Number(targetId));
+    return this.permissions.revokePermission(id, targetType, Number(targetId), user.id);
   }
 
   // ---------- Search ----------

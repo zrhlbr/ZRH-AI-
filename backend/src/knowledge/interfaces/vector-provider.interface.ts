@@ -31,8 +31,12 @@ export interface IVectorProvider {
   /** 删除向量化记录 */
   delete(chunkIds: number[]): Promise<void>;
 
-  /** 相似度检索，返回 Top-K */
-  search(embedding: number[], topK: number): Promise<VectorSearchResult[]>;
+  /** 相似度检索，返回 Top-K；可选 chunkIds 缩小扫描范围 */
+  search(
+    embedding: number[],
+    topK: number,
+    options?: { chunkIds?: number[] },
+  ): Promise<VectorSearchResult[]>;
 
   /** 清空并重建索引 */
   rebuild(): Promise<void>;

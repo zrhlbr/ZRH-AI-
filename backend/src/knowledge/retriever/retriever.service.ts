@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { OllamaEmbeddingProvider } from '../embedding/ollama-embedding.provider';
 import { PgvectorProvider } from '../vector/pgvector.provider';
 import { KnowledgePermissionService } from '../permissions/permission.service';
+import { keywordOverlapScore } from '../utils/text-tokenize';
 
 export interface SearchResult {
   chunkId: number;
@@ -44,32 +46,26 @@ export class RetrieverService {
     private readonly permissions: KnowledgePermissionService,
   ) {}
 
-  private normalize(text: string): string {
-    return text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, ' ').replace(/\s+/g, ' ').trim();
-  }
-
-  private keywordScore(query: string, content: string): number {
-    const qTerms = this.normalize(query).split(' ').filter(Boolean);
-    const cTerms = this.normalize(content).split(' ').filter(Boolean);
-    if (qTerms.length === 0 || cTerms.length === 0) return 0;
-    const cSet = new Set(cTerms);
-    const matches = qTerms.filter((t) => cSet.has(t)).length;
-    return matches / qTerms.length;
-  }
-
   private async resolveAllowedDocumentIds(
     userId: number | undefined,
     explicitIds?: number[],
   ): Promise<number[] | undefined> {
-    if (explicitIds?.length) return explicitIds;
-    if (userId === undefined) return undefined;
+    if (userId === undefined) {
+      return explicitIds?.length ? explicitIds : undefined;
+    }
     const filter = await this.permissions.buildDocumentFilter(userId);
     const docs = await this.prisma.knowledgeDocument.findMany({
       where: filter,
       select: { id: true },
       take: 5000,
     });
-    return docs.map((d) => d.id);
+    const allowed = docs.map((d) => d.id);
+    // Stabilization R2: never trust explicitIds alone — intersect with ACL
+    if (explicitIds?.length) {
+      const set = new Set(explicitIds);
+      return allowed.filter((id) => set.has(id));
+    }
+    return allowed;
   }
 
   private async attachDocumentMeta(
@@ -100,25 +96,47 @@ export class RetrieverService {
     topK: number,
     filters?: SearchOptions['filters'],
   ): Promise<SearchResult[]> {
-    const where: Record<string, unknown> = {};
+    if (filters?.documentIds && filters.documentIds.length === 0) return [];
+
+    const where: Prisma.KnowledgeChunkWhereInput = {};
     if (filters?.documentIds) {
-      if (filters.documentIds.length === 0) return [];
       where.documentId = { in: filters.documentIds };
     }
     if (filters?.language) {
       where.language = filters.language;
     }
+    const q = query.trim().slice(0, 100);
+    if (q.length >= 2) {
+      where.content = { contains: q, mode: 'insensitive' };
+    }
+
     const chunks = await this.prisma.knowledgeChunk.findMany({
       where,
       select: { id: true, documentId: true, content: true },
-      take: 500,
+      take: 300,
+      orderBy: { id: 'desc' },
     });
-    const scored = chunks
+
+    // Fallback: if contains prefilter empty, sample within ACL docs
+    let candidates = chunks;
+    if (candidates.length === 0 && filters?.documentIds?.length) {
+      candidates = await this.prisma.knowledgeChunk.findMany({
+        where: {
+          documentId: { in: filters.documentIds },
+          ...(filters.language ? { language: filters.language } : {}),
+        },
+        select: { id: true, documentId: true, content: true },
+        take: 300,
+        orderBy: { id: 'desc' },
+      });
+    }
+
+    const scored = candidates
       .map((c) => ({
         chunkId: c.id,
         documentId: c.documentId,
         content: c.content,
-        score: this.keywordScore(query, c.content),
+        score: keywordOverlapScore(query, c.content),
         source: 'keyword' as const,
       }))
       .filter((c) => c.score > 0)
@@ -134,13 +152,26 @@ export class RetrieverService {
     filters?: SearchOptions['filters'],
   ): Promise<SearchResult[]> {
     const embedding = await this.embedding.embed(query);
-    const vectorResults = await this.vector.search(embedding, topK * 3);
+    let chunkIds: number[] | undefined;
+    if (filters?.documentIds?.length) {
+      const rows = await this.prisma.knowledgeChunk.findMany({
+        where: {
+          documentId: { in: filters.documentIds },
+          ...(filters.language ? { language: filters.language } : {}),
+        },
+        select: { id: true },
+        take: 8000,
+      });
+      chunkIds = rows.map((r) => r.id);
+      if (chunkIds.length === 0) return [];
+    }
+    const vectorResults = await this.vector.search(embedding, topK * 3, { chunkIds });
     if (vectorResults.length === 0) return [];
 
-    const chunkIds = vectorResults.map((r) => r.chunkId);
+    const ids = vectorResults.map((r) => r.chunkId);
     const chunks = await this.prisma.knowledgeChunk.findMany({
       where: {
-        id: { in: chunkIds },
+        id: { in: ids },
         ...(filters?.documentIds
           ? { documentId: { in: filters.documentIds.length ? filters.documentIds : [-1] } }
           : {}),

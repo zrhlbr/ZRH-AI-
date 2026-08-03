@@ -39,8 +39,9 @@ export class EmbeddingWorkerService implements OnModuleInit, OnModuleDestroy {
     this.running = true;
     try {
       const batch = Math.max(1, Number(process.env.RAG_EMBEDDING_WORKER_BATCH ?? '2'));
-      const pending = await this.tasks.listPending(batch);
-      for (const task of pending) {
+      // Stabilization R2: atomic claim + stale recovery
+      const claimed = await this.tasks.claimPending(batch);
+      for (const task of claimed) {
         try {
           const result = await this.documents.processEmbeddingTask(task.id);
           this.logger.log(`worker task=${task.id} status=${result.status}`);
@@ -49,7 +50,7 @@ export class EmbeddingWorkerService implements OnModuleInit, OnModuleDestroy {
           this.logger.error(`worker task=${task.id} failed: ${message}`);
         }
       }
-      return pending.length;
+      return claimed.length;
     } finally {
       this.running = false;
     }

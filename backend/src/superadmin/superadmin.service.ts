@@ -66,7 +66,7 @@ export class SuperAdminService {
     secret?: boolean;
     updatedBy?: number;
   }) {
-    return this.prisma.systemConfig.upsert({
+    const row = await this.prisma.systemConfig.upsert({
       where: { key: input.key },
       create: {
         key: input.key,
@@ -82,6 +82,11 @@ export class SuperAdminService {
         updatedBy: input.updatedBy,
       },
     });
+    // Feature Freeze: never echo secret values in API responses
+    return {
+      ...row,
+      value: row.secret ? '***' : row.value,
+    };
   }
 
   async systemLogsReserved() {

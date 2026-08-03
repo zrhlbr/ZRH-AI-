@@ -101,7 +101,10 @@ export class WorkflowRuntimeService {
     };
   }
 
-  async getRun(id: number): Promise<WorkflowRunView> {
+  async getRun(id: number, access?: { userId: number; roleCode: string }): Promise<WorkflowRunView> {
+    if (access) {
+      await this.assertRunAccess(id, access.userId, access.roleCode);
+    }
     const row = await this.prisma.workflowRun.findUnique({
       where: { id },
       include: {
@@ -175,18 +178,26 @@ export class WorkflowRuntimeService {
 
     // queue
     this.queue.push(run.id);
-    void this.drainQueue(input.userId, input.roleCode);
+    void this.drainQueue();
     return this.getRun(run.id);
   }
 
-  private async drainQueue(userId: number, roleCode: string) {
+  /** Feature Freeze: each queued run executes as its owner, never the drainer */
+  private async drainQueue() {
     if (this.draining) return;
     this.draining = true;
     try {
       while (this.queue.length) {
         const runId = this.queue.shift()!;
         try {
-          await this.runGraph(runId, userId, roleCode);
+          const run = await this.prisma.workflowRun.findUnique({ where: { id: runId } });
+          if (!run) continue;
+          const owner = await this.prisma.user.findUnique({
+            where: { id: run.userId },
+            include: { role: true },
+          });
+          const roleCode = owner?.role?.code ?? 'USER';
+          await this.runGraph(runId, run.userId, roleCode);
         } catch (err) {
           this.logger.error(`queue run ${runId}: ${err instanceof Error ? err.message : err}`);
         }
@@ -194,6 +205,16 @@ export class WorkflowRuntimeService {
     } finally {
       this.draining = false;
     }
+  }
+
+  private async assertRunAccess(runId: number, userId: number, roleCode?: string) {
+    const run = await this.prisma.workflowRun.findUnique({ where: { id: runId } });
+    if (!run) throw new NotFoundException('run not found');
+    const isAdmin = roleCode === 'ADMIN' || roleCode === 'SUPER_ADMIN';
+    if (!isAdmin && run.userId !== userId) {
+      throw new NotFoundException('run not found');
+    }
+    return run;
   }
 
   private control(runId: number): Control {
@@ -205,9 +226,8 @@ export class WorkflowRuntimeService {
     return c;
   }
 
-  async pause(runId: number, userId: number) {
-    const run = await this.prisma.workflowRun.findUnique({ where: { id: runId } });
-    if (!run) throw new NotFoundException('run not found');
+  async pause(runId: number, userId: number, roleCode?: string) {
+    const run = await this.assertRunAccess(runId, userId, roleCode);
     if (run.status !== 'running') throw new BadRequestException('run is not running');
     this.control(runId).paused = true;
     await this.prisma.workflowRun.update({
@@ -223,9 +243,8 @@ export class WorkflowRuntimeService {
     return this.getRun(runId);
   }
 
-  async resume(runId: number, userId: number) {
-    const run = await this.prisma.workflowRun.findUnique({ where: { id: runId } });
-    if (!run) throw new NotFoundException('run not found');
+  async resume(runId: number, userId: number, roleCode?: string) {
+    const run = await this.assertRunAccess(runId, userId, roleCode);
     const c = this.control(runId);
     c.paused = false;
     const waiters = c.resumeWaiters.splice(0);
@@ -245,9 +264,8 @@ export class WorkflowRuntimeService {
     return this.getRun(runId);
   }
 
-  async cancel(runId: number, userId: number) {
-    const run = await this.prisma.workflowRun.findUnique({ where: { id: runId } });
-    if (!run) throw new NotFoundException('run not found');
+  async cancel(runId: number, userId: number, roleCode?: string) {
+    const run = await this.assertRunAccess(runId, userId, roleCode);
     this.control(runId).cancelled = true;
     this.control(runId).paused = false;
     this.control(runId).resumeWaiters.splice(0).forEach((w) => w());
@@ -268,9 +286,14 @@ export class WorkflowRuntimeService {
     return this.getRun(runId);
   }
 
-  async approve(runId: number, userId: number, approved: boolean, comment?: string) {
-    const run = await this.prisma.workflowRun.findUnique({ where: { id: runId } });
-    if (!run) throw new NotFoundException('run not found');
+  async approve(
+    runId: number,
+    userId: number,
+    approved: boolean,
+    comment?: string,
+    roleCode?: string,
+  ) {
+    const run = await this.assertRunAccess(runId, userId, roleCode);
     if (run.status !== 'waiting_approval') {
       throw new BadRequestException('run is not waiting for approval');
     }

@@ -31,12 +31,22 @@ export class AgentRouterService {
     return score;
   }
 
-  async route(message: string, preferredCode?: string): Promise<{ agent: AgentProfileView; reason: string }> {
+  async route(
+    message: string,
+    preferredCode?: string,
+    roleCode?: string,
+  ): Promise<{ agent: AgentProfileView; reason: string }> {
     if (preferredCode) {
       const agent = await this.registry.getByCode(preferredCode);
+      if (roleCode && !this.registry.roleAllows(agent.roleAccess, roleCode)) {
+        const fallback = await this.registry.getByCode('assistant');
+        return { agent: fallback, reason: `denied:${preferredCode}->assistant` };
+      }
       return { agent, reason: `explicit:${preferredCode}` };
     }
-    const agents = (await this.registry.list({ enabled: true, status: 'active' })).filter((a) => a.enabled);
+    const agents = (
+      await this.registry.list({ enabled: true, status: 'active', roleCode })
+    ).filter((a) => a.enabled);
     if (!agents.length) {
       const fallback = await this.registry.getByCode('assistant');
       return { agent: fallback, reason: 'fallback:assistant' };

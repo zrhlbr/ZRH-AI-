@@ -43,16 +43,24 @@ export class PgvectorProvider implements IVectorProvider {
 
   async insert(records: VectorRecord[]): Promise<void> {
     if (records.length === 0) return;
-    for (const r of records) {
-      this.assertVector(r.embedding);
-      const payload = JSON.stringify(r.embedding);
+    // Stabilization R2: batch upsert to cut N+1 round-trips
+    const chunkSize = 50;
+    for (let i = 0; i < records.length; i += chunkSize) {
+      const batch = records.slice(i, i + chunkSize);
+      for (const r of batch) this.assertVector(r.embedding);
+      const values: string[] = [];
+      const params: unknown[] = [];
+      let p = 1;
+      for (const r of batch) {
+        values.push(`($${p++}::int, $${p++}::jsonb)`);
+        params.push(r.chunkId, JSON.stringify(r.embedding));
+      }
       await this.prisma.$executeRawUnsafe(
         `INSERT INTO "knowledge_vectors" ("chunk_id", "embedding")
-         VALUES ($1, $2::jsonb)
+         VALUES ${values.join(',')}
          ON CONFLICT ("chunk_id") DO UPDATE
          SET "embedding" = EXCLUDED."embedding", "createdAt" = CURRENT_TIMESTAMP`,
-        r.chunkId,
-        payload,
+        ...params,
       );
     }
   }
@@ -96,12 +104,28 @@ export class PgvectorProvider implements IVectorProvider {
     return dot / (Math.sqrt(normA) * Math.sqrt(normB));
   }
 
-  async search(embedding: number[], topK: number): Promise<VectorSearchResult[]> {
+  async search(
+    embedding: number[],
+    topK: number,
+    options?: { chunkIds?: number[] },
+  ): Promise<VectorSearchResult[]> {
     this.assertVector(embedding);
     const k = Math.max(1, Math.min(topK || 10, 100));
-    const rows = (await this.prisma.$queryRawUnsafe(
-      `SELECT "chunk_id", "embedding" FROM "knowledge_vectors"`,
-    )) as Array<{ chunk_id: number; embedding: unknown }>;
+    const chunkIds = (options?.chunkIds ?? []).filter((id) => Number.isInteger(id) && id > 0);
+    let rows: Array<{ chunk_id: number; embedding: unknown }>;
+    if (chunkIds.length > 0) {
+      // Stabilization R2: scope scan to ACL / candidate chunks
+      rows = (await this.prisma.$queryRawUnsafe(
+        `SELECT "chunk_id", "embedding" FROM "knowledge_vectors" WHERE "chunk_id" = ANY($1::int[])`,
+        chunkIds,
+      )) as Array<{ chunk_id: number; embedding: unknown }>;
+    } else {
+      const scanLimit = Math.max(100, Math.min(Number(process.env.VECTOR_SCAN_LIMIT ?? '5000'), 20000));
+      rows = (await this.prisma.$queryRawUnsafe(
+        `SELECT "chunk_id", "embedding" FROM "knowledge_vectors" ORDER BY "chunk_id" DESC LIMIT $1`,
+        scanLimit,
+      )) as Array<{ chunk_id: number; embedding: unknown }>;
+    }
 
     const scored: VectorSearchResult[] = [];
     for (const r of rows) {
