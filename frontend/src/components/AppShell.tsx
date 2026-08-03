@@ -11,7 +11,6 @@ import { motionTokens } from '../design-system/animations';
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
 import { LanguageSwitcher } from './LanguageSwitcher';
-import { EnterpriseAdminNav } from './nav/EnterpriseAdminNav';
 import { ZButton, ZToastHost } from './ui';
 
 type NavItem = {
@@ -22,7 +21,9 @@ type NavItem = {
 };
 
 /**
- * AppShell V3 — 普通用户仅 AI 产品导航；企业管理入口隔离至 EnterpriseAdminNav。
+ * AppShell V3 Final — 用户 Drawer 仅 AI 产品菜单。
+ * 企业 RAG / Agent / MCP / Workflow / Developer / 系统状态等：不在此出现。
+ * Admin / SuperAdmin 后台仍通过 /admin、/superadmin 进入（页面未改）。
  */
 export function AppShell() {
   const { t } = useTranslation();
@@ -31,6 +32,10 @@ export function AppShell() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { themeId, setTheme } = useThemeStore();
   const { profile, clear, refreshToken } = useAuthStore();
+
+  const role = profile?.role ?? '';
+  const showAdminConsole = role === 'ADMIN' || role === 'SUPER_ADMIN';
+  const showSuperConsole = role === 'SUPER_ADMIN';
 
   const userItems: NavItem[] = [
     { to: '/home', label: t('nav.home'), icon: zrhIcons.home, end: true },
@@ -53,6 +58,13 @@ export function AppShell() {
     navigate('/login', { replace: true });
   };
 
+  const linkClass = ({ isActive }: { isActive: boolean }) =>
+    `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition-colors ${
+      isActive
+        ? 'bg-zrh-accent/10 font-semibold text-zrh-accent'
+        : 'text-zrh-text-dim hover:bg-zrh-surface-raised hover:text-zrh-text'
+    }`;
+
   const nav = (
     <nav className="flex flex-col gap-1">
       {userItems.map((item) => (
@@ -61,20 +73,33 @@ export function AppShell() {
           to={item.to}
           end={item.end}
           onClick={() => setDrawerOpen(false)}
-          className={({ isActive }) =>
-            `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition-colors ${
-              isActive
-                ? 'bg-zrh-accent/10 font-semibold text-zrh-accent'
-                : 'text-zrh-text-dim hover:bg-zrh-surface-raised hover:text-zrh-text'
-            }`
-          }
+          className={linkClass}
         >
           <item.icon className="h-4 w-4 shrink-0" aria-hidden />
           {item.label}
         </NavLink>
       ))}
-      <div className="my-2 border-t border-zrh-border/70" aria-hidden />
-      <EnterpriseAdminNav onNavigate={() => setDrawerOpen(false)} />
+
+      {(showAdminConsole || showSuperConsole) && (
+        <>
+          <div className="my-2 border-t border-zrh-border/70" aria-hidden />
+          <p className="mb-1 px-3.5 text-[10px] font-semibold uppercase tracking-widest text-zrh-text-dim/70">
+            {t('nav.enterprise')}
+          </p>
+          {showAdminConsole && (
+            <NavLink to="/admin" onClick={() => setDrawerOpen(false)} className={linkClass}>
+              <zrhIcons.shield className="h-4 w-4 shrink-0" aria-hidden />
+              {t('nav.admin')}
+            </NavLink>
+          )}
+          {showSuperConsole && (
+            <NavLink to="/superadmin" onClick={() => setDrawerOpen(false)} className={linkClass}>
+              <zrhIcons.database className="h-4 w-4 shrink-0" aria-hidden />
+              {t('nav.superadmin')}
+            </NavLink>
+          )}
+        </>
+      )}
     </nav>
   );
 

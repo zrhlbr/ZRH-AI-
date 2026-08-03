@@ -13,7 +13,7 @@
 | 文件 | 说明 |
 |------|------|
 | `frontend/src/components/AppShell.tsx` | 用户菜单最终版；企业管理入口外置 |
-| `frontend/src/components/nav/EnterpriseAdminNav.tsx` | **新增** Admin/SuperAdmin 专属导航（用户默认不渲染） |
+| `frontend/src/components/nav/EnterpriseAdminNav.tsx` | **已移除** — 用户 Drawer 不再挂载企业中心列表 |
 | `frontend/src/pages/HomePage.tsx` | 产品化首页 + 最近聊天 |
 | `frontend/src/pages/MePage.tsx` | **新增**「我的」 |
 | `frontend/src/pages/SettingsPage.tsx` | **新增**「设置」 |
@@ -42,7 +42,8 @@
 - Developer / 系统状态 / AI 模型  
 - Admin / SuperAdmin  
 
-企业管理入口仅在 `EnterpriseAdminNav` 中，且 **仅 `ADMIN` / `SUPER_ADMIN` 角色渲染**。
+用户 Drawer **不再出现** 企业 RAG / Agent / Tool / MCP / Workflow / Business / Developer / 系统状态。  
+Admin / SuperAdmin 仅保留进入 **管理后台** `/admin`、**超级管理** `/superadmin` 的入口（功能页未改）。
 
 **最终用户菜单：**
 
@@ -54,6 +55,8 @@
 6. 退出登录  
 
 （未加入「AI 应用」——按规格可选，本次移除。）
+
+> **说明（对照生产截图）：** 赵总标注的 `ai.zrhtech.com` 截图仍为 **旧前端镜像**。本地 V3 已删除红叉区域；**Production Impact 仍为 0，未经批准未部署**，故公网暂未变化。
 
 ---
 
