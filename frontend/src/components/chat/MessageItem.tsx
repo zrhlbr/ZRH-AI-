@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Check, Copy, Link2, RefreshCw, ThumbsDown, ThumbsUp, Trash2 } from 'lucide-react';
 import type { ChatCitation, ChatMessage } from '../../api/chat';
-import { brand } from '../../design-system/theme';
 import { useChatStore } from '../../store/chatStore';
 import { MarkdownRenderer } from './MarkdownRenderer';
 
@@ -62,9 +61,9 @@ export const MessageItem = memo(function MessageItem({ message, isLast, streamin
   return (
     <div className="zrh-msg-enter flex justify-start" data-role="assistant">
       <div className="max-w-[min(100%,42rem)] rounded-2xl px-1 py-1 sm:px-2">
-        <div className="mb-1.5 flex flex-col gap-0.5">
-          <div className="flex items-center gap-2">
-            <span className="text-caption font-semibold tracking-brand text-zrh-accent">{brand.name}</span>
+        {/* Mobile Chat UI V5.0：AI 回复不再出现品牌 Logo / 集团介绍，仅保留状态徽标 */}
+        {(message.status === 'stopped' || message.status === 'error') && (
+          <div className="mb-1.5 flex items-center gap-2">
             {message.status === 'stopped' && (
               <span className="rounded-full border border-zrh-warn/40 px-2 py-0.5 text-[9px] text-zrh-warn">
                 {t('chat.stopped')}
@@ -76,10 +75,7 @@ export const MessageItem = memo(function MessageItem({ message, isLast, streamin
               </span>
             )}
           </div>
-          <span className="text-[9px] tracking-wide text-zrh-text-dim/80">
-            {i18n.language.startsWith('zh') ? brand.groupZh : brand.subtitle}
-          </span>
-        </div>
+        )}
 
         <MarkdownRenderer content={message.content} />
 

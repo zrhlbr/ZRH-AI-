@@ -8,8 +8,7 @@ import { ChatSidebar } from '../components/chat/ChatSidebar';
 import { MessageItem } from '../components/chat/MessageItem';
 import { MarkdownRenderer } from '../components/chat/MarkdownRenderer';
 import { useChatStore } from '../store/chatStore';
-import { BrandMark } from '../design-system/BrandMark';
-import { brand } from '../design-system/theme';
+import { useVisualViewportOffset } from '../hooks/useVisualViewportOffset';
 
 const LEFT_KEY = 'zrh-ai-chat-left-w';
 const RIGHT_KEY = 'zrh-ai-chat-right-w';
@@ -80,25 +79,13 @@ function MessageList() {
 
   return (
     <div ref={scrollRef} onScroll={onScroll} className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6">
-      <div className="mx-auto flex w-full max-w-[60rem] flex-col gap-5">
+      {/* Mobile Chat UI V5.0：消息区独立滚动；移动端底部留白避让 fixed 输入框 */}
+      <div className="mx-auto flex w-full max-w-[60rem] flex-col gap-5 max-xl:pb-24">
         {loadingMessages && messages.length === 0 && (
           <p className="py-16 text-center text-xs text-zrh-text-dim">{t('status.loading')}</p>
         )}
 
-        {!loadingMessages && messages.length === 0 && !showStreaming && (
-          <div className="zrh-msg-enter flex flex-col items-center gap-4 py-16 text-center">
-            <BrandMark size={96} className="h-16 w-16 rounded-zrh-2xl shadow-zrh-glow" />
-            <div>
-              <p className="font-display text-base font-semibold tracking-brand text-zrh-accent">
-                {brand.name}
-              </p>
-              <p className="mt-1 text-caption tracking-wide text-zrh-text-dim">{t('chat.brandGroup')}</p>
-            </div>
-            <p className="max-w-md whitespace-pre-line text-xs leading-relaxed text-zrh-text-dim">
-              {t('chat.welcome')}
-            </p>
-          </div>
-        )}
+        {/* V5.0：空会话不再展示品牌 Logo / 集团介绍 / 欢迎文案 —— 打开即聊天记录 */}
 
         {hasMore && messages.length > 0 && (
           <button
@@ -132,15 +119,12 @@ function MessageList() {
         {showStreaming && (
           <div className="flex justify-start">
             <div className="zrh-glass zrh-glow-border max-w-[92%] rounded-2xl rounded-bl-sm px-4 py-3 sm:max-w-[85%]">
-              <div className="mb-1.5 flex flex-col gap-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-semibold tracking-widest text-zrh-accent">{brand.name}</span>
-                  {streaming.ragHit && (
-                    <span className="text-[9px] text-zrh-accent/90">{t('chat.knowledgeGrounded')}</span>
-                  )}
+              {/* V5.0：流式气泡不再展示品牌名 / 集团名，仅保留 RAG 命中提示 */}
+              {streaming.ragHit && (
+                <div className="mb-1.5">
+                  <span className="text-[9px] text-zrh-accent/90">{t('chat.knowledgeGrounded')}</span>
                 </div>
-                <span className="text-[9px] tracking-wide text-zrh-text-dim/80">{t('chat.brandGroup')}</span>
-              </div>
+              )}
               {streaming.content || streaming.baseContent ? (
                 <MarkdownRenderer content={streaming.baseContent + streaming.content} streaming />
               ) : (
@@ -190,6 +174,8 @@ export function ChatPage() {
   const right = useResizable(RIGHT_KEY, 300, 240, 460, 'right');
   const [leftDrawer, setLeftDrawer] = useState(false);
   const [rightDrawer, setRightDrawer] = useState(false);
+  /** V5.0：移动端软键盘弹出时 fixed 输入框跟随键盘 */
+  const vvOffset = useVisualViewportOffset();
 
   useEffect(() => {
     void loadConversations(true);
@@ -275,18 +261,18 @@ export function ChatPage() {
 
         {/* 中央聊天区 — 居中消息 + 底部输入 */}
         <section className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-hidden">
-          <div className="hidden items-center gap-3 border-b border-zrh-border/50 bg-zrh-bg px-4 py-2 xl:flex">
-            <BrandMark size={28} className="h-7 w-7 rounded-lg" />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold tracking-brand text-zrh-accent">{brand.name}</p>
-              <p className="truncate text-[10px] text-zrh-text-dim">{t('app.tagline')}</p>
-            </div>
-            {activeTitle && (
+          {/* V5.0：桌面聊天区内不再展示品牌 Logo / 标语，仅在有会话标题时显示标题栏 */}
+          {activeTitle && (
+            <div className="hidden items-center gap-3 border-b border-zrh-border/50 bg-zrh-bg px-4 py-2 xl:flex">
               <p className="ml-auto max-w-xs truncate text-[11px] text-zrh-text-dim">{activeTitle}</p>
-            )}
-          </div>
+            </div>
+          )}
           <MessageList />
-          <div className="mx-auto w-full max-w-[60rem] pb-[max(0.25rem,env(safe-area-inset-bottom))]">
+          {/* V5.0：移动端输入框 fixed 贴底（left:0/right:0/bottom:0），键盘弹出随键盘上移；桌面保持文档流 */}
+          <div
+            className="zrh-chat-input-dock mx-auto w-full max-w-[60rem] bg-zrh-bg pb-[max(0.25rem,env(safe-area-inset-bottom))] max-xl:fixed max-xl:bottom-0 max-xl:left-0 max-xl:right-0 max-xl:z-30"
+            style={vvOffset > 0 ? { bottom: vvOffset } : undefined}
+          >
             <ChatInput />
           </div>
         </section>

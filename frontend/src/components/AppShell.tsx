@@ -2,7 +2,7 @@ import { useEffect, useState, type ComponentType } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X, LogOut, Settings as SettingsIcon, MoreHorizontal, MessagesSquare, Star } from 'lucide-react';
+import { Menu, X, LogOut, Settings as SettingsIcon, MessagesSquare, Star } from 'lucide-react';
 import { zrhIcons } from '../design-system/icons';
 import { BrandMark } from '../design-system/BrandMark';
 import { brand, themes, themeOrder } from '../design-system/theme';
@@ -65,8 +65,7 @@ export function AppShell() {
       ]
     : consumerItems;
 
-  /** 底栏主入口：首页 / AI 对话 / 我的会话 / 我的 */
-  const bottomItems: NavItem[] = consumerItems.slice(0, 3).concat(consumerItems[4]);
+  /** Mobile Chat UI V5.0：底部导航栏组件已彻底删除（非隐藏），移动端导航走抽屉 */
 
   const logout = async () => {
     if (refreshToken) {
@@ -125,11 +124,6 @@ export function AppShell() {
       )}
     </nav>
   );
-
-  const bottomActive = (to: string, end?: boolean) => {
-    if (end) return location.pathname === to;
-    return location.pathname === to || location.pathname.startsWith(`${to}/`);
-  };
 
   return (
     <div className="zrh-app-shell flex h-dvh max-h-dvh w-full max-w-[100vw] overflow-hidden bg-zrh-bg text-zrh-text">
@@ -263,40 +257,6 @@ export function AppShell() {
             <Outlet />
           </div>
         </main>
-
-        {/* 手机底栏 */}
-        <nav
-          className="zrh-bottom-nav z-30 shrink-0 border-t border-zrh-border bg-zrh-bg/95 backdrop-blur lg:hidden"
-          aria-label={t('shell.bottomNav')}
-        >
-          <div className="zrh-bottom-nav-inner flex items-stretch justify-around px-1">
-            {bottomItems.map((item) => {
-              const active = bottomActive(item.to, item.end);
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[10px] font-medium leading-tight ${
-                    active ? 'text-zrh-accent' : 'text-zrh-text-dim'
-                  }`}
-                >
-                  <item.icon className="h-5 w-5 shrink-0" aria-hidden />
-                  <span className="max-w-full truncate">{item.label}</span>
-                </NavLink>
-              );
-            })}
-            <button
-              type="button"
-              onClick={() => setDrawerOpen(true)}
-              className="flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[10px] font-medium leading-tight text-zrh-text-dim"
-              aria-label={t('shell.more')}
-            >
-              <MoreHorizontal className="h-5 w-5 shrink-0" aria-hidden />
-              <span>{t('shell.more')}</span>
-            </button>
-          </div>
-        </nav>
       </div>
       <ZToastHost />
     </div>

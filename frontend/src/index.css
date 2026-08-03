@@ -102,31 +102,24 @@ h3 {
 }
 
 .zrh-shell-header {
-  --zrh-shell-header-h: 3.25rem;
+  /* Mobile Chat UI V5.0：Header 固定 56px，不随页面滚动 */
+  --zrh-shell-header-h: 3.5rem;
   padding-top: env(safe-area-inset-top, 0px);
 }
 
 .zrh-shell-header-inner {
-  min-height: 2.75rem;
+  min-height: 3.5rem;
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
 }
 
-.zrh-bottom-nav {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-.zrh-bottom-nav-inner {
-  min-height: 3.25rem;
-}
-
 @media (max-width: 1023px) {
-  /* UX V4.0 手机端：Header 高度降低，LOGO/语言按钮居中 */
+  /* Mobile Chat UI V5.0：手机端 Header 同样固定 56px */
   .zrh-shell-header {
-    --zrh-shell-header-h: 2.5rem;
+    --zrh-shell-header-h: 3.5rem;
   }
   .zrh-shell-header-inner {
-    min-height: 2.25rem;
+    min-height: 3.5rem;
     padding-top: 0.125rem;
     padding-bottom: 0.125rem;
   }
