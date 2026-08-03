@@ -3,10 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { TechBackground } from '../components/background/TechBackground';
-import { DigitalGlobe } from '../components/background/DigitalGlobe';
+import { AiCore } from '../components/background/AiCore';
 import { ZBadge, ZCard } from '../components/ui';
 import { zrhIcons } from '../design-system/icons';
 import { brand } from '../design-system/theme';
+import { BrandMark } from '../design-system/BrandMark';
 import { fadeInUp, baseTransition } from '../design-system/animations';
 import { api, HealthReport, OllamaModel, OllamaStatus, SystemMetric } from '../api/client';
 import { chatApi, ChatStats } from '../api/chat';
@@ -166,7 +167,7 @@ export function HomePage() {
   ];
 
   return (
-    <TechBackground>
+    <TechBackground variant="home" globe={false}>
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-3 py-6 sm:px-5 xl:flex-row">
         {/* 中央：AI 输入区 */}
         <motion.section
@@ -177,42 +178,23 @@ export function HomePage() {
           className="flex min-w-0 flex-1 flex-col items-center justify-center gap-8 py-8 sm:py-14"
         >
           <div className="relative flex w-full max-w-xl flex-col items-center">
-            {/* AI 光环：数字地球外围双环脉动 */}
+            {/* AI 光环 + 科技球（缓慢呼吸，无旋转） */}
             <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2">
               <div className="zrh-ai-halo" aria-hidden />
               <div className="zrh-ai-halo zrh-ai-halo--slow" aria-hidden />
             </div>
-            <DigitalGlobe className="pointer-events-none absolute -top-24 left-1/2 h-56 w-56 -translate-x-1/2 opacity-60" />
-            <div className="relative z-10 mt-28 text-center">
-              <h1 className="text-3xl font-bold tracking-[0.2em] text-zrh-accent sm:text-4xl">
-                {brand.name}
-              </h1>
-              <p className="mt-1 text-xs text-zrh-text-dim sm:text-sm">{brand.groupZh}</p>
-              <p className="mt-0.5 text-[10px] tracking-[0.18em] text-zrh-text-dim/80 sm:text-xs">
-                {brand.groupEn}
-              </p>
-              {/* 实时统计：模型数量 / 聊天数量 */}
-              {chatStats && (
-                <div className="mt-4 flex items-center justify-center gap-4 text-[11px] text-zrh-text-dim">
-                  <span>
-                    {t('chat.modelCount')} <span className="font-mono text-zrh-accent">{chatStats.models}</span>
-                  </span>
-                  <span className="h-3 w-px bg-zrh-border" aria-hidden />
-                  <span>
-                    {t('chat.chatCount')} <span className="font-mono text-zrh-accent">{chatStats.conversations}</span>
-                  </span>
-                  <span className="h-3 w-px bg-zrh-border" aria-hidden />
-                  <span>
-                    {t('chat.messageCount')} <span className="font-mono text-zrh-accent">{chatStats.messages}</span>
-                  </span>
-                </div>
-              )}
+            <AiCore className="pointer-events-none absolute -top-24 left-1/2 h-56 w-56 -translate-x-1/2 opacity-65 sm:h-72 sm:w-72 sm:opacity-70" />
+            <div className="relative z-10 mt-28 flex flex-col items-center text-center">
+              <BrandMark size={96} className="zrh-logo-glow mb-6 h-20 w-20 rounded-zrh-2xl sm:h-24 sm:w-24" />
+              <h1 className="zrh-landing-display text-3xl sm:text-4xl">{brand.name}</h1>
+              <p className="zrh-landing-lead mt-2 text-sm">{brand.groupZh}</p>
+              <p className="zrh-landing-meta mt-1">{brand.groupEn}</p>
             </div>
           </div>
 
           <form
             onSubmit={submit}
-            className="zrh-glass zrh-glow-border zrh-hud flex w-full max-w-xl items-center gap-2 rounded-2xl p-2.5"
+            className="zrh-glass-card flex w-full max-w-xl items-center gap-2 rounded-zrh-2xl p-3 sm:p-3.5"
           >
             <input
               value={input}
@@ -223,22 +205,39 @@ export function HomePage() {
             <button
               type="submit"
               aria-label={t('home.send')}
-              className="rounded-xl bg-zrh-accent p-2.5 text-zrh-bg transition-colors hover:bg-zrh-accent-soft"
+              className="rounded-zrh-lg bg-zrh-accent p-2.5 text-zrh-on-accent transition-colors hover:bg-zrh-accent-soft"
             >
               <SendIcon className="h-4 w-4" aria-hidden />
             </button>
           </form>
-          <p className="max-w-xl text-center text-[10px] text-zrh-text-dim/60">
+          <p className="max-w-xl text-center text-caption text-zrh-text-dim/70">
             {t('home.aiInputStageHint')}
           </p>
+          {chatStats && (
+            <div className="flex items-center justify-center gap-4 text-caption text-zrh-text-dim">
+              <span>
+                {t('chat.modelCount')} <span className="font-mono text-zrh-accent">{chatStats.models}</span>
+              </span>
+              <span className="h-3 w-px bg-zrh-border" aria-hidden />
+              <span>
+                {t('chat.chatCount')}{' '}
+                <span className="font-mono text-zrh-accent">{chatStats.conversations}</span>
+              </span>
+              <span className="h-3 w-px bg-zrh-border" aria-hidden />
+              <span>
+                {t('chat.messageCount')}{' '}
+                <span className="font-mono text-zrh-accent">{chatStats.messages}</span>
+              </span>
+            </div>
+          )}
         </motion.section>
 
-        {/* 右侧：实时状态面板 */}
+        {/* 右侧：实时状态面板（次级，桌面侧栏） */}
         <motion.aside
           variants={fadeInUp}
           initial="initial"
           animate="animate"
-          transition={{ ...baseTransition, delay: 0.1 }}
+          transition={{ ...baseTransition, delay: 0.12 }}
           className="w-full shrink-0 xl:w-80"
         >
           <ZCard title={t('status.realtime')} hud glow padded={false} className="zrh-glass">

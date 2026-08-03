@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react';
-import { canvasDpr, isMobileViewport, prefersReducedMotion } from './performance';
+import { COSMOS, canvasDpr, isMobileViewport, prefersReducedMotion } from './performance';
 
 /**
- * Shell / App pages — Blue White V2.0 AI sphere (breath only, no spin).
- * Cosmos pages use AiCore instead.
+ * Layer 5 — AI Core（Logo 后方巨大能量球）
+ * 8–10s 呼吸；禁止旋转；仅允许蓝白宇宙色板。
  */
-export function DigitalGlobe({ className = '' }: { className?: string }) {
+export function AiCore({ className = '' }: { className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -19,7 +19,7 @@ export function DigitalGlobe({ className = '' }: { className?: string }) {
     const reduced = prefersReducedMotion();
     const mobile = isMobileViewport();
     const dpr = canvasDpr();
-    const N = reduced ? 160 : mobile ? 280 : 520;
+    const N = reduced ? 140 : mobile ? 220 : 380;
 
     const points: Array<{ x: number; y: number; z: number }> = [];
     const golden = Math.PI * (3 - Math.sqrt(5));
@@ -30,6 +30,7 @@ export function DigitalGlobe({ className = '' }: { className?: string }) {
       points.push({ x: Math.cos(theta) * r, y, z: Math.sin(theta) * r });
     }
 
+    // Fixed view — no spin
     const viewAngle = 0.42;
     const cosA = Math.cos(viewAngle);
     const sinA = Math.sin(viewAngle);
@@ -42,10 +43,6 @@ export function DigitalGlobe({ className = '' }: { className?: string }) {
     const observer = new ResizeObserver(resize);
     observer.observe(canvas);
 
-    const accent =
-      getComputedStyle(document.documentElement).getPropertyValue('--zrh-accent').trim() ||
-      '#2563eb';
-
     let t0 = performance.now();
 
     const draw = (breath: number) => {
@@ -54,12 +51,14 @@ export function DigitalGlobe({ className = '' }: { className?: string }) {
       ctx.clearRect(0, 0, w, h);
       const cx = w / 2;
       const cy = h / 2;
-      const R = Math.min(w, h) * (0.38 + breath * 0.02);
+      const R = Math.min(w, h) * (0.4 + breath * 0.025);
 
-      const grad = ctx.createRadialGradient(cx, cy, R * 0.15, cx, cy, R * 1.4);
-      grad.addColorStop(0, `rgba(37,99,235,${0.1 + breath * 0.06})`);
-      grad.addColorStop(1, 'rgba(37,99,235,0)');
-      ctx.fillStyle = grad;
+      const glow = ctx.createRadialGradient(cx, cy, R * 0.1, cx, cy, R * 1.45);
+      glow.addColorStop(0, `rgba(96,165,250,${0.22 + breath * 0.08})`);
+      glow.addColorStop(0.35, `rgba(37,99,235,${0.14 + breath * 0.05})`);
+      glow.addColorStop(0.7, 'rgba(30,58,138,0.08)');
+      glow.addColorStop(1, 'rgba(2,6,23,0)');
+      ctx.fillStyle = glow;
       ctx.fillRect(0, 0, w, h);
 
       for (const p of points) {
@@ -69,15 +68,16 @@ export function DigitalGlobe({ className = '' }: { className?: string }) {
         if (depth < 0.28) continue;
         const sx = cx + x * R;
         const sy = cy + p.y * R;
-        ctx.globalAlpha = (0.15 + depth * 0.6) * (0.9 + breath * 0.1);
-        ctx.fillStyle = accent;
+        const alpha = (0.14 + depth * 0.55) * (0.88 + breath * 0.12);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = depth > 0.7 ? COSMOS.mist : COSMOS.light;
         ctx.beginPath();
-        ctx.arc(sx, sy, (0.55 + depth * 1.05) * dpr, 0, Math.PI * 2);
+        ctx.arc(sx, sy, (0.5 + depth * 1.05) * dpr, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      ctx.globalAlpha = 0.22 + breath * 0.08;
-      ctx.strokeStyle = accent;
+      ctx.globalAlpha = 0.2 + breath * 0.1;
+      ctx.strokeStyle = COSMOS.soft;
       ctx.lineWidth = dpr;
       ctx.beginPath();
       ctx.arc(cx, cy, R, 0, Math.PI * 2);
@@ -92,6 +92,7 @@ export function DigitalGlobe({ className = '' }: { className?: string }) {
 
     const render = (now: number) => {
       if (!running) return;
+      // ~9s breath cycle
       const breath = 0.5 + 0.5 * Math.sin(((now - t0) / 9000) * Math.PI * 2);
       draw(breath);
       raf = requestAnimationFrame(render);

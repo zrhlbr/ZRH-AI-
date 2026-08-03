@@ -84,28 +84,28 @@ export function RegisterPage() {
   };
 
   return (
-    <TechBackground>
-      <div className="flex min-h-screen items-center justify-center px-4 py-8">
+    <TechBackground variant="auth" globe>
+      <div className="zrh-auth-stack">
         <motion.div
           variants={fadeInUp}
           initial="initial"
           animate="animate"
           transition={baseTransition}
-          className="w-full max-w-md"
+          className="relative z-10 w-full max-w-md"
         >
-          <div className="mb-6 text-center">
-            <BrandMark size={72} className="mx-auto mb-3 h-[72px] w-[72px] rounded-2xl" />
-            <h1 className="text-3xl font-bold tracking-brand text-zrh-accent">{brand.logo}</h1>
-            <p className="mt-2 text-xs text-zrh-text-dim">{t('auth.registerTitle')}</p>
+          <div className="mb-8 text-center">
+            <BrandMark size={72} className="zrh-logo-glow mx-auto mb-4 h-[72px] w-[72px] rounded-2xl" />
+            <h1 className="zrh-landing-display text-3xl">{brand.logo}</h1>
+            <p className="zrh-landing-meta mt-2.5">{t('auth.registerTitle')}</p>
           </div>
 
-          <div className="zrh-glass zrh-glow-border zrh-hud rounded-2xl p-6 sm:p-8">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-zrh-text">{t('auth.register')}</h2>
-              <LanguageSwitcher />
+          <div className="zrh-glass-card rounded-2xl px-5 py-6 sm:px-8 sm:py-8">
+            <div className="mb-6 flex items-center justify-between gap-3">
+              <h2 className="zrh-auth-title">{t('auth.register')}</h2>
+              <LanguageSwitcher compact />
             </div>
 
-            <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-3.5">
+            <form onSubmit={(e) => void submit(e)} className="flex flex-col gap-4">
               <ZInput
                 label={t('auth.username')}
                 name="username"
@@ -200,14 +200,14 @@ export function RegisterPage() {
                 </p>
               )}
 
-              <ZButton type="submit" size="lg" loading={loading} className="mt-1 w-full">
+              <ZButton type="submit" size="lg" loading={loading} className="mt-1 w-full font-semibold">
                 {loading ? t('auth.registering') : t('auth.register')}
               </ZButton>
             </form>
 
-            <p className="mt-4 text-center text-xs text-zrh-text-dim">
+            <p className="zrh-landing-meta mt-6 text-center">
               {t('auth.haveAccount')}{' '}
-              <Link to="/login" className="text-zrh-accent hover:underline">
+              <Link to="/login" className="font-medium text-zrh-accent hover:underline">
                 {t('auth.login')}
               </Link>
             </p>

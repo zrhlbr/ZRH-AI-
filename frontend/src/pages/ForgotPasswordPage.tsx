@@ -6,6 +6,7 @@ import { TechBackground } from '../components/background/TechBackground';
 import { ZButton, ZInput } from '../components/ui';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { brand } from '../design-system/theme';
+import { BrandMark } from '../design-system/BrandMark';
 import { fadeInUp, baseTransition } from '../design-system/animations';
 import { ApiError } from '../api/client';
 import { v12Api } from '../api/v12';
@@ -60,24 +61,25 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <TechBackground>
-      <div className="flex min-h-screen items-center justify-center px-4 py-8">
+    <TechBackground variant="auth" globe>
+      <div className="zrh-auth-stack">
         <motion.div
           variants={fadeInUp}
           initial="initial"
           animate="animate"
           transition={baseTransition}
-          className="w-full max-w-sm"
+          className="relative z-10 w-full max-w-sm"
         >
-          <div className="mb-6 text-center">
-            <h1 className="text-3xl font-bold tracking-[0.2em] text-zrh-accent">{brand.logo}</h1>
-            <p className="mt-2 text-xs text-zrh-text-dim">{t('auth.forgotTitle')}</p>
+          <div className="mb-8 text-center">
+            <BrandMark size={72} className="zrh-logo-glow mx-auto mb-4 h-[72px] w-[72px] rounded-2xl" />
+            <h1 className="zrh-landing-display text-3xl">{brand.logo}</h1>
+            <p className="zrh-landing-meta mt-2.5">{t('auth.forgotTitle')}</p>
           </div>
 
-          <div className="zrh-glass zrh-glow-border zrh-hud rounded-2xl p-6 sm:p-8">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-zrh-text">{t('auth.forgotPassword')}</h2>
-              <LanguageSwitcher />
+          <div className="zrh-glass-card rounded-2xl px-5 py-6 sm:px-8 sm:py-8">
+            <div className="mb-6 flex items-center justify-between gap-3">
+              <h2 className="zrh-auth-title">{t('auth.forgotPassword')}</h2>
+              <LanguageSwitcher compact />
             </div>
 
             {step === 'request' ? (
