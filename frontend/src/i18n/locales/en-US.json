@@ -24,6 +24,10 @@
     "admin": "Admin Console",
     "superadmin": "Super Admin"
   },
+  "shell": {
+    "bottomNav": "Bottom navigation",
+    "more": "More"
+  },
   "common": {
     "close": "Close",
     "confirm": "Confirm",

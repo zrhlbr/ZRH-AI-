@@ -24,6 +24,10 @@
     "admin": "管理后台",
     "superadmin": "超级管理"
   },
+  "shell": {
+    "bottomNav": "底部导航",
+    "more": "更多"
+  },
   "common": {
     "close": "关闭",
     "confirm": "确认",
