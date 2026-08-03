@@ -119,8 +119,10 @@ Landing · Login · Register · Forgot Password · Welcome（Home）
 
 ## 8. Git Commit
 
-见本次提交（whitelist：背景系统 + 上述页面 + 报告/截图）。  
-**未 push / 未部署。**
+- **SHA：** `7b79d65`  
+- **Message：** `feat(ui): add ZRH AI Cosmos Background V3.0`  
+- **Scope：** whitelist（背景系统 + Landing/Auth/Welcome + 报告/截图）  
+- **未 push / 未部署。**
 
 ---
 
