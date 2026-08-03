@@ -57,6 +57,9 @@ html,
 body,
 #root {
   height: 100%;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 body {
@@ -64,10 +67,42 @@ body {
   background-color: var(--zrh-bg);
   color: var(--zrh-text);
   overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-x: none;
   font-family: 'Space Grotesk', 'Noto Sans SC', 'Noto Sans Myanmar', 'PingFang SC', 'Microsoft YaHei',
     sans-serif;
   transition: background-color 0.35s cubic-bezier(0.22, 1, 0.36, 1), color 0.25s ease;
   -webkit-font-smoothing: antialiased;
+}
+
+/* User Experience V2.0 — 禁止横向拖动 */
+.zrh-app-shell,
+.zrh-chat-shell,
+.zrh-shell-aside,
+.zrh-page-enter {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.zrh-shell-header {
+  --zrh-shell-header-h: 3.25rem;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.zrh-shell-header-inner {
+  min-height: 2.75rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+@media (max-width: 1023px) {
+  .zrh-shell-header {
+    --zrh-shell-header-h: 3rem;
+  }
+  .zrh-shell-header-inner {
+    min-height: 2.5rem;
+  }
 }
 
 /* 缅文语言环境字体切换 */

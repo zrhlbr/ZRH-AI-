@@ -24,11 +24,11 @@ function ModelSwitcher() {
   const statusOf = (name: string) => modelsStatus.find((s) => s.name === name)?.status;
   const dotClass = (status?: string) =>
     status === 'running'
-      ? 'bg-emerald-400'
+      ? 'bg-zrh-ok'
       : status === 'online'
-        ? 'bg-sky-400'
+        ? 'bg-zrh-tech-blue'
         : status === 'loading'
-          ? 'bg-amber-400'
+          ? 'bg-zrh-warn'
           : 'bg-zrh-text-dim/40';
 
   return (
@@ -39,7 +39,7 @@ function ModelSwitcher() {
         disabled={streaming.active}
         onClick={() => setOpen((v) => !v)}
         aria-label={t('chat.modelSwitch')}
-        className="flex items-center gap-1.5 rounded-lg border border-zrh-border/60 bg-black/20 px-2.5 py-1.5 text-[11px] text-zrh-text transition-colors hover:border-zrh-accent/50 disabled:opacity-50"
+        className="zrh-inset flex items-center gap-1.5 rounded-zrh-md border border-zrh-border/60 px-2.5 py-1.5 text-caption text-zrh-text transition-colors hover:border-zrh-accent/50 disabled:opacity-50"
       >
         <span className={`h-1.5 w-1.5 rounded-full ${dotClass(statusOf(activeModel))}`} aria-hidden />
         <Cpu className="h-3.5 w-3.5 text-zrh-accent/80" aria-hidden />
@@ -86,7 +86,7 @@ function PromptSelector() {
     <select
       value={selectedPromptCode ?? ''}
       onChange={(e) => setSelectedPromptCode(e.target.value || null)}
-      className="rounded-lg border border-zrh-border/60 bg-black/20 px-2 py-1.5 text-[11px] text-zrh-text-dim outline-none hover:border-zrh-accent/50"
+      className="zrh-inset rounded-zrh-md border border-zrh-border/60 px-2 py-1.5 text-caption text-zrh-text-dim outline-none hover:border-zrh-accent/50"
       aria-label={t('chat.promptTemplate')}
     >
       <option value="">{t('chat.defaultPrompt')}</option>
@@ -128,11 +128,17 @@ export function ChatInput() {
   };
 
   return (
-    <div className="border-t border-zrh-border/60 bg-zrh-bg/60 p-3 backdrop-blur">
+    <div className="border-t border-zrh-border/60 bg-zrh-bg/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-zrh-bg/90">
       {error && (
-        <div className="mb-2 flex items-center justify-between rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">
-          <span className="min-w-0 truncate">{error}</span>
-          <button type="button" onClick={clearError} className="ml-2 shrink-0 text-red-400 hover:text-red-200">
+        <div className="mb-2 flex items-center justify-between rounded-lg border border-zrh-err/40 bg-zrh-err/10 px-3 py-2 text-xs text-zrh-err">
+          <span className="min-w-0 truncate">
+            {error === 'load_failed'
+              ? t('chat.errors.loadFailed')
+              : error === 'stream_failed'
+                ? t('chat.errors.streamFailed')
+                : error}
+          </span>
+          <button type="button" onClick={clearError} className="ml-2 shrink-0 opacity-70 hover:opacity-100">
             ✕
           </button>
         </div>
@@ -190,7 +196,7 @@ export function ChatInput() {
             data-testid="chat-stop"
             onClick={() => void stop()}
             aria-label={t('chat.stop')}
-            className="flex items-center gap-1.5 rounded-xl border border-red-500/50 bg-red-500/10 px-3 py-2.5 text-xs font-semibold text-red-400 transition-colors hover:bg-red-500/20"
+            className="flex items-center gap-1.5 rounded-zrh-lg border border-zrh-err/50 bg-zrh-err/10 px-3 py-2.5 text-xs font-semibold text-zrh-err transition-colors hover:bg-zrh-err/20"
           >
             <Square className="h-3.5 w-3.5" aria-hidden />
             <span className="hidden sm:inline">{t('chat.stop')}</span>
@@ -202,7 +208,7 @@ export function ChatInput() {
             onClick={submit}
             disabled={!input.trim()}
             aria-label={t('chat.send')}
-            className="rounded-xl bg-zrh-accent p-2.5 text-zrh-bg transition-colors hover:bg-zrh-accent-soft disabled:opacity-40"
+            className="rounded-zrh-lg bg-zrh-accent p-2.5 text-zrh-on-accent transition-colors hover:bg-zrh-accent-soft disabled:opacity-40"
           >
             <Send className="h-4 w-4" aria-hidden />
           </button>

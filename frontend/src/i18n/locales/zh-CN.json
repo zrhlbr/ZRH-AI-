@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "ZRH AI",
-    "tagline": "ZRH 科技集团 · 企业级私有人工智能平台"
+    "tagline": "ZRH 科技集团 · 智能助手"
   },
   "nav": {
     "home": "首页",
@@ -9,17 +9,20 @@
     "menu": "菜单",
     "chat": "AI 对话",
     "models": "AI 模型",
-    "knowledge": "知识平台",
-    "rag": "企业 RAG",
-    "agents": "Agent Center",
-    "tools": "Tool Center",
-    "mcp": "MCP Center",
-    "workflows": "Workflow Center",
-    "business": "Business Hub",
+    "knowledge": "知识库",
+    "rag": "企业知识检索",
+    "agents": "智能体中心",
+    "tools": "工具中心",
+    "mcp": "MCP 中心",
+    "workflows": "工作流中心",
+    "business": "业务中心",
     "account": "用户中心",
+    "me": "我的",
+    "settings": "设置",
+    "enterprise": "管理功能",
     "developer": "开发者",
-    "admin": "Admin",
-    "superadmin": "Super Admin"
+    "admin": "管理后台",
+    "superadmin": "超级管理"
   },
   "common": {
     "close": "关闭",
@@ -264,10 +267,11 @@
     "en-US": "English"
   },
   "home": {
-    "stage": "ZRH AI Enterprise · 企业级私有人工智能平台",
-    "notice": "基础框架已就绪。业务功能将在后续阶段开放。",
+    "stage": "ZRH AI · 智能对话",
+    "notice": "开始与 ZRH AI 对话。",
+    "welcomeGreeting": "你好，我是 ZRH AI。今天想聊些什么？",
     "aiInputPlaceholder": "向 ZRH AI 提问…",
-    "aiInputStageHint": "输入问题，立即开始与 ZRH AI 对话。由 ZRH 科技集团自主研发。",
+    "aiInputStageHint": "输入问题，立即开始对话。",
     "send": "发送"
   },
   "landing": {

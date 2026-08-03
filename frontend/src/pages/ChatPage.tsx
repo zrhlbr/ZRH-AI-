@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { PanelLeft, PanelRight } from 'lucide-react';
-import { TechBackground } from '../components/background/TechBackground';
 import { ConversationList } from '../components/chat/ConversationList';
 import { ChatInput } from '../components/chat/ChatInput';
 import { ChatSidebar } from '../components/chat/ChatSidebar';
 import { MessageItem } from '../components/chat/MessageItem';
 import { MarkdownRenderer } from '../components/chat/MarkdownRenderer';
 import { useChatStore } from '../store/chatStore';
-import { zrhIcons } from '../design-system/icons';
+import { BrandMark } from '../design-system/BrandMark';
 import { brand } from '../design-system/theme';
 
 const LEFT_KEY = 'zrh-ai-chat-left-w';
@@ -86,10 +86,15 @@ function MessageList() {
         )}
 
         {!loadingMessages && messages.length === 0 && !showStreaming && (
-          <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <zrhIcons.ai className="h-10 w-10 text-zrh-accent/40" aria-hidden />
-            <p className="text-sm font-semibold tracking-widest text-zrh-accent">{brand.name}</p>
-            <p className="max-w-md whitespace-pre-line text-xs leading-relaxed text-zrh-text-dim/80">
+          <div className="zrh-msg-enter flex flex-col items-center gap-4 py-16 text-center">
+            <BrandMark size={96} className="h-16 w-16 rounded-zrh-2xl shadow-zrh-glow" />
+            <div>
+              <p className="font-display text-base font-semibold tracking-brand text-zrh-accent">
+                {brand.name}
+              </p>
+              <p className="mt-1 text-caption tracking-wide text-zrh-text-dim">{t('chat.brandGroup')}</p>
+            </div>
+            <p className="max-w-md whitespace-pre-line text-xs leading-relaxed text-zrh-text-dim">
               {t('chat.welcome')}
             </p>
           </div>
@@ -105,14 +110,24 @@ function MessageList() {
           </button>
         )}
 
-        {messages.map((m, i) => (
-          <MessageItem
-            key={m.id}
-            message={m}
-            isLast={i === messages.length - 1}
-            streamingActive={streaming.active}
-          />
-        ))}
+        {messages.map((m, i) => {
+          // Feature Freeze: hide assistant being continued to avoid dual bubbles
+          if (
+            showStreaming &&
+            streaming.appendToMessageId &&
+            m.id === streaming.appendToMessageId
+          ) {
+            return null;
+          }
+          return (
+            <MessageItem
+              key={m.id}
+              message={m}
+              isLast={i === messages.length - 1}
+              streamingActive={streaming.active}
+            />
+          );
+        })}
 
         {showStreaming && (
           <div className="flex justify-start">
@@ -155,6 +170,8 @@ function MessageList() {
  */
 export function ChatPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { id: routeId } = useParams();
   const {
     loadConversations,
     loadModels,
@@ -164,6 +181,9 @@ export function ChatPage() {
     setPendingHomeMessage,
     send,
     activeTitle,
+    activeId,
+    openConversation,
+    newChat,
   } = useChatStore();
 
   const left = useResizable(LEFT_KEY, 264, 200, 420, 'left');
@@ -178,104 +198,125 @@ export function ChatPage() {
     void loadStats();
   }, [loadConversations, loadModels, loadPrompts, loadStats]);
 
+  // Feature Freeze: wire /chat/:id deep link
+  useEffect(() => {
+    if (!routeId) return;
+    const n = Number(routeId);
+    if (!Number.isFinite(n) || n <= 0) {
+      navigate('/chat', { replace: true });
+      return;
+    }
+    if (activeId !== n) {
+      void openConversation(n).catch(() => navigate('/chat', { replace: true }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync from URL only when routeId changes
+  }, [routeId]);
+
+  useEffect(() => {
+    if (activeId != null && routeId !== String(activeId)) {
+      navigate(`/chat/${activeId}`, { replace: true });
+    }
+  }, [activeId, routeId, navigate]);
+
+  const onNewChat = () => {
+    newChat();
+    navigate('/chat', { replace: true });
+  };
+
   // 首页输入区携带的首条消息
   useEffect(() => {
     if (pendingHomeMessage) {
       setPendingHomeMessage(null);
+      newChat();
+      navigate('/chat', { replace: true });
       void send(pendingHomeMessage);
     }
-  }, [pendingHomeMessage, setPendingHomeMessage, send]);
+  }, [pendingHomeMessage, setPendingHomeMessage, send, newChat, navigate]);
 
   return (
-    <TechBackground>
-      <div className="flex h-[calc(100vh-57px)] min-h-0 flex-col">
-        {/* 页头（移动端抽屉开关 + 标题） */}
-        <div className="flex items-center justify-between gap-2 border-b border-zrh-border/60 bg-zrh-bg/60 px-3 py-2 backdrop-blur xl:hidden">
-          <button
-            type="button"
-            onClick={() => setLeftDrawer(true)}
-            aria-label={t('chat.history')}
-            className="rounded-lg p-1.5 text-zrh-text-dim hover:text-zrh-text"
-          >
-            <PanelLeft className="h-5 w-5" />
-          </button>
-          <p className="min-w-0 flex-1 truncate text-center text-xs text-zrh-text-dim">
-            {activeTitle || t('nav.chat')}
-          </p>
-          <button
-            type="button"
-            onClick={() => setRightDrawer(true)}
-            aria-label={t('chat.modelsStatus')}
-            className="rounded-lg p-1.5 text-zrh-text-dim hover:text-zrh-text"
-          >
-            <PanelRight className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="flex min-h-0 flex-1">
-          {/* 左栏（桌面） */}
-          <aside
-            style={{ width: left.width }}
-            className="hidden min-h-0 shrink-0 border-r border-zrh-border/60 bg-zrh-surface/50 backdrop-blur xl:block"
-          >
-            <ConversationList />
-          </aside>
-          <div
-            role="separator"
-            aria-orientation="vertical"
-            onMouseDown={left.startDrag}
-            className="hidden w-1 shrink-0 cursor-col-resize bg-transparent transition-colors hover:bg-zrh-accent/40 xl:block"
-          />
-
-          {/* 中央聊天区 */}
-          <section className="flex min-w-0 flex-1 flex-col">
-            <div className="hidden items-center gap-3 border-b border-zrh-border/60 bg-zrh-bg/40 px-4 py-2.5 xl:flex">
-              <zrhIcons.ai className="h-6 w-6 text-zrh-accent" aria-hidden />
-              <div className="min-w-0">
-                <p className="text-sm font-bold tracking-widest text-zrh-accent">{brand.name}</p>
-                <p className="text-[10px] text-zrh-text-dim">
-                  <span className="mr-2">{brand.groupZh}</span>
-                  <span className="tracking-wider">{brand.groupEn}</span>
-                </p>
-              </div>
-              {activeTitle && (
-                <p className="ml-auto max-w-xs truncate text-[11px] text-zrh-text-dim">{activeTitle}</p>
-              )}
-            </div>
-            <MessageList />
-            <ChatInput />
-          </section>
-
-          <div
-            role="separator"
-            aria-orientation="vertical"
-            onMouseDown={right.startDrag}
-            className="hidden w-1 shrink-0 cursor-col-resize bg-transparent transition-colors hover:bg-zrh-accent/40 xl:block"
-          />
-          {/* 右栏（桌面） */}
-          <aside
-            style={{ width: right.width }}
-            className="hidden min-h-0 shrink-0 border-l border-zrh-border/60 bg-zrh-surface/50 backdrop-blur xl:block"
-          >
-            <ChatSidebar />
-          </aside>
-        </div>
+    <div className="zrh-chat-shell flex h-[calc(100dvh-var(--zrh-shell-header-h,3.25rem))] min-h-0 w-full max-w-full flex-col overflow-x-hidden bg-zrh-bg">
+      {/* 页头（移动端抽屉开关 + 标题） */}
+      <div className="flex items-center justify-between gap-2 border-b border-zrh-border/60 bg-zrh-bg px-3 py-1.5 xl:hidden">
+        <button
+          type="button"
+          onClick={() => setLeftDrawer(true)}
+          aria-label={t('chat.history')}
+          className="rounded-lg p-1.5 text-zrh-text-dim hover:text-zrh-text"
+        >
+          <PanelLeft className="h-5 w-5" />
+        </button>
+        <p className="min-w-0 flex-1 truncate text-center text-xs font-medium text-zrh-text">
+          {activeTitle || t('nav.chat')}
+        </p>
+        <button
+          type="button"
+          onClick={() => setRightDrawer(true)}
+          aria-label={t('chat.params')}
+          className="rounded-lg p-1.5 text-zrh-text-dim hover:text-zrh-text"
+        >
+          <PanelRight className="h-5 w-5" />
+        </button>
       </div>
 
-      {/* 移动端抽屉：左 */}
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-x-hidden">
+        {/* 左栏（桌面） */}
+        <aside
+          style={{ width: left.width }}
+          className="hidden min-h-0 shrink-0 border-r border-zrh-border/60 bg-zrh-surface/80 xl:block"
+        >
+          <ConversationList onNewChat={onNewChat} />
+        </aside>
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          onMouseDown={left.startDrag}
+          className="hidden w-1 shrink-0 cursor-col-resize bg-transparent transition-colors hover:bg-zrh-accent/40 xl:block"
+        />
+
+        {/* 中央聊天区 — 居中消息 + 底部输入 */}
+        <section className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-hidden">
+          <div className="hidden items-center gap-3 border-b border-zrh-border/50 bg-zrh-bg px-4 py-2 xl:flex">
+            <BrandMark size={28} className="h-7 w-7 rounded-lg" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold tracking-brand text-zrh-accent">{brand.name}</p>
+              <p className="truncate text-[10px] text-zrh-text-dim">{t('app.tagline')}</p>
+            </div>
+            {activeTitle && (
+              <p className="ml-auto max-w-xs truncate text-[11px] text-zrh-text-dim">{activeTitle}</p>
+            )}
+          </div>
+          <MessageList />
+          <div className="mx-auto w-full max-w-3xl pb-[max(0.25rem,env(safe-area-inset-bottom))]">
+            <ChatInput />
+          </div>
+        </section>
+
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          onMouseDown={right.startDrag}
+          className="hidden w-1 shrink-0 cursor-col-resize bg-transparent transition-colors hover:bg-zrh-accent/40 xl:block"
+        />
+        <aside
+          style={{ width: right.width }}
+          className="hidden min-h-0 shrink-0 border-l border-zrh-border/60 bg-zrh-surface/80 xl:block"
+        >
+          <ChatSidebar />
+        </aside>
+      </div>
+
       {leftDrawer && (
-        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm xl:hidden" onClick={() => setLeftDrawer(false)}>
+        <div className="fixed inset-0 z-40 max-w-[100vw] overflow-hidden bg-zrh-text/40 backdrop-blur-sm xl:hidden" onClick={() => setLeftDrawer(false)}>
           <div
             className="h-full w-72 max-w-[85vw] border-r border-zrh-border bg-zrh-surface"
             onClick={(e) => e.stopPropagation()}
           >
-            <ConversationList />
+            <ConversationList onNewChat={onNewChat} />
           </div>
         </div>
       )}
-      {/* 移动端抽屉：右 */}
       {rightDrawer && (
-        <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm xl:hidden" onClick={() => setRightDrawer(false)}>
+        <div className="fixed inset-0 z-40 max-w-[100vw] overflow-hidden bg-zrh-text/40 backdrop-blur-sm xl:hidden" onClick={() => setRightDrawer(false)}>
           <div
             className="ml-auto h-full w-80 max-w-[88vw] border-l border-zrh-border bg-zrh-surface"
             onClick={(e) => e.stopPropagation()}
@@ -284,6 +325,6 @@ export function ChatPage() {
           </div>
         </div>
       )}
-    </TechBackground>
+    </div>
   );
 }

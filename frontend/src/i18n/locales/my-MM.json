@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "ZRH AI",
-    "tagline": "ZRH Technology Group ၏ လုပ်ငန်းသုံး AI"
+    "tagline": "ZRH Technology Group · AI လက်ထောက်"
   },
   "nav": {
     "home": "ပင်မစာမျက်နှာ",
@@ -9,14 +9,17 @@
     "menu": "မီနူး",
     "chat": "AI စကားပြော",
     "models": "AI မော်ဒယ်များ",
-    "knowledge": "ဗဟုသုတ ပလက်ဖောင်း",
-    "rag": "လုပ်ငန်း RAG",
-    "agents": "Agent များ",
+    "knowledge": "ဗဟုသုတ",
+    "rag": "လုပ်ငန်း ဗဟုသုတရှာဖွေမှု",
+    "agents": "အေးဂျင့်များ",
     "tools": "ကိရိယာများ",
     "mcp": "MCP",
     "workflows": "အလုပ်စဉ်များ",
     "business": "လုပ်ငန်းဗဟို",
     "account": "အသုံးပြုသူစင်တာ",
+    "me": "ကျွန်ုပ်",
+    "settings": "ဆက်တင်",
+    "enterprise": "စီမံခန့်ခွဲမှု",
     "developer": "ဖွံ့ဖြိုးရေး",
     "admin": "စီမံခန့်ခွဲမှု",
     "superadmin": "အထူးစီမံ"
@@ -264,10 +267,11 @@
     "en-US": "English"
   },
   "home": {
-    "stage": "လုပ်ငန်းအဆင့်",
-    "notice": "အခြေခံဘောင်အဆင့် အဆင်ပြေပါပြီ။ လုပ်ငန်းလုပ်ဆောင်ချက်များကို နောက်အဆင့်များတွင် ဖွင့်ပေးပါမည်။",
+    "stage": "ZRH AI · စကားပြော",
+    "notice": "ZRH AI နှင့် စကားပြောရန် စတင်ပါ။",
+    "welcomeGreeting": "မင်္ဂလာပါ၊ ကျွန်ုပ်သည် ZRH AI ဖြစ်ပါသည်။ ယနေ့ ဘာကူညီပေးရမလဲ။",
     "aiInputPlaceholder": "ZRH AI ကို မေးမြန်းပါ…",
-    "aiInputStageHint": "ZRH AI နှင့် စကားပြောရန် မေးခွန်းရိုက်ထည့်ပါ။ ZRH Technology Group မှ တီထွင်ထားသည်။",
+    "aiInputStageHint": "မေးခွန်းရိုက်ထည့်ပြီး စကားပြောစတင်ပါ။",
     "send": "ပို့ရန်"
   },
   "landing": {

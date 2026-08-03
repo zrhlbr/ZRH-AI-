@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ZBadge, ZButton, ZCard, ZInput } from '../components/ui';
 import { api, ApiError } from '../api/client';
@@ -15,7 +15,18 @@ type Tab = 'profile' | 'security' | 'devices' | 'history' | 'tokens';
 export function AccountPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>('profile');
+  const [searchParams] = useSearchParams();
+  const initialTab = (searchParams.get('tab') as Tab | null) || 'profile';
+  const [tab, setTab] = useState<Tab>(
+    ['profile', 'security', 'devices', 'history', 'tokens'].includes(initialTab) ? initialTab : 'profile',
+  );
+
+  useEffect(() => {
+    const q = searchParams.get('tab') as Tab | null;
+    if (q && ['profile', 'security', 'devices', 'history', 'tokens'].includes(q)) {
+      setTab(q);
+    }
+  }, [searchParams]);
   const [me, setMe] = useState<UserCenterMe | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);

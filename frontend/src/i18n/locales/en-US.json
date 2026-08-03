@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "ZRH AI",
-    "tagline": "ZRH Technology Group · Enterprise Private AI Platform"
+    "tagline": "ZRH Technology Group · AI Assistant"
   },
   "nav": {
     "home": "Home",
@@ -9,16 +9,19 @@
     "menu": "Menu",
     "chat": "AI Chat",
     "models": "AI Models",
-    "knowledge": "Knowledge Platform",
+    "knowledge": "Knowledge",
     "rag": "Enterprise RAG",
-    "agents": "Agent Center",
-    "tools": "Tool Center",
-    "mcp": "MCP Center",
-    "workflows": "Workflow Center",
-    "business": "Business Hub",
+    "agents": "Agents",
+    "tools": "Tools",
+    "mcp": "MCP",
+    "workflows": "Workflows",
+    "business": "Business",
     "account": "Account",
+    "me": "Me",
+    "settings": "Settings",
+    "enterprise": "Admin",
     "developer": "Developer",
-    "admin": "Admin",
+    "admin": "Admin Console",
     "superadmin": "Super Admin"
   },
   "common": {
@@ -264,10 +267,11 @@
     "en-US": "English"
   },
   "home": {
-    "stage": "ZRH AI Enterprise · Enterprise Private AI Platform",
-    "notice": "The base framework is ready. Business features will be enabled in later stages.",
+    "stage": "ZRH AI · Chat",
+    "notice": "Start chatting with ZRH AI.",
+    "welcomeGreeting": "Hi, I am ZRH AI. How can I help you today?",
     "aiInputPlaceholder": "Ask ZRH AI…",
-    "aiInputStageHint": "Ask anything to start chatting with ZRH AI. Built by ZRH Technology Group.",
+    "aiInputStageHint": "Type a question to start chatting.",
     "send": "Send"
   },
   "landing": {
