@@ -82,7 +82,8 @@
 
 ## 7. Git Commit
 
-见本任务白名单提交（message 含 Mobile UI Optimization）。
+- **SHA：** `a85111e`  
+- **Message：** `feat(ui): optimize mobile shell layout and clean home status panels`
 
 ---
 
