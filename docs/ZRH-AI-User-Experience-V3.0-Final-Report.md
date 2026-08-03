@@ -87,9 +87,9 @@
 
 ## 12. Git Commit
 
-见本任务单独提交：
-
-`feat(ui): redesign user experience v3 and separate enterprise features`
+- **SHA：** `0312b31`  
+- **Message：** `feat(ui): redesign user experience v3 and separate enterprise features`  
+- **未 push / 未部署 Production**
 
 ---
 
