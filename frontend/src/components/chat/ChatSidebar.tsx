@@ -149,31 +149,34 @@ export function ChatSidebar() {
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-y-auto overflow-x-hidden">
-      <Section title={t('chat.modelsStatus')}>
-        <ul className="flex flex-col gap-1.5">
-          {modelsStatus.map((m, index) => (
-            <li
-              key={m.name}
-              className="zrh-inset flex items-center justify-between gap-2 rounded-zrh-md border border-zrh-border/40 px-2.5 py-2"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-[11px] text-zrh-text">{toEngineLabelByIndex(m.name, index)}</p>
-                {isEnterpriseAdmin && m.vramBytes ? (
-                  <p className="truncate text-[9px] text-zrh-text-dim/70">
-                    VRAM {(m.vramBytes / 1024 / 1024 / 1024).toFixed(1)}GB
-                  </p>
-                ) : null}
-              </div>
-              <ModelStatusBadge status={m.status} />
-            </li>
-          ))}
-        </ul>
-        {stats && (
-          <p className="mt-2 text-[10px] text-zrh-text-dim">
-            {t('chat.chatCount')}: {stats.conversations}
-          </p>
-        )}
-      </Section>
+      {/* UX V4.0：模型运行状态 / 对话统计仅 Admin 可见，用户端不出现任何在线状态与统计数字 */}
+      {isEnterpriseAdmin && (
+        <Section title={t('chat.modelsStatus')}>
+          <ul className="flex flex-col gap-1.5">
+            {modelsStatus.map((m, index) => (
+              <li
+                key={m.name}
+                className="zrh-inset flex items-center justify-between gap-2 rounded-zrh-md border border-zrh-border/40 px-2.5 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-[11px] text-zrh-text">{toEngineLabelByIndex(m.name, index)}</p>
+                  {m.vramBytes ? (
+                    <p className="truncate text-[9px] text-zrh-text-dim/70">
+                      VRAM {(m.vramBytes / 1024 / 1024 / 1024).toFixed(1)}GB
+                    </p>
+                  ) : null}
+                </div>
+                <ModelStatusBadge status={m.status} />
+              </li>
+            ))}
+          </ul>
+          {stats && (
+            <p className="mt-2 text-[10px] text-zrh-text-dim">
+              {t('chat.chatCount')}: {stats.conversations}
+            </p>
+          )}
+        </Section>
+      )}
 
       <Section title={t('chat.params')}>
         {draft ? (

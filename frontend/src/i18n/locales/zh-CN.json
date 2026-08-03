@@ -22,7 +22,9 @@
     "enterprise": "管理功能",
     "developer": "开发者",
     "admin": "管理后台",
-    "superadmin": "超级管理"
+    "superadmin": "超级管理",
+    "conversations": "我的会话",
+    "favorites": "收藏"
   },
   "shell": {
     "bottomNav": "底部导航",
@@ -277,7 +279,13 @@
     "aiInputPlaceholder": "向 ZRH AI 提问…",
     "aiInputStageHint": "输入问题，立即开始对话。",
     "send": "发送",
-    "recentChats": "最近聊天"
+    "recentChats": "最近聊天",
+    "intro": "你的智能助手，随时为你解答问题、整理思路、协助工作。",
+    "historyEntry": "查看历史聊天",
+    "quickPrompt1": "帮我写一封邮件",
+    "quickPrompt2": "解释一下这个概念",
+    "quickPrompt3": "帮我制定今天的计划",
+    "quickPrompt4": "翻译这段话"
   },
   "me": {
     "profile": "个人资料",
@@ -671,5 +679,8 @@
     "testSent": "测试邮件已提交",
     "smtpReady": "SMTP 已配置",
     "smtpMissing": "SMTP 未配置"
+  },
+  "conversations": {
+    "emptyFavorites": "还没有收藏的会话"
   }
 }

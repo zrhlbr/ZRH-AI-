@@ -22,7 +22,9 @@
     "enterprise": "Admin",
     "developer": "Developer",
     "admin": "Admin Console",
-    "superadmin": "Super Admin"
+    "superadmin": "Super Admin",
+    "conversations": "My Chats",
+    "favorites": "Favorites"
   },
   "shell": {
     "bottomNav": "Bottom navigation",
@@ -277,7 +279,13 @@
     "aiInputPlaceholder": "Ask ZRH AI…",
     "aiInputStageHint": "Type a question to start chatting.",
     "send": "Send",
-    "recentChats": "Recent chats"
+    "recentChats": "Recent chats",
+    "intro": "Your intelligent assistant — answers questions, organizes ideas, and helps with work anytime.",
+    "historyEntry": "View chat history",
+    "quickPrompt1": "Write an email for me",
+    "quickPrompt2": "Explain this concept",
+    "quickPrompt3": "Plan my day",
+    "quickPrompt4": "Translate this"
   },
   "me": {
     "profile": "Profile",
@@ -671,5 +679,8 @@
     "testSent": "Test email submitted",
     "smtpReady": "SMTP configured",
     "smtpMissing": "SMTP not configured"
+  },
+  "conversations": {
+    "emptyFavorites": "No favorite conversations yet"
   }
 }

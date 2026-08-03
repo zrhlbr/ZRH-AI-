@@ -115,11 +115,14 @@ h3 {
 }
 
 @media (max-width: 1023px) {
+  /* UX V4.0 手机端：Header 高度降低，LOGO/语言按钮居中 */
   .zrh-shell-header {
-    --zrh-shell-header-h: 2.75rem;
+    --zrh-shell-header-h: 2.5rem;
   }
   .zrh-shell-header-inner {
-    min-height: 2.35rem;
+    min-height: 2.25rem;
+    padding-top: 0.125rem;
+    padding-bottom: 0.125rem;
   }
   /* 聊天页填满 Content，避免与底栏叠加造成双滚动 */
   .zrh-shell-content .zrh-chat-shell {

@@ -2,7 +2,7 @@ import { useEffect, useState, type ComponentType } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, X, LogOut, Settings as SettingsIcon, MoreHorizontal } from 'lucide-react';
+import { Menu, X, LogOut, Settings as SettingsIcon, MoreHorizontal, MessagesSquare, Star } from 'lucide-react';
 import { zrhIcons } from '../design-system/icons';
 import { BrandMark } from '../design-system/BrandMark';
 import { brand, themes, themeOrder } from '../design-system/theme';
@@ -18,12 +18,12 @@ type NavItem = {
   label: string;
   icon: ComponentType<{ className?: string }>;
   end?: boolean;
-  perm?: string;
 };
 
 /**
- * V1.2.2 Mobile Shell — 固定 Header/底栏 + Content 独立滚动 + 安全区。
- * 不改 Chat / Knowledge 等业务页内部结构。
+ * UX V4.0 用户端壳层 —— 用户菜单固定 7 项（首页 / AI 对话 / 我的会话 / 收藏 /
+ * 我的 / 设置 / 退出登录），企业入口在用户端不存在（非 display:none、非权限判断）。
+ * ADMIN / SUPER_ADMIN 额外保留知识平台与管理控制台入口，后台功能不变。
  */
 export function AppShell() {
   const { t } = useTranslation();
@@ -31,7 +31,7 @@ export function AppShell() {
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { themeId, setTheme } = useThemeStore();
-  const { profile, clear, refreshToken, hasPermission } = useAuthStore();
+  const { profile, clear, refreshToken } = useAuthStore();
 
   const role = profile?.role ?? '';
   const showAdminConsole = role === 'ADMIN' || role === 'SUPER_ADMIN';
@@ -46,21 +46,27 @@ export function AppShell() {
     };
   }, []);
 
-  const drawerItems: NavItem[] = [
-    { to: '/home', label: t('nav.home'), icon: zrhIcons.home, end: true, perm: 'menu:home' },
-    { to: '/chat', label: t('nav.chat'), icon: zrhIcons.ai, perm: 'menu:chat' },
-    { to: '/knowledge', label: t('nav.knowledge'), icon: zrhIcons.knowledge, perm: 'menu:knowledge' },
-    { to: '/me', label: t('nav.me'), icon: zrhIcons.user, perm: 'menu:account' },
+  /** 消费者菜单（所有角色共有） */
+  const consumerItems: NavItem[] = [
+    { to: '/home', label: t('nav.home'), icon: zrhIcons.home, end: true },
+    { to: '/chat', label: t('nav.chat'), icon: zrhIcons.ai },
+    { to: '/conversations', label: t('nav.conversations'), icon: MessagesSquare },
+    { to: '/favorites', label: t('nav.favorites'), icon: Star },
+    { to: '/me', label: t('nav.me'), icon: zrhIcons.user },
     { to: '/settings', label: t('nav.settings'), icon: SettingsIcon },
-  ].filter((item) => !item.perm || hasPermission(item.perm));
+  ];
 
-  /** 底栏主入口（有权限才显示） */
-  const bottomItems: NavItem[] = [
-    { to: '/home', label: t('nav.home'), icon: zrhIcons.home, end: true, perm: 'menu:home' },
-    { to: '/chat', label: t('nav.chat'), icon: zrhIcons.ai, perm: 'menu:chat' },
-    { to: '/knowledge', label: t('nav.knowledge'), icon: zrhIcons.knowledge, perm: 'menu:knowledge' },
-    { to: '/me', label: t('nav.me'), icon: zrhIcons.user, perm: 'menu:account' },
-  ].filter((item) => !item.perm || hasPermission(item.perm));
+  /** 管理角色在消费者菜单基础上追加知识平台入口（其余企业功能在控制台内） */
+  const drawerItems: NavItem[] = showAdminConsole
+    ? [
+        ...consumerItems.slice(0, 4),
+        { to: '/knowledge', label: t('nav.knowledge'), icon: zrhIcons.knowledge },
+        ...consumerItems.slice(4),
+      ]
+    : consumerItems;
+
+  /** 底栏主入口：首页 / AI 对话 / 我的会话 / 我的 */
+  const bottomItems: NavItem[] = consumerItems.slice(0, 3).concat(consumerItems[4]);
 
   const logout = async () => {
     if (refreshToken) {
@@ -166,7 +172,7 @@ export function AppShell() {
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ duration: motionTokens.duration.base, ease: motionTokens.ease.out }}
-              className="zrh-shell-aside flex h-full w-[min(17rem,88vw)] max-w-full flex-col overflow-x-hidden bg-zrh-surface shadow-zrh-raised"
+              className="zrh-shell-aside flex h-full w-[80%] max-w-full flex-col overflow-x-hidden bg-zrh-surface shadow-zrh-raised"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between border-b border-zrh-border px-4 py-2.5 pt-[max(0.625rem,env(safe-area-inset-top))]">
@@ -217,6 +223,7 @@ export function AppShell() {
             <div className="flex items-center justify-center gap-1.5 lg:hidden">
               <BrandMark size={20} className="h-5 w-5 rounded-zrh-sm" />
               <span className="text-sm font-semibold tracking-brand text-zrh-accent">{brand.name}</span>
+              <LanguageSwitcher compact />
             </div>
 
             <div className="flex items-center justify-end gap-1 sm:gap-1.5">
@@ -240,7 +247,9 @@ export function AppShell() {
                   );
                 })}
               </div>
-              <LanguageSwitcher compact />
+              <div className="hidden lg:block">
+                <LanguageSwitcher compact />
+              </div>
               <ZButton variant="ghost" size="sm" className="min-h-8 px-2 text-xs" onClick={() => void logout()}>
                 {t('auth.logout')}
               </ZButton>

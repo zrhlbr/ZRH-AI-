@@ -95,18 +95,16 @@ const PERMISSIONS = [
   { code: 'api:developer:admin', type: 'API', name: 'Developer 管理' },
 ];
 
+/**
+ * UX V4.0：USER / VIP 彻底消费者化 —— 仅保留首页、AI 对话、个人中心权限。
+ * 访问 Developer / MCP / Workflow / Business / Server / System / Health / Monitor
+ * 等企业接口时由 PermissionsGuard 返回 403 Forbidden。
+ * 企业级权限仅保留在 ENTERPRISE / ADMIN / SUPER_ADMIN 角色。
+ */
 const USER_BASE_PERMISSIONS = [
   'menu:home',
-  'menu:status',
   'menu:chat',
   'menu:account',
-  'button:status:refresh',
-  'api:system:cpu',
-  'api:system:memory',
-  'api:system:network',
-  'api:system:storage',
-  'api:system:docker',
-  'api:ollama:read',
   'api:auth:profile',
   'api:user-center:read',
   'api:user-center:write',
@@ -115,6 +113,19 @@ const USER_BASE_PERMISSIONS = [
   'api:chat:delete',
   'api:prompts:read',
   'api:parameters:write',
+];
+
+/** 企业角色保留全部企业能力（后台功能不变） */
+const ENTERPRISE_PERMISSIONS = [
+  ...USER_BASE_PERMISSIONS,
+  'menu:status',
+  'button:status:refresh',
+  'api:system:cpu',
+  'api:system:memory',
+  'api:system:network',
+  'api:system:storage',
+  'api:system:docker',
+  'api:ollama:read',
   'api:ai:read',
   'menu:knowledge',
   'api:knowledge:read',
@@ -140,10 +151,6 @@ const USER_BASE_PERMISSIONS = [
   'menu:developer',
   'api:developer:read',
   'api:developer:chat',
-];
-
-const ENTERPRISE_PERMISSIONS = [
-  ...USER_BASE_PERMISSIONS,
   'api:developer:write',
 ];
 

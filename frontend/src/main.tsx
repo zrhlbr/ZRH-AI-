@@ -8,6 +8,7 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { HomePage } from './pages/HomePage';
+import { ConversationsPage } from './pages/ConversationsPage';
 import { LandingPage } from './pages/LandingPage';
 import { ReleaseNotesPage } from './pages/ReleaseNotesPage';
 import { StatusPage } from './pages/StatusPage';
@@ -126,6 +127,8 @@ const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { path: '/home', element: <HomePage /> },
+          { path: '/conversations', element: <ConversationsPage /> },
+          { path: '/favorites', element: <ConversationsPage favoriteOnly /> },
           { path: '/chat', element: <Suspense fallback={<PageFallback />}><ChatPage /></Suspense> },
           { path: '/chat/:id', element: <Suspense fallback={<PageFallback />}><ChatPage /></Suspense> },
           { path: '/ai/models', element: <ModelsPage /> },

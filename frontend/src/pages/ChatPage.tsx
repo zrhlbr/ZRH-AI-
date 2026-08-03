@@ -80,7 +80,7 @@ function MessageList() {
 
   return (
     <div ref={scrollRef} onScroll={onScroll} className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6">
-      <div className="mx-auto flex w-full max-w-[42rem] flex-col gap-5">
+      <div className="mx-auto flex w-full max-w-[60rem] flex-col gap-5">
         {loadingMessages && messages.length === 0 && (
           <p className="py-16 text-center text-xs text-zrh-text-dim">{t('status.loading')}</p>
         )}
@@ -286,7 +286,7 @@ export function ChatPage() {
             )}
           </div>
           <MessageList />
-          <div className="mx-auto w-full max-w-[42rem] pb-[max(0.25rem,env(safe-area-inset-bottom))]">
+          <div className="mx-auto w-full max-w-[60rem] pb-[max(0.25rem,env(safe-area-inset-bottom))]">
             <ChatInput />
           </div>
         </section>
