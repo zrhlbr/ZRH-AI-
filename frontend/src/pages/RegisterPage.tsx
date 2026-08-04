@@ -14,7 +14,7 @@ import { useAuthStore } from '../store/authStore';
 import { api } from '../api/client';
 
 /**
- * 注册中心 — 用户名 / 邮箱 / 手机号 + 邮箱验证码 + 邀请码（可选）
+ * 注册中心 — 用户名 / 邮箱 / 手机号 + 邮箱验证码
  */
 export function RegisterPage() {
   const { t, i18n } = useTranslation();
@@ -25,9 +25,7 @@ export function RegisterPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [emailCode, setEmailCode] = useState('');
-  const [inviteCode, setInviteCode] = useState('');
   const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [acceptPrivacy, setAcceptPrivacy] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -66,9 +64,7 @@ export function RegisterPage() {
         email: email.trim() || undefined,
         phone: phone.trim() || undefined,
         password,
-        displayName: displayName.trim() || undefined,
         emailCode: emailCode.trim() || undefined,
-        inviteCode: inviteCode.trim() || undefined,
         acceptTerms,
         acceptPrivacy,
         language: i18n.language,
@@ -113,12 +109,6 @@ export function RegisterPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 autoComplete="username"
               />
-              <ZInput
-                label={t('auth.displayName')}
-                name="displayName"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-              />
               <div className="flex gap-2">
                 <div className="flex-1">
                   <ZInput
@@ -162,12 +152,6 @@ export function RegisterPage() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-              />
-              <ZInput
-                label={`${t('auth.inviteCode')} (${t('common.optional')})`}
-                name="inviteCode"
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value)}
               />
 
               <label className="flex items-start gap-2 text-xs text-zrh-text-dim">
