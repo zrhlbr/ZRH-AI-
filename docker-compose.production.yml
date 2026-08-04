@@ -123,6 +123,8 @@ services:
       DEV_RUNNER_TOKEN: ${DEV_RUNNER_TOKEN:?DEV_RUNNER_TOKEN is required}
       DEV_WORKSPACES_ROOT: /zrh-workspaces
       CURSOR_CLOUD_ENABLED: ${CURSOR_CLOUD_ENABLED:-false}
+      MAIL_CONFIG_CRYPTO_KEY: ${MAIL_CONFIG_CRYPTO_KEY:?MAIL_CONFIG_CRYPTO_KEY is required}
+      MAIL_DEV_CODE_ENABLED: ${MAIL_DEV_CODE_ENABLED:-false}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
