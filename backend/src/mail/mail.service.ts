@@ -92,7 +92,7 @@ export class MailService {
     const passwordEnc = map.get(MAIL_CONFIG_KEYS.password) || '';
     const encryption = (map.get(MAIL_CONFIG_KEYS.encryption) || 'starttls') as MailEncryption;
     const fromEmail = map.get(MAIL_CONFIG_KEYS.fromEmail) || '';
-    const fromName = map.get(MAIL_CONFIG_KEYS.fromName) || 'ZRH AI';
+    const fromName = map.get(MAIL_CONFIG_KEYS.fromName) || 'ZRHLBR';
     const replyTo = map.get(MAIL_CONFIG_KEYS.replyTo) || '';
     const connectionTimeoutMs = Number(map.get(MAIL_CONFIG_KEYS.timeoutMs) || 15000);
     const passwordConfigured = !!passwordEnc;
@@ -160,7 +160,7 @@ export class MailService {
     );
     await this.upsertConfig(
       MAIL_CONFIG_KEYS.fromName,
-      (input.fromName || 'ZRH AI').trim(),
+      (input.fromName || 'ZRHLBR').trim(),
       'smtp',
       false,
       updatedBy,
@@ -380,7 +380,7 @@ export class MailService {
     const to = input.to.trim().toLowerCase();
     const locale = (input.locale || 'zh-CN') as string;
     const templateType = input.templateType;
-    const vars = { ...(input.vars || {}), appName: input.vars?.appName || 'ZRH AI' };
+    const vars = { ...(input.vars || {}), appName: input.vars?.appName || 'ZRHLBR' };
 
     const mode = await this.ensureDeliveryMode().catch((err) => {
       if (input.softFail) return null;
@@ -521,7 +521,7 @@ export class MailService {
       vars: {
         code: '000000',
         ttlMinutes: '10',
-        appName: 'ZRH AI',
+        appName: 'ZRHLBR',
         message: 'This is a Mail Center test message.',
       },
       userId,

@@ -86,13 +86,13 @@ export function isZrhThemeId(id: unknown): id is ZrhThemeId {
 
 /** 品牌常量（品牌资产不做翻译，全球统一） */
 export const brand = {
-  name: 'ZRH AI',
-  logo: 'ZRH AI',
+  name: 'ZRHLBR',
+  logo: 'ZRHLBR',
   subtitle: 'ZRH Technology Group',
   groupZh: 'ZRH 科技集团',
   groupEn: 'ZRH TECHNOLOGY GROUP',
   copyright: '© ZRH Technology Group',
-  iconVersion: 'ZRH AI Official App Icon V1.0',
+  iconVersion: 'ZRHLBR Official App Icon V1.0',
   designSystem: 'ZRH Design System V2.0',
   /** Product release shown in landing / release-notes / footer */
   appVersion: '1.2.1',

@@ -36,7 +36,7 @@ function nearestBucket(size: number): BrandMarkSize {
 export function BrandMark({
   size = 32,
   className = '',
-  alt = 'ZRH AI',
+  alt = 'ZRHLBR',
 }: {
   size?: BrandMarkSize | number;
   className?: string;

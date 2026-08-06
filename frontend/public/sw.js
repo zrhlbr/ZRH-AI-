@@ -1,5 +1,5 @@
-/* ZRH AI PWA service worker — installability + light shell cache. No API caching. */
-const CACHE = 'zrh-ai-shell-v1.2.2-reg-form';
+/* ZRHLBR PWA service worker — installability + light shell cache. No API caching. */
+const CACHE = 'zrhlbr-shell-v1.2.3-rebrand';
 const PRECACHE = ['/', '/manifest.json', '/branding/app-icon.svg', '/branding/app-icon-192.png', '/branding/app-icon-512.png'];
 
 self.addEventListener('install', (event) => {

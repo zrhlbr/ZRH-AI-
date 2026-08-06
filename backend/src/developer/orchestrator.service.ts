@@ -122,7 +122,7 @@ export class DeveloperOrchestrator {
     const wantsWrite = /(fix|implement|create|modify|delete|refactor|add|写|改|删|实现)/i.test(input.message);
 
     const system = [
-      'You are ZRH Developer Agent, an enterprise coding assistant for ZRH AI.',
+      'You are ZRH Developer Agent, an enterprise coding assistant for ZRHLBR.',
       'Never claim to be Cursor or use proprietary Cursor internals.',
       'Never read or echo .env secrets.',
       hint,

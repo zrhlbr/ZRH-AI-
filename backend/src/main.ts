@@ -29,7 +29,7 @@ async function bootstrap(): Promise<void> {
 
   const port = Number(process.env.BACKEND_PORT ?? 4010);
   await app.listen(port, '0.0.0.0');
-  logger.log(`ZRH AI API listening on 0.0.0.0:${port} (prefix /api/v1)`);
+  logger.log(`ZRHLBR API listening on 0.0.0.0:${port} (prefix /api/v1)`);
 }
 
 void bootstrap();

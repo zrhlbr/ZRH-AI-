@@ -16,7 +16,7 @@ export interface PromptBuildInput {
 @Injectable()
 export class PromptBuilderService {
   private readonly systemPrompt = [
-    'You are ZRH AI, independently developed by ZRH Technology Group, deployed on ZRH AI Enterprise.',
+    'You are ZRHLBR, independently developed by ZRH Technology Group, deployed on ZRHLBR Enterprise.',
     'Answer using the provided knowledge context when relevant; prioritize knowledge-base facts over general memory.',
     'If context is insufficient for the asked fact, say the knowledge base does not cover it instead of inventing details.',
     'Prefer concise Markdown answers in the user language.',

@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "ZRH AI",
+    "name": "ZRHLBR",
     "tagline": "ZRH Technology Group · AI လက်ထောက်"
   },
   "nav": {
@@ -163,7 +163,7 @@
     "hubBusiness": "လုပ်ငန်းချိတ်ဆက်မှုများကို စစ်ဆေးပါ။",
     "hubMonitor": "စနစ်အခြေအနေစာမျက်နှာကို ဖွင့်ပါ။",
     "hubSettings": "Super Admin တွင် လုံခြုံရေးနှင့် စနစ်သတ်မှတ်ချက်များကို စီမံပါ။",
-    "hubSeo": "အမှတ်တံဆိပ်နှင့် ဆိုက်အချက်အလက်ကို ZRH AI က စီမံသည်။",
+    "hubSeo": "အမှတ်တံဆိပ်နှင့် ဆိုက်အချက်အလက်ကို ZRHLBR က စီမံသည်။",
     "hubI18n": "UI သည် တရုတ်၊ မြန်မာ၊ အင်္ဂလိပ်ကို ထောက်ပံ့သည်။"
   },
   "developer": {
@@ -276,10 +276,10 @@
     "en-US": "English"
   },
   "home": {
-    "stage": "ZRH AI · စကားပြော",
-    "notice": "ZRH AI နှင့် စကားပြောရန် စတင်ပါ။",
-    "welcomeGreeting": "မင်္ဂလာပါ၊ ကျွန်ုပ်သည် ZRH AI ဖြစ်ပါသည်။ ယနေ့ ဘာကူညီပေးရမလဲ။",
-    "aiInputPlaceholder": "ZRH AI ကို မေးမြန်းပါ…",
+    "stage": "ZRHLBR · စကားပြော",
+    "notice": "ZRHLBR နှင့် စကားပြောရန် စတင်ပါ။",
+    "welcomeGreeting": "မင်္ဂလာပါ၊ ကျွန်ုပ်သည် ZRHLBR ဖြစ်ပါသည်။ ယနေ့ ဘာကူညီပေးရမလဲ။",
+    "aiInputPlaceholder": "ZRHLBR ကို မေးမြန်းပါ…",
     "aiInputStageHint": "မေးခွန်းရိုက်ထည့်ပြီး စကားပြောစတင်ပါ။",
     "send": "ပို့ရန်",
     "recentChats": "မကြာသေးမီ စကားပြောများ",
@@ -308,23 +308,23 @@
     "themeHint": "အရောင်အသွေး ရွေးရန်",
     "notifications": "အကြောင်းကြားချက်များ",
     "mail": "အီးမေးလ်",
-    "about": "ZRH AI အကြောင်း"
+    "about": "ZRHLBR အကြောင်း"
   },
   "landing": {
     "registerNow": "ယခုစာရင်းသွင်းရန်",
     "login": "ဝင်ရောက်ရန်"
   },
   "pwa": {
-    "install": "ZRH AI ထည့်သွင်းရန်",
+    "install": "ZRHLBR ထည့်သွင်းရန်",
     "installHint": "ဖုန်းပင်မစခရင်သို့ ထည့်ပြီး App ကဲ့သို့ ဖွင့်ပါ။",
     "later": "နောက်မှ",
     "iosStep1": "Safari အောက်ခြေရှိ Share ခလုတ်ကို နှိပ်ပါ",
     "iosStep2": "ဆင်းကြည့်ပြီး Add to Home Screen ကို ရွေးပါ",
-    "iosStep3": "အတည်ပြုပြီးနောက် ပင်မစခရင်မှ ZRH AI ကို သီးခြားဖွင့်နိုင်သည်"
+    "iosStep3": "အတည်ပြုပြီးနောက် ပင်မစခရင်မှ ZRHLBR ကို သီးခြားဖွင့်နိုင်သည်"
   },
   "releaseNotes": {
     "title": "ဗားရှင်းမှတ်တမ်း",
-    "subtitle": "ZRH AI Enterprise ဗားရှင်းအသစ်များ",
+    "subtitle": "ZRHLBR Enterprise ဗားရှင်းအသစ်များ",
     "link": "ဗားရှင်းမှတ်တမ်း",
     "currentVersion": "လက်ရှိဗားရှင်း v{{version}}",
     "updates": "အသစ်များ",
@@ -400,7 +400,7 @@
     "like": "ကြိုက်သည်",
     "dislike": "မကြိုက်ပါ",
     "deleteMessage": "စာချွန်ဖျက်ရန်",
-    "thinking": "ZRH AI ထုတ်နေပါသည်…",
+    "thinking": "ZRHLBR ထုတ်နေပါသည်…",
     "stopped": "ရပ်ထားသည်",
     "error": "အမှား",
     "tokens": "တိုကင်",
@@ -408,7 +408,7 @@
     "knowledgeGrounded": "ဗဟုသုတအခြေခံဖြင့်",
     "emptyTitle": "စကားပြောအသစ် စတင်ပါ",
     "emptyHint": "Engine ရွေးပြီး မေးခွန်းမေးပါ။ စကားပြောအားလုံး သိမ်းဆည်းပါသည်။",
-    "welcome": "မင်္ဂလာပါ၊ ကျွန်ုပ်သည် ZRH AI ဖြစ်ပါသည်၊\nZRH Technology Group မှ ကိုယ်တိုင်တီထွင်ထားပြီး၊\nZRH AI Enterprise ပုဂ္ဂလိက AI ပလက်ဖောင်းတွင် တပ်ဆင်ထားပါသည်။\n\nကူညီရန် အသင့်ရှိပါသည်။\nသင့်လိုအပ်ချက်ကို ပြောပြပါ။",
+    "welcome": "မင်္ဂလာပါ၊ ကျွန်ုပ်သည် ZRHLBR ဖြစ်ပါသည်၊\nZRH Technology Group မှ ကိုယ်တိုင်တီထွင်ထားပြီး၊\nZRHLBR Enterprise ပုဂ္ဂလိက AI ပလက်ဖောင်းတွင် တပ်ဆင်ထားပါသည်။\n\nကူညီရန် အသင့်ရှိပါသည်။\nသင့်လိုအပ်ချက်ကို ပြောပြပါ။",
     "brandGroup": "ZRH နည်းပညာအုပ်စု",
     "aiRuntime": "AI အပြေးအဆန်",
     "model": "မော်ဒယ်",

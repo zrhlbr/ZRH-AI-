@@ -133,7 +133,7 @@ export function PwaInstallPrompt({ variant = 'card', className = '' }: Props) {
           src={brandAssets.appIcon192}
           width={48}
           height={48}
-          alt="ZRH AI"
+          alt="ZRHLBR"
           draggable={false}
           className="h-12 w-12 shrink-0 select-none rounded-zrh-lg object-contain shadow-zrh-glow"
         />

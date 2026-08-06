@@ -1,5 +1,5 @@
 /**
- * ZRH AI 数据库种子脚本（幂等，可重复执行）
+ * ZRHLBR 数据库种子脚本（幂等，可重复执行）
  * - 角色：SUPER_ADMIN / ADMIN / USER / VIP / ENTERPRISE
  * - 权限目录：菜单 / 按钮 / API 三类（含 V1.2 User Center / Admin / Super Admin）
  * - 超级管理员初始账号（用户名/密码来自环境变量）
@@ -200,7 +200,7 @@ const PROMPT_TEMPLATES = [
     role: 'system',
     isDefault: true,
     content:
-      'You are ZRH AI, a helpful assistant inside the ZRH ecosystem. Answer accurately and concisely. Use Markdown for structure, code blocks for code, and tables for comparisons when helpful.',
+      'You are ZRHLBR, a helpful assistant inside the ZRH ecosystem. Answer accurately and concisely. Use Markdown for structure, code blocks for code, and tables for comparisons when helpful.',
   },
   {
     code: 'role.coder',
@@ -756,7 +756,7 @@ async function main() {
       graph: linearGraph([
         { type: 'tool', label: 'RAG Search', config: { toolCode: 'rag_search', args: { query: '{{input.query}}', mode: 'hybrid' } } },
       ]),
-      variables: { defaults: { query: '什么是 ZRH AI' } },
+      variables: { defaults: { query: '什么是 ZRHLBR' } },
     },
     {
       code: 'tpl_document_import',
@@ -1175,7 +1175,7 @@ async function main() {
     { key: 'mail.smtp.password', value: '', group: 'smtp', secret: true },
     { key: 'mail.smtp.encryption', value: 'starttls', group: 'smtp', secret: false },
     { key: 'mail.smtp.fromEmail', value: '', group: 'smtp', secret: false },
-    { key: 'mail.smtp.fromName', value: 'ZRH AI', group: 'smtp', secret: false },
+    { key: 'mail.smtp.fromName', value: 'ZRHLBR', group: 'smtp', secret: false },
     { key: 'mail.smtp.replyTo', value: '', group: 'smtp', secret: false },
     { key: 'mail.smtp.connectionTimeoutMs', value: '15000', group: 'smtp', secret: false },
     { key: 'mail.code.length', value: '6', group: 'mail', secret: false },

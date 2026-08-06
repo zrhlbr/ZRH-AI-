@@ -138,7 +138,7 @@ export class V12AuthService {
       vars: {
         code,
         ttlMinutes: String(Math.max(1, Math.round(policy.ttlSeconds / 60))),
-        appName: 'ZRH AI',
+        appName: 'ZRHLBR',
       },
     });
 
@@ -375,7 +375,7 @@ export class V12AuthService {
         vars: {
           code: token,
           ttlMinutes: String(Math.max(1, Math.round(policy.ttlSeconds / 60))),
-          appName: 'ZRH AI',
+          appName: 'ZRHLBR',
           username: user.username,
         },
         userId: user.id,

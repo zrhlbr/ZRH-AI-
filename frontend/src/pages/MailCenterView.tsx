@@ -19,7 +19,7 @@ export function MailCenterView() {
   const [passwordConfigured, setPasswordConfigured] = useState(false);
   const [encryption, setEncryption] = useState('starttls');
   const [fromEmail, setFromEmail] = useState('');
-  const [fromName, setFromName] = useState('ZRH AI');
+  const [fromName, setFromName] = useState('ZRHLBR');
   const [replyTo, setReplyTo] = useState('');
   const [timeoutMs, setTimeoutMs] = useState('15000');
   const [configured, setConfigured] = useState(false);

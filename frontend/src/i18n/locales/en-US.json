@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "ZRH AI",
+    "name": "ZRHLBR",
     "tagline": "ZRH Technology Group · AI Assistant"
   },
   "nav": {
@@ -163,7 +163,7 @@
     "hubBusiness": "Inspect enterprise business connectors.",
     "hubMonitor": "Open runtime and infrastructure status.",
     "hubSettings": "Manage security and system configuration in Super Admin.",
-    "hubSeo": "Brand and site metadata are managed by ZRH AI.",
+    "hubSeo": "Brand and site metadata are managed by ZRHLBR.",
     "hubI18n": "The UI supports Chinese, Myanmar, and English from the top bar."
   },
   "developer": {
@@ -276,10 +276,10 @@
     "en-US": "English"
   },
   "home": {
-    "stage": "ZRH AI · Chat",
-    "notice": "Start chatting with ZRH AI.",
-    "welcomeGreeting": "Hi, I am ZRH AI. How can I help you today?",
-    "aiInputPlaceholder": "Ask ZRH AI…",
+    "stage": "ZRHLBR · Chat",
+    "notice": "Start chatting with ZRHLBR.",
+    "welcomeGreeting": "Hi, I am ZRHLBR. How can I help you today?",
+    "aiInputPlaceholder": "Ask ZRHLBR…",
     "aiInputStageHint": "Type a question to start chatting.",
     "send": "Send",
     "recentChats": "Recent chats",
@@ -308,23 +308,23 @@
     "themeHint": "Choose appearance",
     "notifications": "Notifications",
     "mail": "Mail",
-    "about": "About ZRH AI"
+    "about": "About ZRHLBR"
   },
   "landing": {
     "registerNow": "Register now",
     "login": "Log in"
   },
   "pwa": {
-    "install": "Install ZRH AI",
-    "installHint": "Add ZRH AI to your home screen and open it like an app.",
+    "install": "Install ZRHLBR",
+    "installHint": "Add ZRHLBR to your home screen and open it like an app.",
     "later": "Not now",
     "iosStep1": "Tap the Share button in Safari",
     "iosStep2": "Scroll and choose Add to Home Screen",
-    "iosStep3": "Confirm to launch ZRH AI as a standalone app"
+    "iosStep3": "Confirm to launch ZRHLBR as a standalone app"
   },
   "releaseNotes": {
     "title": "Release notes",
-    "subtitle": "ZRH AI Enterprise version history",
+    "subtitle": "ZRHLBR Enterprise version history",
     "link": "Release notes",
     "currentVersion": "Current version v{{version}}",
     "updates": "What's new",
@@ -400,7 +400,7 @@
     "like": "Like",
     "dislike": "Dislike",
     "deleteMessage": "Delete message",
-    "thinking": "ZRH AI is generating…",
+    "thinking": "ZRHLBR is generating…",
     "stopped": "Stopped",
     "error": "Error",
     "tokens": "tokens",
@@ -408,7 +408,7 @@
     "knowledgeGrounded": "Grounded in knowledge base",
     "emptyTitle": "Start a new conversation",
     "emptyHint": "Pick an engine and ask a question. Every chat is saved to the database.",
-    "welcome": "Hello, I am ZRH AI,\nindependently developed by ZRH Technology Group,\nand deployed on the ZRH AI Enterprise private AI platform.\n\nGlad to serve you.\nPlease tell me what you need.",
+    "welcome": "Hello, I am ZRHLBR,\nindependently developed by ZRH Technology Group,\nand deployed on the ZRHLBR Enterprise private AI platform.\n\nGlad to serve you.\nPlease tell me what you need.",
     "brandGroup": "ZRH Technology Group",
     "aiRuntime": "AI Runtime",
     "model": "Engine",
