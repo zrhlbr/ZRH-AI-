@@ -200,7 +200,10 @@
     "runnerOk": "Runner အွန်လိုင်း",
     "runnerDown": "Runner အော့ဖ်လိုင်း",
     "index": "အညွှန်းပြန်တည်ဆောက်",
-    "indexOk": "အညွှန်းအသစ်ပြီးပါပြီ"
+    "indexOk": "အညွှန်းအသစ်ပြီးပါပြီ",
+    "confirmStaged": "အောက်ပါ staged ဖိုင်များကို commit လုပ်မလား?",
+    "rollback": "နောက်ပြန်ဆုတ်",
+    "confirmRollback": "ဤ Diff ကို မပြုပြင်မီ snapshot သို့ ပြန်ဆုတ်မလား?"
   },
   "superadmin": {
     "title": "အထူးစီမံ",

@@ -53,11 +53,13 @@ export const developerApi = {
       method: 'POST',
       body: JSON.stringify({ command }),
     }),
-  commit: (id: number, message: string) =>
-    request(`/developer/workspaces/${id}/git/commit`, {
+  commit: (id: number, message: string, confirmed = false) =>
+    request<Record<string, unknown>>(`/developer/workspaces/${id}/git/commit`, {
       method: 'POST',
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, confirmed }),
     }),
+  rollbackDiff: (id: number) =>
+    request(`/developer/diffs/${id}/rollback`, { method: 'POST', body: '{}' }),
   dangerousGit: (
     id: number,
     op: 'reset-hard' | 'clean' | 'push-force',

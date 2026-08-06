@@ -200,7 +200,10 @@
     "runnerOk": "Runner 在线",
     "runnerDown": "Runner 离线",
     "index": "重建索引",
-    "indexOk": "索引已更新"
+    "indexOk": "索引已更新",
+    "confirmStaged": "确认提交以下已暂存文件？",
+    "rollback": "回滚",
+    "confirmRollback": "确认回滚此 Diff 到修改前快照？"
   },
   "superadmin": {
     "title": "Super Admin",

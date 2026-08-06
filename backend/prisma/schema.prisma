@@ -1304,10 +1304,29 @@ model DevDiffFile {
   changeType  String   // create|modify|delete
   patch       String
   deleteConfirmed Boolean @default(false)
+  // Phase 0.5: SHA-256 integrity + per-file lifecycle
+  baseSha     String?  // sha256 of file content when the diff was created
+  afterSha    String?  // sha256 after apply
+  status      String   @default("pending") // pending|applied|rolled-back
   createdAt   DateTime @default(now())
 
   @@index([diffId])
   @@map("dev_diff_files")
+}
+
+/// Phase 0.5: pre-apply snapshots for transactional apply + rollback
+model DevSnapshot {
+  id          Int      @id @default(autoincrement())
+  workspaceId Int
+  diffId      Int?
+  path        String
+  sha256      String   // sha256 of content at snapshot time (empty string hash when file absent)
+  existed     Boolean  @default(false)
+  content     String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId, diffId])
+  @@map("dev_snapshots")
 }
 
 model DevTerminalRun {
@@ -1399,6 +1418,11 @@ model DevAuditLog {
   result      String
   detail      String?
   ip          String?
+  // Phase 0.5: request UA + structured context (role/session/plan/diff/command/
+  // file list/before-after SHA/commit SHA/confirmation/duration/error code).
+  // Secret-shaped values are redacted before persisting.
+  userAgent   String?
+  meta        Json?
   createdAt   DateTime @default(now())
 
   @@index([workspaceId, createdAt])

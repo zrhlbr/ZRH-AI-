@@ -23,7 +23,9 @@ export class TerminalService {
     cwd?: string;
     timeoutMs?: number;
     allowDangerous?: boolean;
+    ctx?: { ip?: string; userAgent?: string };
   }) {
+    const started = Date.now();
     await this.workspaces.assertAccess(input.workspaceId, input.userId, input.roleCode, 'editor');
     // Stabilization: terminal never accepts dangerous bypass; use git/dangerous API instead
     this.policy.assertCommandSafe(input.command, false);
@@ -56,6 +58,14 @@ export class TerminalService {
       action: 'terminal.run',
       resource: input.command.slice(0, 120),
       result: row.status,
+      ip: input.ctx?.ip,
+      userAgent: input.ctx?.userAgent,
+      meta: {
+        command: input.command.slice(0, 200),
+        exitCode: result.exitCode,
+        timedOut: result.timedOut,
+        durationMs: Date.now() - started,
+      },
     });
     return { ...result, id: row.id };
   }

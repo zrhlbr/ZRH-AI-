@@ -1,22 +1,23 @@
 /**
  * ZRH AI Dev Runner — sandboxed FS / search / terminal / git plane.
  * Does NOT mount docker.sock. Requires shared token with API.
+ * Phase 0.5: non-root image, precise-whitelist git staging, PowerShell escape
+ * denial, terminal concurrency cap, testable exports.
  */
 const http = require('http');
 const { spawn } = require('child_process');
 const fs = require('fs');
-const fsp = require('fs/promises');
+const fsp = fs.promises;
 const path = require('path');
 const crypto = require('crypto');
 
 const PORT = Number(process.env.RUNNER_PORT || 5055);
 const ROOT = path.resolve(process.env.WORKSPACES_ROOT || path.join(process.cwd(), 'workspaces'));
 const TOKEN = process.env.DEV_RUNNER_TOKEN || '';
-if (!TOKEN) {
-  console.error('[dev-runner] DEV_RUNNER_TOKEN is required');
-  process.exit(1);
-}
+// TOKEN is enforced in the server startup branch (require.main === module)
+// so unit tests can import helpers without a token.
 const MAX_TIMEOUT_MS = Number(process.env.RUNNER_MAX_TIMEOUT_MS || 120000);
+const MAX_CONCURRENT_TERMINAL = Number(process.env.RUNNER_MAX_CONCURRENT_TERMINAL || 2);
 
 const COMMAND_ALLOW = [
   /^git(\s|$)/,
@@ -28,7 +29,6 @@ const COMMAND_ALLOW = [
   /^tsc(\s|$)/,
   /^prisma(\s|$)/,
   /^npx\s+prisma(\s|$)/,
-  /^docker(\s|$)/,
   /^ls(\s|$)/,
   /^cat(\s|$)/,
   /^pwd$/,
@@ -54,6 +54,10 @@ const COMMAND_DENY = [
   /git\s+push\s+-f\b/,
   /git\s+reset\s+--hard/,
   /git\s+clean\b/,
+  /git\s+add\s+(-A|--all|\.)(?=\s|$)/,
+  /git\s+commit\s+[^\n]*-a(\s|$|m)/,
+  /(^|\s)(powershell|pwsh)(\.exe)?(\s|$)/i,
+  /Invoke-Expression/i,
 ];
 
 const ENV_DENY = /(^|\/|\\)\.env($|\.|\/|\\)/i;
@@ -130,7 +134,7 @@ function tokenize(command) {
       continue;
     }
     if (ch === '"' || ch === "'") {
-      quote = ch;
+      quote = null;
       continue;
     }
     if (/\s/.test(ch)) {
@@ -169,8 +173,8 @@ function runCommand(cwd, commandOrArgs, timeoutMs) {
       CI: '1',
       NODE_ENV: process.env.NODE_ENV || 'production',
       SystemRoot: process.env.SystemRoot,
-      TEMP: process.env.TEMP,
-      TMP: process.env.TMP,
+      TEMP: process.env.TEMP || '/tmp',
+      TMP: process.env.TMP || '/tmp',
     };
     const child = spawn(bin, rest, { cwd, shell: false, env: childEnv });
     let stdout = '';
@@ -243,6 +247,143 @@ function redact(text) {
     .replace(/Bearer\s+[A-Za-z0-9._\-]+/gi, 'Bearer ***');
 }
 
+function sha256(text) {
+  return crypto.createHash('sha256').update(text ?? '').digest('hex');
+}
+
+/* ---------------------------------------------------------------------------
+ * Phase 0.5: precise-whitelist git staging (no git add -A / git add . ever)
+ * ------------------------------------------------------------------------- */
+
+function parseNameStatus(out) {
+  return String(out || '')
+    .split('\n')
+    .filter(Boolean)
+    .map((l) => {
+      const [status, ...rest] = l.split('\t');
+      return { status: status.trim(), path: rest.join('\t') };
+    });
+}
+
+/** Reject symlink escapes: resolved real path must stay inside base. */
+async function realpathInside(base, rel) {
+  const realBase = await fsp.realpath(base);
+  const target = path.resolve(base, rel);
+  if (!target.startsWith(base + path.sep) && target !== base) {
+    throw new Error('path escape denied');
+  }
+  try {
+    const real = await fsp.realpath(target);
+    if (!real.startsWith(realBase + path.sep) && real !== realBase) {
+      throw new Error('symlink escape denied');
+    }
+  } catch (err) {
+    if (err && err.code === 'ENOENT') return target; // deleted/new paths allowed
+    throw err;
+  }
+  return target;
+}
+
+/**
+ * Stage exactly `files` (whitelist) and verify the staged set matches it.
+ * Returns { ok, status, reason?, files?, nameStatus?, stat?, stagedDiff? }.
+ * Never uses shell; each file is a separate argv entry (no glob expansion).
+ */
+async function stageWhitelist(base, files) {
+  if (!Array.isArray(files) || !files.length) {
+    return { ok: false, status: 'denied', reason: 'empty whitelist — commit requires an exact file list' };
+  }
+  const clean = [];
+  try {
+    for (const f of files) {
+      const rel = String(f).replace(/\\/g, '/');
+      if (!rel || rel.includes('\0')) throw new Error('invalid path');
+      assertSafePath(rel);
+      await realpathInside(base, rel);
+      clean.push(rel);
+    }
+  } catch (err) {
+    return { ok: false, status: 'denied', reason: String(err.message || err) };
+  }
+  const want = [...new Set(clean)];
+
+  // Refuse when the index already holds unrelated staged entries
+  const pre = await runCommand(base, ['git', 'diff', '--cached', '--name-only'], 30000);
+  if (pre.exitCode !== 0) {
+    return { ok: false, status: 'error', reason: 'git index check failed', stderr: redact(pre.stderr) };
+  }
+  if (pre.stdout.trim()) {
+    return { ok: false, status: 'conflict', reason: 'staged area not clean — unstage unrelated files first' };
+  }
+
+  const add = await runCommand(base, ['git', 'add', '--', ...want], 60000);
+  if (add.exitCode !== 0) {
+    return { ok: false, status: 'error', reason: 'git add failed', stderr: redact(add.stderr) };
+  }
+
+  const ns = await runCommand(base, ['git', 'diff', '--cached', '--name-status'], 30000);
+  const stagedPaths = parseNameStatus(ns.stdout).map((e) => e.path);
+  const wantSet = new Set(want);
+  const extra = stagedPaths.filter((p) => !wantSet.has(p));
+  if (extra.length || stagedPaths.length === 0) {
+    // Abort: unstage everything we just staged (plain reset, never --hard)
+    await runCommand(base, ['git', 'reset', '-q', '--', ...stagedPaths], 30000);
+    return {
+      ok: false,
+      status: 'conflict',
+      reason: `staged mismatch (extra: ${extra.join(', ') || 'none'}; empty: ${stagedPaths.length === 0})`,
+    };
+  }
+
+  const stat = await runCommand(base, ['git', 'diff', '--cached', '--stat'], 30000);
+  const diff = await runCommand(base, ['git', 'diff', '--cached'], 60000);
+  return {
+    ok: true,
+    status: 'staged',
+    files: stagedPaths,
+    nameStatus: redact(ns.stdout),
+    stat: redact(stat.stdout),
+    stagedDiff: redact(diff.stdout),
+  };
+}
+
+/** Verify the already-staged set equals the whitelist, then commit. */
+async function commitStaged(base, files, message) {
+  const want = [...new Set(files.map((f) => String(f).replace(/\\/g, '/')))];
+  const ns = await runCommand(base, ['git', 'diff', '--cached', '--name-status'], 30000);
+  const stagedPaths = parseNameStatus(ns.stdout).map((e) => e.path);
+  const wantSet = new Set(want);
+  const match =
+    stagedPaths.length > 0 &&
+    stagedPaths.length === wantSet.size &&
+    stagedPaths.every((p) => wantSet.has(p));
+  if (!match) {
+    return {
+      ok: false,
+      status: 'conflict',
+      reason: 'staged set does not match whitelist — run stage step first',
+    };
+  }
+  const msg = String(message || 'chore: zrh developer agent update').slice(0, 200);
+  const r = await runCommand(base, ['git', 'commit', '-m', msg], 60000);
+  if (r.exitCode !== 0) {
+    return { ok: false, status: 'error', reason: 'git commit failed', stderr: redact(r.stderr) };
+  }
+  const sha = await runCommand(base, ['git', 'rev-parse', 'HEAD'], 30000);
+  return {
+    ok: true,
+    status: 'ok',
+    files: stagedPaths,
+    commitSha: sha.stdout.trim(),
+    stdout: redact(r.stdout),
+    stderr: redact(r.stderr),
+  };
+}
+
+/* ------------------------------------------------------------------------- */
+
+let terminalInFlight = 0;
+
 const server = http.createServer(async (req, res) => {
   try {
     if (!auth(req) && req.url !== '/health') {
@@ -288,7 +429,7 @@ const server = http.createServer(async (req, res) => {
       if (!st.isFile()) throw new Error('not a file');
       if (st.size > 2_000_000) throw new Error('file too large');
       const content = await fsp.readFile(target, 'utf8');
-      return json(res, 200, { path: body.path, content: redact(content), size: st.size });
+      return json(res, 200, { path: body.path, content: redact(content), size: st.size, sha256: sha256(content) });
     }
 
     if (req.method === 'POST' && p === '/fs/write') {
@@ -302,7 +443,7 @@ const server = http.createServer(async (req, res) => {
       const { base, target } = resolveWs(body.workspaceId, body.path);
       await fsp.mkdir(path.dirname(target), { recursive: true });
       await fsp.writeFile(target, body.content ?? '', 'utf8');
-      const hash = crypto.createHash('sha256').update(body.content ?? '').digest('hex');
+      const hash = sha256(body.content ?? '');
       return json(res, 200, { ok: true, path: body.path, hash, base });
     }
 
@@ -317,23 +458,12 @@ const server = http.createServer(async (req, res) => {
       }
       if (body.changeType === 'create' || body.changeType === 'modify') {
         await fsp.mkdir(path.dirname(target), { recursive: true });
-        // Prefer full content when provided; else naive @@ patch apply of new file content after +++
-        let next = body.content;
-        if (next == null && body.patch) {
-          const lines = String(body.patch).split('\n');
-          const out = [];
-          for (const line of lines) {
-            if (line.startsWith('+++') || line.startsWith('---') || line.startsWith('@@')) continue;
-            if (line.startsWith('+')) out.push(line.slice(1));
-            else if (line.startsWith('-')) continue;
-            else if (line.startsWith('\\')) continue;
-            else out.push(line.startsWith(' ') ? line.slice(1) : line);
-          }
-          next = out.join('\n');
-        }
-        if (next == null) throw new Error('no content/patch');
+        // Phase 0.5: full content only. Naive +/- patch replay is no longer
+        // an accepted production path (proper unified diff lands in Phase 3).
+        const next = body.content;
+        if (next == null) throw new Error('full content required (patch replay disabled in Phase 0.5)');
         await fsp.writeFile(target, next, 'utf8');
-        return json(res, 200, { ok: true });
+        return json(res, 200, { ok: true, sha256: sha256(next) });
       }
       throw new Error('unknown changeType');
     }
@@ -373,19 +503,27 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'POST' && p === '/terminal') {
+      if (terminalInFlight >= MAX_CONCURRENT_TERMINAL) {
+        return json(res, 429, { ok: false, status: 'busy', reason: 'too many concurrent terminal tasks' });
+      }
       const body = await readBody(req);
       const gate = allowCommand(body.command, !!body.allowDangerous);
       if (!gate.ok) return json(res, 403, { ok: false, status: 'denied', reason: gate.reason });
       const { base } = resolveWs(body.workspaceId);
       const cwd = body.cwd ? resolveWs(body.workspaceId, body.cwd).target : base;
-      const result = await runCommand(cwd, body.command, body.timeoutMs || 60000);
-      return json(res, 200, {
-        ok: !result.timedOut && result.exitCode === 0,
-        ...result,
-        stdout: redact(result.stdout),
-        stderr: redact(result.stderr),
-        status: result.timedOut ? 'timeout' : result.exitCode === 0 ? 'ok' : 'error',
-      });
+      terminalInFlight += 1;
+      try {
+        const result = await runCommand(cwd, body.command, body.timeoutMs || 60000);
+        return json(res, 200, {
+          ok: !result.timedOut && result.exitCode === 0,
+          ...result,
+          stdout: redact(result.stdout),
+          stderr: redact(result.stderr),
+          status: result.timedOut ? 'timeout' : result.exitCode === 0 ? 'ok' : 'error',
+        });
+      } finally {
+        terminalInFlight -= 1;
+      }
     }
 
     if (req.method === 'POST' && p === '/git') {
@@ -402,19 +540,23 @@ const server = http.createServer(async (req, res) => {
       else if (op === 'log') argv = ['git', 'log', '-n', '30', '--oneline'];
       else if (op === 'branches') argv = ['git', 'branch', '-a'];
       else if (op === 'commit') {
-        const msg = String(body.message || 'chore: update');
-        const add = await runCommand(base, ['git', 'add', '-A'], 60000);
-        if (add.exitCode !== 0) {
-          return json(res, 200, {
+        // Phase 0.5: exact-whitelist staging only. Never git add -A / git add .
+        const files = Array.isArray(body.files) ? body.files : null;
+        if (!files) {
+          return json(res, 400, {
             ok: false,
-            op,
-            ...add,
-            stdout: redact(add.stdout),
-            stderr: redact(add.stderr),
-            status: 'error',
+            status: 'denied',
+            reason: 'files whitelist required — derive exact paths from the approved/applied diff',
           });
         }
-        argv = ['git', 'commit', '-m', msg];
+        const result = body.confirmed
+          ? await commitStaged(base, files, body.message)
+          : await stageWhitelist(base, files);
+        return json(res, result.ok ? 200 : result.status === 'conflict' ? 409 : 403, {
+          op,
+          needsConfirmation: result.status === 'staged',
+          ...result,
+        });
       } else if (op === 'revert') {
         const sha = String(body.sha || 'HEAD');
         if (sha !== 'HEAD' && !/^[0-9a-f]{7,40}$/i.test(sha)) {
@@ -426,9 +568,6 @@ const server = http.createServer(async (req, res) => {
       else if (op === 'push-force') argv = ['git', 'push', '--force'];
       else return json(res, 400, { error: 'unknown git op' });
 
-      if (['reset-hard', 'clean', 'push-force'].includes(op) && !body.confirmed) {
-        return json(res, 403, { ok: false, status: 'denied', reason: 'dangerous git requires confirmation' });
-      }
       const result = await runCommand(base, argv, 60000);
       return json(res, 200, {
         ok: result.exitCode === 0,
@@ -446,11 +585,28 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-ensureRoot().then(() => {
-  // Feature Freeze: bind loopback by default; override with RUNNER_BIND=0.0.0.0 only inside private networks
-  const bind = process.env.RUNNER_BIND || '127.0.0.1';
-  server.listen(PORT, bind, () => {
-    // eslint-disable-next-line no-console
-    console.log(`[zrh-ai-dev-runner] listening on ${bind}:${PORT} root=${ROOT}`);
+if (require.main === module) {
+  if (!TOKEN) {
+    console.error('[dev-runner] DEV_RUNNER_TOKEN is required');
+    process.exit(1);
+  }
+  ensureRoot().then(() => {
+    // Feature Freeze: bind loopback by default; override with RUNNER_BIND=0.0.0.0 only inside private networks
+    const bind = process.env.RUNNER_BIND || '127.0.0.1';
+    server.listen(PORT, bind, () => {
+      // eslint-disable-next-line no-console
+      console.log(`[zrh-ai-dev-runner] listening on ${bind}:${PORT} root=${ROOT}`);
+    });
   });
-});
+}
+
+module.exports = {
+  tokenize,
+  allowCommand,
+  stageWhitelist,
+  commitStaged,
+  parseNameStatus,
+  realpathInside,
+  redact,
+  sha256,
+};

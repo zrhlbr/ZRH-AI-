@@ -61,6 +61,18 @@ services:
       DEV_RUNNER_TOKEN: ${DEV_RUNNER_TOKEN:?Set DEV_RUNNER_TOKEN in .env.test}
     volumes:
       - zrh-ai-test-workspaces:/zrh-workspaces
+    # Phase 0.5: resource + privilege hardening (image runs as non-root zrh-runner)
+    cpus: 2.0
+    mem_limit: 4g
+    pids_limit: 128
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /home/zrh-runner
     # No docker.sock
     expose:
       - "5055"
@@ -104,7 +116,9 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - zrh-ai-test-workspaces:/zrh-workspaces
+      # Phase 0.5: API mounts workspaces read-only — all workspace writes go
+      # through the Dev Runner (Policy Engine → Runner), never direct FS.
+      - zrh-ai-test-workspaces:/zrh-workspaces:ro
       - zrh-ai-test-storage:/app/storage
     ports:
       - "127.0.0.1:${BACKEND_PORT:-4011}:4010"

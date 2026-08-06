@@ -148,11 +148,23 @@ const ENTERPRISE_PERMISSIONS = [
   'menu:business',
   'api:business:read',
   'api:business:execute',
+];
+
+/**
+ * Phase 0.5：专用 Developer 角色权限（赵总批准）。
+ * ADMIN 不再继承任何 Developer 权限；ENTERPRISE / USER / VIP 一律 403。
+ * DEVELOPER：工作台 + plan/diff/terminal/git（受控）。
+ * DEV_LEAD：在 DEVELOPER 之上加管理（workspace 创建、危险操作确认）。
+ */
+const DEVELOPER_ROLE_PERMISSIONS = [
+  ...USER_BASE_PERMISSIONS,
   'menu:developer',
   'api:developer:read',
   'api:developer:chat',
   'api:developer:write',
+  'api:developer:terminal',
 ];
+const DEV_LEAD_PERMISSIONS = [...DEVELOPER_ROLE_PERMISSIONS, 'api:developer:admin'];
 
 const ROLE_PERMISSIONS = {
   SUPER_ADMIN: PERMISSIONS.map((p) => p.code), // 全部权限
@@ -160,18 +172,24 @@ const ROLE_PERMISSIONS = {
     (p) =>
       p.code !== 'button:user:manage' &&
       p.code !== 'menu:superadmin' &&
-      !p.code.startsWith('api:superadmin:'),
+      !p.code.startsWith('api:superadmin:') &&
+      // Phase 0.5: ADMIN 不再自动拥有 Developer 权限（默认 403）
+      p.code !== 'menu:developer' &&
+      !p.code.startsWith('api:developer:'),
   ).map((p) => p.code),
   USER: USER_BASE_PERMISSIONS,
   VIP: USER_BASE_PERMISSIONS,
   ENTERPRISE: ENTERPRISE_PERMISSIONS,
+  DEVELOPER: DEVELOPER_ROLE_PERMISSIONS,
+  DEV_LEAD: DEV_LEAD_PERMISSIONS,
 };
 
 // 阶段 3：默认模型配置（与 Ollama 实时清单合并）
 const MODEL_CONFIGS = [
   { name: 'qwen3:8b', displayName: 'Qwen3 8B', isDefault: true, sortOrder: 1 },
-  { name: 'deepseek-r1:8b', displayName: 'DeepSeek R1 8B', isDefault: false, sortOrder: 2 },
-  { name: 'deepseek-coder:latest', displayName: 'DeepSeek Coder', isDefault: false, sortOrder: 3 },
+  { name: 'qwen2.5-coder:7b', displayName: 'Qwen2.5 Coder 7B', isDefault: false, sortOrder: 2 },
+  { name: 'deepseek-r1:8b', displayName: 'DeepSeek R1 8B', isDefault: false, sortOrder: 3 },
+  { name: 'deepseek-coder:latest', displayName: 'DeepSeek Coder 1B (baseline only)', isDefault: false, sortOrder: 4 },
 ];
 
 // 阶段 3：内置 Prompt 模板（后续 AI Agent 直接调用）
@@ -217,10 +235,12 @@ async function main() {
     ['USER', '普通用户'],
     ['VIP', 'VIP 用户'],
     ['ENTERPRISE', '企业用户'],
+    ['DEVELOPER', 'Code Engineer 开发工程师'],
+    ['DEV_LEAD', 'Code Engineer 开发负责人'],
   ]) {
     roles[code] = await prisma.role.upsert({ where: { code }, update: { name }, create: { code, name } });
   }
-  console.log('[seed] roles: SUPER_ADMIN / ADMIN / USER / VIP / ENTERPRISE');
+  console.log('[seed] roles: SUPER_ADMIN / ADMIN / USER / VIP / ENTERPRISE / DEVELOPER / DEV_LEAD');
 
   // 3. 角色-权限映射（全量重建，幂等）
   for (const [roleCode, permCodes] of Object.entries(ROLE_PERMISSIONS)) {
@@ -266,9 +286,10 @@ async function main() {
 
   const ollama = await prisma.aIProvider.findUnique({ where: { code: 'ollama' } });
   const AI_MODELS = [
-    { name: 'qwen3:8b', displayName: 'Qwen3 8B', isDefault: true, contextLength: 8192 },
-    { name: 'deepseek-r1:8b', displayName: 'DeepSeek R1 8B', isDefault: false, contextLength: 8192 },
-    { name: 'deepseek-coder:latest', displayName: 'DeepSeek Coder', isDefault: false, contextLength: 8192 },
+    { name: 'qwen3:8b', displayName: 'Qwen3 8B', isDefault: true, contextLength: 40960 },
+    { name: 'qwen2.5-coder:7b', displayName: 'Qwen2.5 Coder 7B', isDefault: false, contextLength: 32768 },
+    { name: 'deepseek-r1:8b', displayName: 'DeepSeek R1 8B', isDefault: false, contextLength: 32768 },
+    { name: 'deepseek-coder:latest', displayName: 'DeepSeek Coder 1B (baseline only)', isDefault: false, contextLength: 16384 },
   ];
   for (const m of AI_MODELS) {
     await prisma.aIModel.upsert({

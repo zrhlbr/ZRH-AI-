@@ -200,7 +200,10 @@
     "runnerOk": "Runner online",
     "runnerDown": "Runner offline",
     "index": "Rebuild index",
-    "indexOk": "Index updated"
+    "indexOk": "Index updated",
+    "confirmStaged": "Confirm committing the following staged files?",
+    "rollback": "Rollback",
+    "confirmRollback": "Roll back this diff to its pre-apply snapshot?"
   },
   "superadmin": {
     "title": "Super Admin",

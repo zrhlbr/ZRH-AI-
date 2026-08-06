@@ -7,9 +7,10 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   Res,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
@@ -46,6 +47,7 @@ class TerminalDto {
 
 class CommitDto {
   @IsString() message!: string;
+  @IsOptional() @IsBoolean() confirmed?: boolean;
 }
 
 class DangerousGitDto {
@@ -73,6 +75,13 @@ export class DeveloperController {
     private readonly audit: DevAuditService,
     private readonly runner: RunnerClientService,
   ) {}
+
+  private reqCtx(req: Request) {
+    return {
+      ip: req.ip,
+      userAgent: typeof req.headers['user-agent'] === 'string' ? req.headers['user-agent'] : undefined,
+    };
+  }
 
   @Get('health')
   @RequirePermissions('api:developer:read')
@@ -274,8 +283,14 @@ export class DeveloperController {
 
   @Post('diffs/:id/apply')
   @RequirePermissions('api:developer:write')
-  applyDiff(@CurrentUser() user: AuthUser, @Param('id', ParseIntPipe) id: number) {
-    return this.diffs.apply(id, user.id, user.role);
+  applyDiff(@CurrentUser() user: AuthUser, @Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    return this.diffs.apply(id, user.id, user.role, this.reqCtx(req));
+  }
+
+  @Post('diffs/:id/rollback')
+  @RequirePermissions('api:developer:write')
+  rollbackDiff(@CurrentUser() user: AuthUser, @Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    return this.diffs.rollback(id, user.id, user.role, this.reqCtx(req));
   }
 
   @Post('diffs/:id/files/:fileId/confirm-delete')
@@ -294,6 +309,7 @@ export class DeveloperController {
     @CurrentUser() user: AuthUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: TerminalDto,
+    @Req() req: Request,
   ) {
     return this.terminal.run({
       workspaceId: id,
@@ -302,6 +318,7 @@ export class DeveloperController {
       command: dto.command,
       cwd: dto.cwd,
       allowDangerous: dto.allowDangerous,
+      ctx: this.reqCtx(req),
     });
   }
 
@@ -311,8 +328,9 @@ export class DeveloperController {
     @CurrentUser() user: AuthUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: CommitDto,
+    @Req() req: Request,
   ) {
-    return this.gitWrite.commit(id, user.id, user.role, dto.message);
+    return this.gitWrite.commit(id, user.id, user.role, dto.message, dto.confirmed === true, this.reqCtx(req));
   }
 
   @Post('workspaces/:id/git/revert')
@@ -331,8 +349,9 @@ export class DeveloperController {
     @CurrentUser() user: AuthUser,
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: DangerousGitDto,
+    @Req() req: Request,
   ) {
-    return this.gitWrite.dangerous(id, user.id, user.role, dto.op, dto.confirmed);
+    return this.gitWrite.dangerous(id, user.id, user.role, dto.op, dto.confirmed, this.reqCtx(req));
   }
 
   @Get('skills')

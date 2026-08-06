@@ -377,6 +377,20 @@ export function DeveloperPage() {
                   >
                     {t('developer.apply')}
                   </ZButton>
+                  {String(diff.status) === 'applied' && (
+                    <ZButton
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        if (!window.confirm(t('developer.confirmRollback'))) return;
+                        void developerApi
+                          .rollbackDiff(Number(diff.id))
+                          .then((r) => setDiff(r as Record<string, unknown>));
+                      }}
+                    >
+                      {t('developer.rollback')}
+                    </ZButton>
+                  )}
                 </div>
               </div>
             )}
@@ -410,9 +424,35 @@ export function DeveloperPage() {
                 <ZButton
                   size="sm"
                   onClick={() =>
-                    void developerApi.commit(wsId, 'chore: zrh developer agent update').then(() =>
-                      developerApi.git(wsId, 'status').then((g) => setGitStatus(g.stdout || '')),
-                    )
+                    void (async () => {
+                      try {
+                        // Phase 0.5 two-step: stage exact whitelist → human confirm → commit
+                        const staged = await developerApi.commit(
+                          wsId,
+                          'chore: zrh developer agent update',
+                        );
+                        if (!staged.ok) {
+                          setError(String(staged.reason || staged.stderr || 'stage failed'));
+                          return;
+                        }
+                        const summary = `${String(staged.stat || '')}\n${(staged.files as string[] | undefined)?.join('\n') || ''}`;
+                        if (!window.confirm(`${t('developer.confirmStaged')}\n\n${summary}`)) return;
+                        const committed = await developerApi.commit(
+                          wsId,
+                          'chore: zrh developer agent update',
+                          true,
+                        );
+                        if (!committed.ok) {
+                          setError(String(committed.reason || committed.stderr || 'commit failed'));
+                          return;
+                        }
+                        setTermOut(`commit ${String(committed.commitSha || '')}`);
+                        const g = await developerApi.git(wsId, 'status');
+                        setGitStatus(g.stdout || '');
+                      } catch (e) {
+                        setError(e instanceof ApiError ? e.message : 'commit failed');
+                      }
+                    })()
                   }
                 >
                   {t('developer.commit')}

@@ -59,7 +59,7 @@ export class RunnerClientService {
   }
 
   readFile(workspaceId: number, path: string) {
-    return this.request<{ path: string; content: string; size: number }>('/fs/read', {
+    return this.request<{ path: string; content: string; size: number; sha256?: string }>('/fs/read', {
       workspaceId,
       path,
     });
@@ -118,6 +118,7 @@ export class RunnerClientService {
     message?: string;
     sha?: string;
     confirmed?: boolean;
+    files?: string[];
   }) {
     return this.request<{
       ok: boolean;
