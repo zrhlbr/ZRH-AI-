@@ -28,6 +28,21 @@ export class DevSkillsService implements OnModuleInit {
       update: {},
       create: { providerCode: 'cursor-cloud', enabled: false, configJson: { note: 'optional official API; disabled by default' } },
     });
+    // Phase 0.5: primary local coding engine, configurable (not hardcoded).
+    // Rollback = set configJson.modelRef back to 'ollama:deepseek-coder:latest'.
+    await this.prisma.devProviderSetting.upsert({
+      where: { providerCode: 'local-coder' },
+      update: {},
+      create: {
+        providerCode: 'local-coder',
+        enabled: true,
+        configJson: {
+          modelRef: 'ollama:qwen2.5-coder:7b',
+          previousModelRef: 'ollama:deepseek-coder:latest',
+          note: 'primary local coding engine; update modelRef to switch/rollback',
+        },
+      },
+    });
   }
 
   list() {

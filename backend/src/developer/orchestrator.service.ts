@@ -1,4 +1,5 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { createHash } from 'crypto';
 import { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { AIGatewayService } from '../ai/gateway/ai-gateway.service';
@@ -32,15 +33,33 @@ export class DeveloperOrchestrator {
     private readonly runner: RunnerClientService,
   ) {}
 
-  /** Map UI skill → preferred gateway modelRef (internal; UI shows alias). */
-  pickModelRef(skillCode: string, explicit?: string): { modelRef?: string; modelAlias: string } {
+  /**
+   * Map UI skill → preferred gateway modelRef (internal; UI shows alias).
+   * Phase 0.5: the coding engine is configured in dev_provider_settings
+   * (providerCode='local-coder') — never hardcoded. Rollback = update that row.
+   */
+  async pickModelRef(skillCode: string, explicit?: string): Promise<{ modelRef?: string; modelAlias: string }> {
     if (explicit) return { modelRef: explicit, modelAlias: 'coding-engine' };
     const s = skillCode || 'feature';
     if (s === 'review' || s === 'deploy_diag') {
       return { modelRef: 'ollama:qwen3:8b', modelAlias: 'analysis-engine' };
     }
-    // Prefer local coder engines when present
-    return { modelRef: 'ollama:deepseek-coder:latest', modelAlias: 'coding-engine' };
+    try {
+      const setting = await this.prisma.devProviderSetting.findUnique({
+        where: { providerCode: 'local-coder' },
+      });
+      const cfg = (setting?.configJson || {}) as { modelRef?: string };
+      if (setting?.enabled && cfg.modelRef) {
+        return { modelRef: cfg.modelRef, modelAlias: 'coding-engine' };
+      }
+    } catch (err) {
+      this.logger.warn(`local-coder setting lookup failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+    // Safe fallback: env override, then current approved default
+    return {
+      modelRef: process.env.DEV_CODER_MODEL || 'ollama:qwen2.5-coder:7b',
+      modelAlias: 'coding-engine',
+    };
   }
 
   async createSession(input: {
@@ -52,7 +71,7 @@ export class DeveloperOrchestrator {
     modelRef?: string;
   }) {
     await this.workspaces.assertAccess(input.workspaceId, input.userId, input.roleCode, 'viewer');
-    const model = this.pickModelRef(input.skillCode || 'feature', input.modelRef);
+    const model = await this.pickModelRef(input.skillCode || 'feature', input.modelRef);
     return this.prisma.devSession.create({
       data: {
         workspaceId: input.workspaceId,
@@ -113,7 +132,7 @@ export class DeveloperOrchestrator {
       ctx.context ? `Project context:\n${ctx.context}` : 'No indexed context yet; ask to rebuild index if needed.',
     ].join('\n');
 
-    const modelRef = session.modelRef || this.pickModelRef(session.skillCode).modelRef;
+    const modelRef = session.modelRef || (await this.pickModelRef(session.skillCode)).modelRef;
     const messages = [
       { role: 'system' as const, content: system },
       { role: 'user' as const, content: input.message },
@@ -242,6 +261,7 @@ export class DeveloperOrchestrator {
       changeType: 'create' | 'modify' | 'delete';
       patch: string;
       content?: string;
+      baseSha?: string;
     }> = [];
 
     const writeSteps = plan.steps.filter(
@@ -260,8 +280,11 @@ export class DeveloperOrchestrator {
       }
 
       let existing = '';
+      let baseSha: string | undefined;
       try {
-        existing = (await this.runner.readFile(plan.workspaceId, step.path!)).content;
+        const cur = await this.runner.readFile(plan.workspaceId, step.path!);
+        existing = cur.content;
+        baseSha = cur.sha256 || createHash('sha256').update(existing).digest('hex');
       } catch {
         // new file
       }
@@ -294,7 +317,7 @@ export class DeveloperOrchestrator {
               ].join('\n\n'),
             },
           ],
-          this.pickModelRef('feature').modelRef,
+          (await this.pickModelRef('feature')).modelRef,
         );
         const match = generated.match(/```file\s*([\s\S]*?)```/i) || generated.match(/```[\w.-]*\s*([\s\S]*?)```/);
         if (match?.[1]?.trim()) {
@@ -311,6 +334,7 @@ export class DeveloperOrchestrator {
         changeType,
         patch: '',
         content,
+        baseSha,
       });
     }
 
