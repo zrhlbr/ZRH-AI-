@@ -1,14 +1,7 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Response } from 'express';
 import { Observable } from 'rxjs';
-import {
-  AIProvider,
-  AIModel,
-  AIModelCapability,
-  ModelCapability,
-  ModelHealth,
-  PromptTemplate,
-} from '@prisma/client';
+import { PromptTemplate } from '@prisma/client';
 import { IAIProvider } from '../interfaces/ai-provider.interface';
 import {
   AIMessage,
@@ -22,6 +15,7 @@ import { ModelRouterService } from '../router/model-router.service';
 import { StreamingManagerService } from '../stream/streaming-manager.service';
 import { PromptManagerService } from '../prompt/prompt-manager.service';
 import { AIHealthService } from '../health/ai-health.service';
+import { HybridInferenceRouter } from '../hybrid/hybrid-inference.router';
 import {
   OllamaProvider,
   OpenAIProvider,
@@ -56,6 +50,7 @@ export class AIGatewayService {
     private readonly streaming: StreamingManagerService,
     private readonly prompts: PromptManagerService,
     private readonly health: AIHealthService,
+    private readonly hybrid: HybridInferenceRouter,
   ) {
     // 注册所有 Provider
     this.register(new OllamaProvider());
@@ -68,6 +63,14 @@ export class AIGatewayService {
     this.register(new MockProvider());
     // Optional official Cursor Cloud API adapter (disabled unless CURSOR_CLOUD_ENABLED=true)
     this.register(new CursorCloudProvider());
+
+    // Hybrid nodes (registered when feature enabled + URLs configured)
+    if (this.hybrid.isEnabled()) {
+      const laptop = this.hybrid.getProvider('laptop-gpu');
+      const serverCpu = this.hybrid.getProvider('server-cpu');
+      if (laptop) this.register(laptop);
+      if (serverCpu) this.register(serverCpu);
+    }
   }
 
   private register(provider: IAIProvider): void {
@@ -126,6 +129,11 @@ export class AIGatewayService {
 
   /** 非流式生成（预留） */
   async generate(messages: AIMessage[], modelRef?: string): Promise<string> {
+    if (this.hybrid.isEnabled()) {
+      const result = await this.hybrid.generateWithFailover(messages, modelRef);
+      this.logger.log(`gateway generate hybrid node=${result.nodeId} model=${result.modelName}`);
+      return result.text;
+    }
     const decision = await this.route(messages[messages.length - 1]?.content ?? '', modelRef);
     const provider = this.getProvider(decision.providerCode);
     if (!provider) throw new BadRequestException(`provider not found: ${decision.providerCode}`);
@@ -135,12 +143,34 @@ export class AIGatewayService {
   /**
    * 流式生成：核心入口。
    * 返回 Observable<AIStreamChunk>，调用方负责订阅与持久化。
+   * Hybrid 开启时：GPU 优先 + CPU 故障转移（首 token 前可重试；中途失败不拼接）。
    */
   async stream(
     messages: AIMessage[],
     options: AIGenerationOptions & { conversationId?: number; modelRef?: string } = {},
   ): Promise<{ providerCode: string; modelName: string; stream: Observable<AIStreamChunk> }> {
     const { conversationId, modelRef, ...generationOptions } = options;
+
+    if (this.hybrid.isEnabled()) {
+      const hybrid = this.hybrid.streamWithFailover(messages, modelRef, generationOptions, {
+        conversationId,
+      });
+      this.logger.log(
+        `gateway stream hybrid node=${hybrid.nodeId} provider=${hybrid.providerCode} model=${hybrid.modelName} conv=${conversationId ?? '-'}`,
+      );
+      if (conversationId !== undefined) {
+        this.activeStreams.set(conversationId, {
+          providerCode: hybrid.providerCode,
+          modelName: hybrid.modelName,
+        });
+      }
+      return {
+        providerCode: hybrid.providerCode,
+        modelName: hybrid.modelName,
+        stream: hybrid.stream,
+      };
+    }
+
     const decision = await this.route(messages[messages.length - 1]?.content ?? '', modelRef);
     const provider = this.getProvider(decision.providerCode);
     if (!provider) throw new BadRequestException(`provider not found: ${decision.providerCode}`);
@@ -157,6 +187,12 @@ export class AIGatewayService {
 
   /** 停止指定对话的流式生成 */
   stop(conversationId: number): boolean {
+    if (this.hybrid.isEnabled()) {
+      const stopped = this.hybrid.stop(conversationId);
+      this.activeStreams.delete(conversationId);
+      this.logger.log(`gateway stop hybrid conv=${conversationId} stopped=${stopped}`);
+      return stopped;
+    }
     const active = this.activeStreams.get(conversationId);
     if (!active) return false;
     const provider = this.getProvider(active.providerCode);
@@ -164,6 +200,21 @@ export class AIGatewayService {
     this.activeStreams.delete(conversationId);
     this.logger.log(`gateway stop conv=${conversationId} provider=${active.providerCode} stopped=${stopped}`);
     return stopped;
+  }
+
+  /** SUPER_ADMIN hybrid infra snapshot */
+  getHybridSnapshot(includeInternal: boolean) {
+    return this.hybrid.getSnapshot(includeInternal);
+  }
+
+  setHybridRoutingMode(mode: 'AUTO' | 'GPU_ONLY' | 'CPU_ONLY') {
+    this.hybrid.setRoutingMode(mode);
+    return this.hybrid.getSnapshot(true);
+  }
+
+  setHybridNodeEnabled(nodeId: 'laptop-gpu' | 'server-cpu', enabled: boolean) {
+    this.hybrid.setNodeEnabled(nodeId, enabled);
+    return this.hybrid.getSnapshot(true);
   }
 
   /** 将 Provider 流直接写入 Express SSE Response */

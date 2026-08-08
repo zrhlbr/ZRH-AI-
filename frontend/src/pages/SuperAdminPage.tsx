@@ -8,6 +8,7 @@ import { ApiError } from '../api/client';
 import { v12Api } from '../api/v12';
 import { useAuthStore } from '../store/authStore';
 import { MailCenterView } from './MailCenterView';
+import { AiInfraView } from './AiInfraView';
 
 function OverviewView() {
   const { t } = useTranslation();
@@ -177,6 +178,11 @@ export function SuperAdminPage() {
     { to: '/superadmin/mail', label: t('mailCenter.nav'), match: /^\/superadmin\/mail/ },
     { to: '/superadmin/ops', label: t('superadmin.ops'), match: /^\/superadmin\/ops/ },
     {
+      to: '/superadmin/ai',
+      label: t('superadmin.aiInfra'),
+      match: /^\/superadmin\/ai/,
+    },
+    {
       to: '/superadmin/integrations',
       label: t('superadmin.integrations'),
       match: /^\/superadmin\/integrations/,
@@ -189,6 +195,7 @@ export function SuperAdminPage() {
   else if (path.startsWith('/superadmin/mail')) body = <MailCenterView />;
   else if (path.startsWith('/superadmin/ops'))
     body = <JsonView title={t('superadmin.ops')} kind="ops" />;
+  else if (path.startsWith('/superadmin/ai')) body = <AiInfraView />;
   else if (path.startsWith('/superadmin/integrations'))
     body = <JsonView title={t('superadmin.integrations')} kind="integrations" />;
   else if (path.startsWith('/superadmin/logs'))

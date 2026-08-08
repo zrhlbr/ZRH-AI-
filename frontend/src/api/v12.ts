@@ -208,6 +208,19 @@ export const v12Api = {
   superOps: () => request<Record<string, unknown>>('/superadmin/ops'),
   superIntegrations: () => request<Record<string, unknown>>('/superadmin/integrations'),
 
+  // Hybrid Inference infra (SUPER_ADMIN only — may include internal URLs)
+  superAiInference: () => request<Record<string, unknown>>('/superadmin/ai/inference'),
+  superAiInferenceMode: (mode: 'AUTO' | 'GPU_ONLY' | 'CPU_ONLY') =>
+    request<Record<string, unknown>>('/superadmin/ai/inference/mode', {
+      method: 'POST',
+      body: JSON.stringify({ mode }),
+    }),
+  superAiInferenceNode: (nodeId: string, enabled: boolean) =>
+    request<Record<string, unknown>>('/superadmin/ai/inference/node', {
+      method: 'POST',
+      body: JSON.stringify({ nodeId, enabled }),
+    }),
+
   // Mail Center V1.0 (SUPER_ADMIN)
   mailStatus: () =>
     request<{

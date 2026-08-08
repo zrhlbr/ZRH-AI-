@@ -28,23 +28,46 @@ interface OllamaTagModel {
   details?: Record<string, unknown>;
 }
 
+export interface OllamaProviderOptions {
+  /** Provider code (default: ollama). Hybrid nodes use laptop-gpu / server-cpu. */
+  code?: string;
+  baseUrl?: string;
+  timeoutMs?: number;
+  streamTimeoutMs?: number;
+  healthTimeoutMs?: number;
+  loggerName?: string;
+}
+
 /**
  * Ollama Provider：直接调用本地/远端 Ollama HTTP API。
  * 所有聊天请求必须经 AIGatewayService 路由至此，禁止业务代码直接实例化。
  */
 export class OllamaProvider extends BaseProvider {
-  readonly code = 'ollama';
+  readonly code: string;
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
   private readonly active = new Map<number, AbortController>();
-
   private readonly streamTimeoutMs: number;
+  private readonly healthTimeoutMs: number;
 
-  constructor() {
-    super(OllamaProvider.name);
-    this.baseUrl = (process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434').replace(/\/$/, '');
-    this.timeoutMs = Number(process.env.OLLAMA_TIMEOUT_MS ?? '60000');
-    this.streamTimeoutMs = Number(process.env.OLLAMA_STREAM_TIMEOUT_MS ?? '300000');
+  constructor(options: OllamaProviderOptions = {}) {
+    super(options.loggerName ?? OllamaProvider.name);
+    this.code = options.code ?? 'ollama';
+    this.baseUrl = (
+      options.baseUrl ??
+      process.env.OLLAMA_BASE_URL ??
+      'http://localhost:11434'
+    ).replace(/\/$/, '');
+    this.timeoutMs = options.timeoutMs ?? Number(process.env.OLLAMA_TIMEOUT_MS ?? '60000');
+    this.streamTimeoutMs =
+      options.streamTimeoutMs ?? Number(process.env.OLLAMA_STREAM_TIMEOUT_MS ?? '300000');
+    this.healthTimeoutMs =
+      options.healthTimeoutMs ?? Number(process.env.HYBRID_HEALTH_TIMEOUT_MS ?? '1800');
+  }
+
+  /** Base URL for SUPER_ADMIN infra diagnostics only — never expose to USER APIs. */
+  getBaseUrl(): string {
+    return this.baseUrl;
   }
 
   isEnabled(): boolean {
@@ -228,19 +251,36 @@ export class OllamaProvider extends BaseProvider {
 
   async health(model?: string): Promise<AIProviderHealth> {
     const started = Date.now();
-    const result = await this.fetchJson<{ models?: unknown[] }>('/api/tags');
-    if (!result.ok) {
-      return { status: 'offline', error: result.error, checkedAt: new Date() };
-    }
-    if (model) {
-      const installed = (result.data.models ?? []).some((m: unknown) =>
-        typeof m === 'object' && m !== null && (m as OllamaTagModel).name === model,
-      );
-      if (!installed) {
-        return { status: 'error', error: `model ${model} not installed`, checkedAt: new Date(), latencyMs: result.latencyMs };
+    // Lightweight tags probe — never run a full generation for health.
+    try {
+      const response = await fetch(`${this.baseUrl}/api/tags`, {
+        signal: AbortSignal.timeout(Math.max(500, this.healthTimeoutMs)),
+      });
+      if (!response.ok) {
+        return {
+          status: 'offline',
+          error: `HTTP ${response.status}`,
+          checkedAt: new Date(),
+          latencyMs: Date.now() - started,
+        };
       }
+      const data = (await response.json()) as { models?: OllamaTagModel[] };
+      if (model) {
+        const installed = (data.models ?? []).some((m) => m.name === model || m.name.startsWith(`${model}:`));
+        if (!installed) {
+          return {
+            status: 'error',
+            error: `model ${model} not installed`,
+            checkedAt: new Date(),
+            latencyMs: Date.now() - started,
+          };
+        }
+      }
+      return { status: 'online', latencyMs: Date.now() - started, checkedAt: new Date() };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return { status: 'offline', error: message, checkedAt: new Date(), latencyMs: Date.now() - started };
     }
-    return { status: 'online', latencyMs: Date.now() - started, checkedAt: new Date() };
   }
 
   pullModel(model: string): Observable<AIPullProgress> {

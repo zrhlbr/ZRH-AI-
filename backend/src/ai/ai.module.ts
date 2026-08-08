@@ -6,6 +6,7 @@ import { ModelRouterService } from './router/model-router.service';
 import { StreamingManagerService } from './stream/streaming-manager.service';
 import { PromptManagerService } from './prompt/prompt-manager.service';
 import { AIHealthService } from './health/ai-health.service';
+import { HybridInferenceRouter } from './hybrid/hybrid-inference.router';
 
 /**
  * AI Gateway 模块（阶段 4）。
@@ -14,6 +15,7 @@ import { AIHealthService } from './health/ai-health.service';
 @Module({
   controllers: [AIController],
   providers: [
+    HybridInferenceRouter,
     AIGatewayService,
     ModelRegistryService,
     ModelRouterService,
@@ -21,6 +23,6 @@ import { AIHealthService } from './health/ai-health.service';
     PromptManagerService,
     AIHealthService,
   ],
-  exports: [AIGatewayService],
+  exports: [AIGatewayService, HybridInferenceRouter],
 })
 export class AIModule {}

@@ -75,6 +75,8 @@ export class ModelRouterService {
 
   private static readonly KNOWN_PROVIDERS = new Set([
     'ollama',
+    'laptop-gpu',
+    'server-cpu',
     'openai',
     'claude',
     'gemini',
