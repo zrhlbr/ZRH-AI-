@@ -240,7 +240,10 @@ Circuit breaker self-test: **PASS**
 
 ## 22. Git SHA
 
-*(Filled after whitelist commit on `test/v1.2`.)*
+- Branch: `test/v1.2`
+- Commit: `056db80a3466232f9b8d0e22d48857d2f803bfb3`
+- Message: `feat(ai): add hybrid gpu priority cpu failover routing`
+- Remote: **not pushed** (await 赵总)
 
 ## 23. Production Impact
 
