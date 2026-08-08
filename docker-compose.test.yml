@@ -47,6 +47,27 @@ services:
       retries: 6
     restart: unless-stopped
 
+  # CPU fallback node for Hybrid Inference (Test only). Models volume shared with host helper.
+  # Published ONLY on 127.0.0.1 — never 0.0.0.0 / public Internet.
+  zrh-ai-ollama-cpu:
+    image: ollama/ollama:latest
+    container_name: zrh-ai-test-ollama-cpu
+    volumes:
+      - zrh-ollama-cpu-data:/root/.ollama
+    ports:
+      - "127.0.0.1:11434:11434"
+    expose:
+      - "11434"
+    networks:
+      - zrh-ai-test-network
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 20s
+    restart: unless-stopped
+
   zrh-ai-dev-runner:
     build:
       context: ./dev-runner
@@ -102,12 +123,12 @@ services:
       REDIS_HOST: zrh-ai-redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://zrh-ai-ollama-cpu:11434}
       # Hybrid Inference V1.0 (default OFF — Production cutover requires 赵总批准)
       HYBRID_INFERENCE_ENABLED: ${HYBRID_INFERENCE_ENABLED:-false}
       HYBRID_ROUTING_MODE: ${HYBRID_ROUTING_MODE:-AUTO}
       LAPTOP_OLLAMA_BASE_URL: ${LAPTOP_OLLAMA_BASE_URL:-}
-      SERVER_OLLAMA_BASE_URL: ${SERVER_OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      SERVER_OLLAMA_BASE_URL: ${SERVER_OLLAMA_BASE_URL:-http://zrh-ai-ollama-cpu:11434}
       HYBRID_LAPTOP_ENABLED: ${HYBRID_LAPTOP_ENABLED:-true}
       HYBRID_SERVER_CPU_ENABLED: ${HYBRID_SERVER_CPU_ENABLED:-true}
       HYBRID_HEALTH_INTERVAL_MS: ${HYBRID_HEALTH_INTERVAL_MS:-15000}
@@ -139,6 +160,8 @@ services:
       zrh-ai-redis:
         condition: service_healthy
       zrh-ai-dev-runner:
+        condition: service_healthy
+      zrh-ai-ollama-cpu:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4010/api/v1/health | grep -q zrh-ai-api || exit 1"]
@@ -172,3 +195,7 @@ volumes:
   zrh-ai-test-redis-data:
   zrh-ai-test-workspaces:
   zrh-ai-test-storage:
+  # Reuse existing CPU model store (created earlier as docker volume zrh-ollama-cpu-data)
+  zrh-ollama-cpu-data:
+    external: true
+    name: zrh-ollama-cpu-data
