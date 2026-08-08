@@ -131,7 +131,8 @@ Public: `https://ai.zrhtech.com/` → **200**
 ## Git / Push
 
 - Local commits include Hybrid feature + test acceptance + this production report.
-- **Push `test/v1.2`:** recorded below after push step.
+- **Push `test/v1.2`:** **DONE** → `8edfaec..ee349ce` on `origin/test/v1.2`
+- Tip SHA: `ee349ceafd936c251c2224c82d40a0423a862c66`
 - **Forbidden (not done):** force push, history rewrite, merge `main`, Release Tag.
 
 ---
